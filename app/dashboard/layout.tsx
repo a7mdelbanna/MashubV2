@@ -8,19 +8,21 @@ import {
   LayoutDashboard, Briefcase, DollarSign, Users,
   HeadphonesIcon, GraduationCap, UserPlus, Package,
   Zap, Settings, LogOut, ChevronLeft, Bell,
-  Search, Sparkles
+  Search, Sparkles, Building2, Box, Building,
+  ShoppingCart, Calendar
 } from 'lucide-react'
 
 const sidebarItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Projects', path: '/dashboard/projects', icon: Briefcase },
+  { name: 'Clients', path: '/dashboard/clients', icon: Building2 },
+  { name: 'Products', path: '/dashboard/products', icon: Box },
+  { name: 'Services', path: '/dashboard/services', icon: Zap },
+  { name: 'Vendors', path: '/dashboard/vendors', icon: Building },
+  { name: 'Purchases', path: '/dashboard/purchases', icon: ShoppingCart },
+  { name: 'Visits', path: '/dashboard/visits', icon: Calendar },
   { name: 'Finance', path: '/dashboard/finance', icon: DollarSign },
-  { name: 'CRM', path: '/dashboard/crm', icon: Users },
   { name: 'Support', path: '/dashboard/support', icon: HeadphonesIcon },
-  { name: 'Learning', path: '/dashboard/learning', icon: GraduationCap },
-  { name: 'Human Resources', path: '/dashboard/hr', icon: UserPlus },
-  { name: 'Assets', path: '/dashboard/assets', icon: Package },
-  { name: 'Automations', path: '/dashboard/automations', icon: Zap },
   { name: 'Settings', path: '/dashboard/settings', icon: Settings }
 ]
 
