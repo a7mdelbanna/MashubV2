@@ -13,10 +13,10 @@ import Link from 'next/link'
 import { ProjectCard } from '@/components/projects/project-card'
 import { ProjectFilters } from '@/components/projects/project-filters'
 
-// Mock data for projects
+// Mock data for projects with enhanced relationships
 const projects = [
   {
-    id: '1',
+    id: 'p1',
     name: 'E-Commerce Platform',
     client: {
       id: 'c1',
@@ -43,6 +43,14 @@ const projects = [
       { id: 't3', name: 'Alex Kim', role: 'UI/UX Designer', avatar: 'AK' },
       { id: 't4', name: 'James Wilson', role: 'DevOps', avatar: 'JW' }
     ],
+    assignedServices: [
+      { id: 'srv1', name: 'ShopLeez POS' },
+      { id: 'srv2', name: 'E-Commerce Platform' }
+    ],
+    relatedInvoices: [
+      { id: 'inv1', amount: 45000, status: 'pending' },
+      { id: 'inv2', amount: 80000, status: 'paid' }
+    ],
     tasks: {
       total: 48,
       completed: 31,
@@ -52,7 +60,7 @@ const projects = [
     gradient: 'gradient-blue'
   },
   {
-    id: '2',
+    id: 'p2',
     name: 'Mobile Banking App',
     client: {
       id: 'c2',
@@ -78,6 +86,12 @@ const projects = [
       { id: 't6', name: 'Ryan Martinez', role: 'Android Dev', avatar: 'RM' },
       { id: 't7', name: 'Lisa Wang', role: 'QA Engineer', avatar: 'LW' }
     ],
+    assignedServices: [
+      { id: 'srv3', name: 'Mobile Banking App' }
+    ],
+    relatedInvoices: [
+      { id: 'inv3', amount: 185000, status: 'paid' }
+    ],
     tasks: {
       total: 62,
       completed: 53,
@@ -87,7 +101,7 @@ const projects = [
     gradient: 'gradient-green'
   },
   {
-    id: '3',
+    id: 'p3',
     name: 'HR Management System',
     client: {
       id: 'c3',
@@ -112,6 +126,12 @@ const projects = [
       { id: 't8', name: 'Mark Anderson', role: 'Full Stack Dev', avatar: 'MA' },
       { id: 't9', name: 'Nina Patel', role: 'Business Analyst', avatar: 'NP' }
     ],
+    assignedServices: [
+      { id: 'srv4', name: 'CRM System' }
+    ],
+    relatedInvoices: [
+      { id: 'inv4', amount: 25000, status: 'pending' }
+    ],
     tasks: {
       total: 35,
       completed: 5,
@@ -121,7 +141,7 @@ const projects = [
     gradient: 'gradient-purple'
   },
   {
-    id: '4',
+    id: 'p4',
     name: 'POS System Upgrade',
     client: {
       id: 'c4',
@@ -146,6 +166,14 @@ const projects = [
       { id: 't10', name: 'Chris Evans', role: 'Backend Dev', avatar: 'CE' },
       { id: 't11', name: 'Diana Prince', role: 'QA Lead', avatar: 'DP' }
     ],
+    assignedServices: [
+      { id: 'srv1', name: 'ShopLeez POS' },
+      { id: 'srv5', name: 'Restaurant Management' }
+    ],
+    relatedInvoices: [
+      { id: 'inv5', amount: 15000, status: 'pending' },
+      { id: 'inv6', amount: 63000, status: 'paid' }
+    ],
     tasks: {
       total: 28,
       completed: 26,
@@ -155,7 +183,7 @@ const projects = [
     gradient: 'gradient-orange'
   },
   {
-    id: '5',
+    id: 'p5',
     name: 'AI Chat Assistant',
     client: {
       id: 'c5',
@@ -180,6 +208,10 @@ const projects = [
       { id: 't12', name: 'Alice Cooper', role: 'ML Engineer', avatar: 'AC' },
       { id: 't13', name: 'Bob Dylan', role: 'Data Scientist', avatar: 'BD' }
     ],
+    assignedServices: [],
+    relatedInvoices: [
+      { id: 'inv7', amount: 55000, status: 'paid' }
+    ],
     tasks: {
       total: 24,
       completed: 10,
@@ -189,7 +221,7 @@ const projects = [
     gradient: 'gradient-pink'
   },
   {
-    id: '6',
+    id: 'p6',
     name: 'Healthcare Portal',
     client: {
       id: 'c6',
@@ -214,6 +246,14 @@ const projects = [
       { id: 't14', name: 'Frank Ocean', role: 'Lead Dev', avatar: 'FO' },
       { id: 't15', name: 'Grace Kelly', role: 'UI Designer', avatar: 'GK' },
       { id: 't16', name: 'Henry Ford', role: 'Backend Dev', avatar: 'HF' }
+    ],
+    assignedServices: [
+      { id: 'srv1', name: 'ShopLeez POS' },
+      { id: 'srv4', name: 'CRM System' }
+    ],
+    relatedInvoices: [
+      { id: 'inv8', amount: 65000, status: 'pending' },
+      { id: 'inv9', amount: 80000, status: 'paid' }
     ],
     tasks: {
       total: 58,

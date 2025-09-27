@@ -3,7 +3,8 @@
 import { cn } from '@/lib/utils'
 import {
   Calendar, DollarSign, Users, Clock, MoreVertical,
-  ArrowUpRight, CheckCircle2, AlertTriangle, TrendingUp
+  ArrowUpRight, CheckCircle2, AlertTriangle, TrendingUp,
+  Zap, FileText, Briefcase
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -73,6 +74,22 @@ export function ProjectCard({ project, viewMode, statusConfig, typeConfig }: Pro
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
+              </div>
+
+              {/* Relationship Indicators */}
+              <div className="flex items-center space-x-4 text-xs text-gray-400">
+                {project.assignedServices && project.assignedServices.length > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <Zap className="h-3 w-3 text-purple-400" />
+                    <span>{project.assignedServices.length}</span>
+                  </div>
+                )}
+                {project.relatedInvoices && project.relatedInvoices.length > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <FileText className="h-3 w-3 text-green-400" />
+                    <span>{project.relatedInvoices.length}</span>
+                  </div>
+                )}
               </div>
 
               {/* Budget */}
@@ -178,6 +195,58 @@ export function ProjectCard({ project, viewMode, statusConfig, typeConfig }: Pro
             </div>
           </div>
 
+          {/* Assigned Services */}
+          {project.assignedServices && project.assignedServices.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 mb-2">Assigned Services:</p>
+              <div className="flex flex-wrap gap-2">
+                {project.assignedServices.slice(0, 2).map((service: any) => (
+                  <div
+                    key={service.id}
+                    className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs flex items-center space-x-1"
+                    title={service.name}
+                  >
+                    <Zap className="h-3 w-3" />
+                    <span className="truncate max-w-20">{service.name}</span>
+                  </div>
+                ))}
+                {project.assignedServices.length > 2 && (
+                  <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
+                    +{project.assignedServices.length - 2} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Related Invoices */}
+          {project.relatedInvoices && project.relatedInvoices.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 mb-2">Related Invoices:</p>
+              <div className="flex flex-wrap gap-2">
+                {project.relatedInvoices.slice(0, 2).map((invoice: any) => (
+                  <div
+                    key={invoice.id}
+                    className={`px-2 py-1 rounded-lg text-xs flex items-center space-x-1 ${
+                      invoice.status === 'paid'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                    }`}
+                    title={`$${invoice.amount.toLocaleString()} - ${invoice.status}`}
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>${(invoice.amount / 1000).toFixed(0)}k</span>
+                  </div>
+                ))}
+                {project.relatedInvoices.length > 2 && (
+                  <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
+                    +{project.relatedInvoices.length - 2} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Tasks Overview */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="rounded-lg bg-gray-800/50 p-3">
@@ -249,6 +318,21 @@ export function ProjectCard({ project, viewMode, statusConfig, typeConfig }: Pro
               <span className="ml-3 text-sm text-gray-400">
                 {project.team.length} members
               </span>
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs text-gray-400">
+              {project.assignedServices && project.assignedServices.length > 0 && (
+                <div className="flex items-center space-x-1">
+                  <Zap className="h-3 w-3 text-purple-400" />
+                  <span>{project.assignedServices.length} services</span>
+                </div>
+              )}
+              {project.relatedInvoices && project.relatedInvoices.length > 0 && (
+                <div className="flex items-center space-x-1">
+                  <FileText className="h-3 w-3 text-green-400" />
+                  <span>{project.relatedInvoices.length} invoices</span>
+                </div>
+              )}
             </div>
 
             <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />

@@ -127,9 +127,9 @@ const clientData = {
   ],
 
   // Services & Products
-  services: [
+  assignedServices: [
     {
-      id: 's1',
+      id: 'srv1',
       name: 'ShopLeez POS',
       package: 'Professional',
       price: 599,
@@ -139,7 +139,7 @@ const clientData = {
       renewalDate: '2024-04-01'
     },
     {
-      id: 's2',
+      id: 'srv2',
       name: 'E-Commerce Platform',
       package: 'Pro Store',
       price: 1499,
@@ -147,6 +147,61 @@ const clientData = {
       status: 'active',
       startDate: '2023-06-15',
       renewalDate: '2024-06-15'
+    },
+    {
+      id: 'srv4',
+      name: 'CRM System',
+      package: 'Business',
+      price: 799,
+      monthlyPrice: 79,
+      status: 'active',
+      startDate: '2023-08-01',
+      renewalDate: '2024-08-01'
+    }
+  ],
+
+  // Active Projects
+  activeProjects: [
+    {
+      id: 'p1',
+      name: 'E-Commerce Platform',
+      status: 'in_progress',
+      progress: 65,
+      budget: 125000,
+      spent: 78500,
+      dueDate: '2024-06-30',
+      manager: 'Sarah Chen'
+    }
+  ],
+
+  // Recent Invoices
+  recentInvoices: [
+    {
+      id: 'inv1',
+      number: 'INV-2024-001',
+      amount: 45000,
+      date: '2024-03-01',
+      dueDate: '2024-03-31',
+      status: 'pending',
+      description: 'Monthly services and support'
+    },
+    {
+      id: 'inv2',
+      number: 'INV-2024-002',
+      amount: 125000,
+      date: '2024-02-15',
+      dueDate: '2024-03-15',
+      status: 'paid',
+      description: 'E-commerce platform development'
+    },
+    {
+      id: 'inv3',
+      number: 'INV-2024-003',
+      amount: 89000,
+      date: '2024-02-01',
+      dueDate: '2024-03-01',
+      status: 'paid',
+      description: 'CRM system setup and integration'
     }
   ],
 
@@ -242,9 +297,9 @@ const clientData = {
 const tabs = [
   { id: 'overview', label: 'Overview', icon: PieChart },
   { id: 'contacts', label: 'Contacts', icon: Users, count: clientData.relatedContacts.length },
-  { id: 'services', label: 'Services & Products', icon: Package, count: clientData.services.length + clientData.products.length },
+  { id: 'services', label: 'Services & Products', icon: Package, count: clientData.assignedServices.length + clientData.products.length },
   { id: 'projects', label: 'Projects', icon: Briefcase, count: clientData.totalProjects },
-  { id: 'invoices', label: 'Invoices', icon: Receipt, count: clientData.totalInvoices },
+  { id: 'invoices', label: 'Invoices', icon: Receipt, count: clientData.recentInvoices.length },
   { id: 'visits', label: 'Visits', icon: Calendar, count: clientData.recentVisits.length },
   { id: 'activity', label: 'Activity', icon: Activity }
 ]
@@ -365,7 +420,7 @@ export default function ClientDetailPage() {
             <span className="text-gray-400 text-sm">Services</span>
             <Zap className="h-4 w-4 text-purple-400" />
           </div>
-          <p className="text-xl font-bold text-white">{clientData.services.length}</p>
+          <p className="text-xl font-bold text-white">{clientData.assignedServices.length}</p>
           <p className="text-xs text-gray-500">Active</p>
         </div>
 
@@ -606,7 +661,7 @@ export default function ClientDetailPage() {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {clientData.services.map((service) => (
+                    {clientData.assignedServices.map((service) => (
                       <div key={service.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
@@ -652,6 +707,138 @@ export default function ClientDetailPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'projects' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Active Projects</h3>
+                  <Link
+                    href={`/dashboard/projects/new?client=${clientData.id}`}
+                    className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
+                  >
+                    New Project
+                  </Link>
+                </div>
+
+                <div className="space-y-3">
+                  {clientData.activeProjects.map((project) => (
+                    <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
+                      <div className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800/70 transition-colors cursor-pointer">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 flex items-center justify-center">
+                              <Briefcase className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{project.name}</p>
+                              <p className="text-sm text-gray-400">Manager: {project.manager}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <span className={cn(
+                              "px-2 py-1 rounded-lg text-xs border",
+                              project.status === 'in_progress'
+                                ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                                : 'bg-green-500/20 text-green-400 border-green-500/30'
+                            )}>
+                              {project.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-gray-400">Progress</span>
+                            <span className="text-xs text-white font-medium">{project.progress}%</span>
+                          </div>
+                          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full transition-all duration-1000"
+                              style={{ width: `${project.progress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Budget info */}
+                        <div className="flex items-center justify-between text-sm">
+                          <div>
+                            <span className="text-gray-400">Budget: </span>
+                            <span className="text-white">${(project.spent / 1000).toFixed(0)}k / ${(project.budget / 1000).toFixed(0)}k</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Due: </span>
+                            <span className="text-white">{new Date(project.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'invoices' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Recent Invoices</h3>
+                  <Link
+                    href={`/dashboard/invoices/new?client=${clientData.id}`}
+                    className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
+                  >
+                    Create Invoice
+                  </Link>
+                </div>
+
+                <div className="space-y-3">
+                  {clientData.recentInvoices.map((invoice) => (
+                    <Link key={invoice.id} href={`/dashboard/invoices/${invoice.id}`}>
+                      <div className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800/70 transition-colors cursor-pointer">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={cn(
+                              "w-10 h-10 rounded-lg flex items-center justify-center",
+                              invoice.status === 'paid'
+                                ? "bg-gradient-to-r from-green-600 to-emerald-600"
+                                : "bg-gradient-to-r from-yellow-600 to-orange-600"
+                            )}>
+                              <FileText className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{invoice.number}</p>
+                              <p className="text-sm text-gray-400">{invoice.description}</p>
+                              <p className="text-xs text-gray-500">
+                                Issued: {new Date(invoice.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {invoice.status === 'pending' && (
+                                  <span className="ml-2">
+                                    • Due: {new Date(invoice.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-right">
+                              <p className="text-white font-medium">${invoice.amount.toLocaleString()}</p>
+                              <span className={cn(
+                                "px-2 py-1 rounded-lg text-xs border",
+                                invoice.status === 'paid'
+                                  ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                  : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                              )}>
+                                {invoice.status.toUpperCase()}
+                              </span>
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
             )}

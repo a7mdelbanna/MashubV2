@@ -6,11 +6,12 @@ import {
   Building2, Plus, Search, Filter, Phone, Mail,
   Globe, MapPin, Calendar, DollarSign, Briefcase,
   TrendingUp, MoreVertical, ArrowUpRight, Star,
-  Users, Clock, CheckCircle2, AlertCircle
+  Users, Clock, CheckCircle2, AlertCircle, Zap,
+  FileText, Calendar as CalendarIcon, Eye
 } from 'lucide-react'
 import Link from 'next/link'
 
-// Mock data for clients
+// Mock data for clients with relationships
 const clients = [
   {
     id: 'c1',
@@ -37,7 +38,23 @@ const clients = [
     },
     tags: ['Enterprise', 'Long-term', 'Priority'],
     rating: 5,
-    gradient: 'gradient-blue'
+    gradient: 'gradient-blue',
+    assignedServices: [
+      { id: 'srv1', name: 'ShopLeez POS' },
+      { id: 'srv2', name: 'E-Commerce Platform' },
+      { id: 'srv4', name: 'CRM System' }
+    ],
+    activeProjects: [
+      { id: 'p1', name: 'E-Commerce Platform', status: 'in_progress' }
+    ],
+    recentInvoices: [
+      { id: 'inv1', amount: 45000, date: '2024-03-01', status: 'pending' },
+      { id: 'inv2', amount: 125000, date: '2024-02-15', status: 'paid' }
+    ],
+    recentVisits: [
+      { date: '2024-03-01', type: 'site_visit', notes: 'Project review meeting' },
+      { date: '2024-02-20', type: 'virtual', notes: 'Technical consultation' }
+    ]
   },
   {
     id: 'c2',
@@ -64,7 +81,20 @@ const clients = [
     },
     tags: ['Enterprise', 'Financial Services'],
     rating: 4.5,
-    gradient: 'gradient-green'
+    gradient: 'gradient-green',
+    assignedServices: [
+      { id: 'srv3', name: 'Mobile Banking App' },
+      { id: 'srv4', name: 'CRM System' }
+    ],
+    activeProjects: [
+      { id: 'p2', name: 'Mobile Banking App', status: 'in_progress' }
+    ],
+    recentInvoices: [
+      { id: 'inv3', amount: 185000, date: '2024-02-28', status: 'paid' }
+    ],
+    recentVisits: [
+      { date: '2024-03-01', type: 'virtual', notes: 'Sprint planning' }
+    ]
   },
   {
     id: 'c3',
@@ -91,7 +121,19 @@ const clients = [
     },
     tags: ['Mid-size', 'HR Tech'],
     rating: 4,
-    gradient: 'gradient-purple'
+    gradient: 'gradient-purple',
+    assignedServices: [
+      { id: 'srv4', name: 'CRM System' }
+    ],
+    activeProjects: [
+      { id: 'p3', name: 'HR Management System', status: 'planning' }
+    ],
+    recentInvoices: [
+      { id: 'inv4', amount: 25000, date: '2024-02-01', status: 'pending' }
+    ],
+    recentVisits: [
+      { date: '2024-02-15', type: 'site_visit', notes: 'Requirements gathering' }
+    ]
   },
   {
     id: 'c4',
@@ -118,7 +160,22 @@ const clients = [
     },
     tags: ['Retail', 'POS Systems'],
     rating: 4.5,
-    gradient: 'gradient-orange'
+    gradient: 'gradient-orange',
+    assignedServices: [
+      { id: 'srv1', name: 'ShopLeez POS' },
+      { id: 'srv2', name: 'E-Commerce Platform' },
+      { id: 'srv5', name: 'Restaurant Management' }
+    ],
+    activeProjects: [
+      { id: 'p4', name: 'POS System Upgrade', status: 'review' }
+    ],
+    recentInvoices: [
+      { id: 'inv5', amount: 15000, date: '2024-02-28', status: 'pending' },
+      { id: 'inv6', amount: 78000, date: '2024-01-15', status: 'paid' }
+    ],
+    recentVisits: [
+      { date: '2024-02-20', type: 'site_visit', notes: 'System deployment' }
+    ]
   },
   {
     id: 'c5',
@@ -145,7 +202,17 @@ const clients = [
     },
     tags: ['Startup', 'AI/ML'],
     rating: 3.5,
-    gradient: 'gradient-pink'
+    gradient: 'gradient-pink',
+    assignedServices: [],
+    activeProjects: [
+      { id: 'p5', name: 'AI Chat Assistant', status: 'on_hold' }
+    ],
+    recentInvoices: [
+      { id: 'inv7', amount: 55000, date: '2024-01-01', status: 'paid' }
+    ],
+    recentVisits: [
+      { date: '2024-01-10', type: 'virtual', notes: 'Project pause discussion' }
+    ]
   },
   {
     id: 'c6',
@@ -172,7 +239,22 @@ const clients = [
     },
     tags: ['Healthcare', 'HIPAA Compliant', 'Enterprise'],
     rating: 5,
-    gradient: 'gradient-yellow'
+    gradient: 'gradient-yellow',
+    assignedServices: [
+      { id: 'srv1', name: 'ShopLeez POS' },
+      { id: 'srv4', name: 'CRM System' }
+    ],
+    activeProjects: [
+      { id: 'p6', name: 'Healthcare Portal', status: 'completed' }
+    ],
+    recentInvoices: [
+      { id: 'inv8', amount: 65000, date: '2024-03-01', status: 'pending' },
+      { id: 'inv9', amount: 145000, date: '2024-02-01', status: 'paid' }
+    ],
+    recentVisits: [
+      { date: '2024-03-02', type: 'virtual', notes: 'Security compliance review' },
+      { date: '2024-02-15', type: 'site_visit', notes: 'Staff training session' }
+    ]
   }
 ]
 
@@ -387,12 +469,55 @@ export default function ClientsPage() {
                   </div>
                 </div>
 
+                {/* Services */}
+                {client.assignedServices && client.assignedServices.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 mb-2">Services Used:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {client.assignedServices.slice(0, 2).map((service) => (
+                        <div
+                          key={service.id}
+                          className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs flex items-center space-x-1"
+                          title={service.name}
+                        >
+                          <Zap className="h-3 w-3" />
+                          <span className="truncate max-w-16">{service.name}</span>
+                        </div>
+                      ))}
+                      {client.assignedServices.length > 2 && (
+                        <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
+                          +{client.assignedServices.length - 2} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Projects */}
+                {client.activeProjects && client.activeProjects.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 mb-2">Active Projects:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {client.activeProjects.map((project) => (
+                        <div
+                          key={project.id}
+                          className="px-2 py-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs flex items-center space-x-1"
+                          title={project.name}
+                        >
+                          <Briefcase className="h-3 w-3" />
+                          <span className="truncate max-w-20">{project.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Projects & Revenue */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="rounded-lg bg-gray-800/50 p-3">
                     <p className="text-xs text-gray-400 mb-1">Projects</p>
                     <p className="text-sm font-medium text-white">
-                      {client.activeProjects} active / {client.totalProjects} total
+                      {client.activeProjects?.length || 0} active / {client.totalProjects} total
                     </p>
                   </div>
                   <div className="rounded-lg bg-gray-800/50 p-3">
@@ -400,6 +525,38 @@ export default function ClientsPage() {
                     <p className="text-sm font-medium text-white">
                       ${(client.totalRevenue / 1000).toFixed(0)}k
                     </p>
+                  </div>
+                </div>
+
+                {/* Recent Activity Indicators */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="rounded-lg bg-gray-800/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-400">Recent Invoices</p>
+                      <FileText className="h-3 w-3 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-medium text-white mt-1">
+                      {client.recentInvoices?.length || 0} invoices
+                    </p>
+                    {client.outstandingBalance > 0 && (
+                      <p className="text-xs text-yellow-400">
+                        ${(client.outstandingBalance / 1000).toFixed(0)}k outstanding
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-lg bg-gray-800/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-400">Recent Visits</p>
+                      <CalendarIcon className="h-3 w-3 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-medium text-white mt-1">
+                      {client.recentVisits?.length || 0} visits
+                    </p>
+                    {client.recentVisits && client.recentVisits.length > 0 && (
+                      <p className="text-xs text-gray-400">
+                        Last: {new Date(client.recentVisits[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -433,9 +590,15 @@ export default function ClientsPage() {
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-800">
-                  <div className="text-sm text-gray-400">
-                    <Clock className="h-4 w-4 inline mr-1" />
-                    Last activity: {client.lastActivity.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <div className="flex items-center space-x-3 text-sm text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{client.lastActivity.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Zap className="h-4 w-4 text-purple-400" />
+                      <span>{client.assignedServices?.length || 0} services</span>
+                    </div>
                   </div>
                   <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
                 </div>

@@ -10,7 +10,7 @@ import {
   MoreVertical, Edit, Eye, Trash2, Archive,
   DollarSign, Tag, AlertCircle, CheckCircle,
   Download, Upload, ChevronLeft, ChevronRight,
-  TrendingUp, BarChart3
+  TrendingUp, BarChart3, Users, Building
 } from 'lucide-react'
 
 // Mock products data
@@ -28,6 +28,11 @@ const mockProducts = [
     warranty: '3 years',
     status: 'in_stock',
     image: null,
+    assignedClients: [
+      { id: 'c1', name: 'TechCorp Solutions', quantity: 3 },
+      { id: 'c2', name: 'StartupHub', quantity: 2 },
+      { id: 'c3', name: 'GlobalHR Solutions', quantity: 1 }
+    ],
     specifications: {
       size: '27 inches',
       resolution: '4K UHD',
@@ -48,6 +53,10 @@ const mockProducts = [
     warranty: '1 year',
     status: 'in_stock',
     image: null,
+    assignedClients: [
+      { id: 'c4', name: 'FinanceHub', quantity: 2 },
+      { id: 'c5', name: 'MediCare Plus', quantity: 1 }
+    ],
     specifications: {
       type: 'Flatbed',
       dpi: '1200',
@@ -68,6 +77,11 @@ const mockProducts = [
     warranty: '2 years',
     status: 'in_stock',
     image: null,
+    assignedClients: [
+      { id: 'c1', name: 'TechCorp Solutions', quantity: 5 },
+      { id: 'c2', name: 'StartupHub', quantity: 8 },
+      { id: 'c6', name: 'Creative Studios', quantity: 4 }
+    ],
     specifications: {
       type: 'Wireless',
       dpi: '4000',
@@ -88,6 +102,9 @@ const mockProducts = [
     warranty: '1 year',
     status: 'low_stock',
     image: null,
+    assignedClients: [
+      { id: 'c3', name: 'GlobalHR Solutions', quantity: 2 }
+    ],
     specifications: {
       type: 'Laser',
       printSpeed: '32 ppm',
@@ -108,6 +125,7 @@ const mockProducts = [
     warranty: '2 years',
     status: 'out_of_stock',
     image: null,
+    assignedClients: [],
     specifications: {
       switches: 'Cherry MX Blue',
       backlight: 'RGB',
@@ -128,6 +146,10 @@ const mockProducts = [
     warranty: '1 year',
     status: 'in_stock',
     image: null,
+    assignedClients: [
+      { id: 'c7', name: 'Remote Work Inc', quantity: 10 },
+      { id: 'c8', name: 'Digital Agency Pro', quantity: 5 }
+    ],
     specifications: {
       resolution: '1080p',
       fps: '30',
@@ -397,6 +419,19 @@ export default function ProductsPage() {
                     <span className="text-sm font-medium text-green-400">${product.sellingPrice}</span>
                   </div>
                   <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Clients</span>
+                    {product.assignedClients && product.assignedClients.length > 0 ? (
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-3 w-3 text-purple-400" />
+                        <span className="text-sm font-medium text-purple-400">
+                          {product.assignedClients.length}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">None</span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400">Vendor</span>
                     <span className="text-sm text-white truncate max-w-[120px]">{product.vendor}</span>
                   </div>
@@ -421,6 +456,7 @@ export default function ProductsPage() {
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Serial Number</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Category</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Vendor</th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Clients</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Stock</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Price</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Status</th>
@@ -444,6 +480,19 @@ export default function ProductsPage() {
                     <td className="py-4 px-6 text-gray-300 font-mono text-sm">{product.serialNumber}</td>
                     <td className="py-4 px-6 text-gray-300">{product.category}</td>
                     <td className="py-4 px-6 text-gray-300">{product.vendor}</td>
+                    <td className="py-4 px-6">
+                      {product.assignedClients && product.assignedClients.length > 0 ? (
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-4 w-4 text-purple-400" />
+                          <span className="text-purple-400 font-medium">{product.assignedClients.length}</span>
+                          <span className="text-xs text-gray-500">
+                            ({product.assignedClients[0].name}{product.assignedClients.length > 1 && `, +${product.assignedClients.length - 1}`})
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-sm">-</span>
+                      )}
+                    </td>
                     <td className="py-4 px-6">
                       <span className={`font-medium ${product.stock === 0 ? 'text-red-400' : product.stock < 10 ? 'text-yellow-400' : 'text-white'}`}>
                         {product.stock}

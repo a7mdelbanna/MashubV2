@@ -11,7 +11,7 @@ import {
   Briefcase, Users, Receipt, Activity, MessageSquare,
   BarChart3, PieChart, CreditCard, Truck, Tag,
   ExternalLink, Copy, Printer, Archive, Send,
-  ChevronRight, Plus, Filter
+  ChevronRight, Plus, Filter, Box
 } from 'lucide-react'
 
 // Mock vendor data
@@ -72,30 +72,46 @@ const mockVendor = {
     responseTime: '< 2 hours'
   },
 
-  products: [
+  productsSupplied: [
     {
-      id: 'p1',
-      name: 'Dell Laptop Pro',
-      category: 'Computers',
+      id: 'prod1',
+      name: 'Dell UltraSharp Monitors',
+      category: 'Monitors',
+      price: 899,
+      inStock: true,
+      moq: 5,
+      quantity: 45,
+      description: '27-inch 4K monitor with USB-C connectivity'
+    },
+    {
+      id: 'prod2',
+      name: 'Dell Latitude Laptops',
+      category: 'Laptops',
       price: 1299,
       inStock: true,
-      moq: 5
+      moq: 10,
+      quantity: 28,
+      description: 'Business-grade laptop with Intel i7 processor'
     },
     {
-      id: 'p2',
-      name: 'Office Chair Premium',
-      category: 'Furniture',
-      price: 599,
+      id: 'prod3',
+      name: 'PowerEdge Servers',
+      category: 'Servers',
+      price: 4999,
       inStock: true,
-      moq: 10
+      moq: 1,
+      quantity: 12,
+      description: 'Rack-mounted server for enterprise applications'
     },
     {
-      id: 'p3',
-      name: 'Wireless Mouse',
-      category: 'Accessories',
-      price: 49,
+      id: 'prod4',
+      name: 'Storage Arrays',
+      category: 'Storage',
+      price: 8999,
       inStock: false,
-      moq: 20
+      moq: 1,
+      quantity: 8,
+      description: 'High-performance storage solution'
     }
   ],
 
@@ -403,27 +419,39 @@ export default function VendorDetailPage() {
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {mockVendor.products.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 flex items-center justify-center">
-                          <Package className="h-5 w-5 text-white" />
+                  {mockVendor.productsSupplied.map((product) => (
+                    <div key={product.id} className="p-4 bg-gray-800/50 rounded-xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{product.name}</p>
+                            <p className="text-sm text-gray-400">{product.category} • MOQ: {product.moq} units</p>
+                            <p className="text-xs text-gray-500 mt-1">{product.description}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-white font-medium">{product.name}</p>
-                          <p className="text-sm text-gray-400">{product.category} • MOQ: {product.moq} units</p>
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <p className="text-white font-medium">${product.price.toLocaleString()}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className={`px-2 py-1 rounded-lg text-xs ${
+                                product.inStock
+                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              }`}>
+                                {product.inStock ? 'In Stock' : 'Out of Stock'}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                Qty: {product.quantity}
+                              </span>
+                            </div>
+                          </div>
+                          <button className="px-3 py-1 rounded-lg bg-purple-600/20 text-purple-400 text-sm hover:bg-purple-600/30 transition-colors">
+                            Add to Order
+                          </button>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="text-white font-medium">${product.price}</p>
-                          <span className={`text-xs ${product.inStock ? 'text-green-400' : 'text-red-400'}`}>
-                            {product.inStock ? 'In Stock' : 'Out of Stock'}
-                          </span>
-                        </div>
-                        <button className="px-3 py-1 rounded-lg bg-purple-600/20 text-purple-400 text-sm hover:bg-purple-600/30 transition-colors">
-                          Add to Order
-                        </button>
                       </div>
                     </div>
                   ))}

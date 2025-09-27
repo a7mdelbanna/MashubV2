@@ -9,10 +9,11 @@ import {
   DollarSign, Package, TrendingUp, AlertCircle,
   CheckCircle, Star, MoreVertical, Edit, Eye,
   Archive, FileText, ShoppingCart, Clock,
-  Download, Upload, ChevronLeft, ChevronRight
+  Download, Upload, ChevronLeft, ChevronRight,
+  Box, Truck
 } from 'lucide-react'
 
-// Mock vendors data
+// Mock vendors data with product relationships
 const mockVendors = [
   {
     id: 'v1',
@@ -41,7 +42,16 @@ const mockVendors = [
     totalPurchases: 125000,
     outstandingBalance: 12500,
     lastOrder: '2024-03-15',
-    productsSupplied: ['Monitors', 'Laptops', 'Servers', 'Storage'],
+    productsSupplied: [
+      { id: 'prod1', name: 'Dell UltraSharp Monitors', category: 'Monitors', quantity: 45 },
+      { id: 'prod2', name: 'Dell Latitude Laptops', category: 'Laptops', quantity: 28 },
+      { id: 'prod3', name: 'PowerEdge Servers', category: 'Servers', quantity: 12 },
+      { id: 'prod4', name: 'Storage Arrays', category: 'Storage', quantity: 8 }
+    ],
+    recentOrders: [
+      { id: 'ord1', date: '2024-03-15', amount: 15000, status: 'delivered' },
+      { id: 'ord2', date: '2024-03-01', amount: 8500, status: 'delivered' }
+    ],
     notes: 'Preferred vendor for all computer equipment. Good discounts on bulk orders.',
     documents: 5,
     orders: 42,
@@ -74,7 +84,15 @@ const mockVendors = [
     totalPurchases: 89000,
     outstandingBalance: 8900,
     lastOrder: '2024-03-10',
-    productsSupplied: ['Printers', 'Scanners', 'Ink & Toner'],
+    productsSupplied: [
+      { id: 'prod5', name: 'HP LaserJet Printers', category: 'Printers', quantity: 35 },
+      { id: 'prod6', name: 'ScanJet Scanners', category: 'Scanners', quantity: 18 },
+      { id: 'prod7', name: 'Original Ink Cartridges', category: 'Ink & Toner', quantity: 200 }
+    ],
+    recentOrders: [
+      { id: 'ord3', date: '2024-03-10', amount: 4500, status: 'pending' },
+      { id: 'ord4', date: '2024-02-25', amount: 6200, status: 'delivered' }
+    ],
     notes: 'Reliable for printing solutions. Extended warranty available.',
     documents: 8,
     orders: 38,
@@ -107,7 +125,16 @@ const mockVendors = [
     totalPurchases: 250000,
     outstandingBalance: 0,
     lastOrder: '2024-03-20',
-    productsSupplied: ['Windows', 'Office 365', 'Azure Services', 'Development Tools'],
+    productsSupplied: [
+      { id: 'prod8', name: 'Windows 11 Pro Licenses', category: 'Operating Systems', quantity: 150 },
+      { id: 'prod9', name: 'Microsoft 365 Business', category: 'Productivity', quantity: 200 },
+      { id: 'prod10', name: 'Azure Cloud Services', category: 'Cloud', quantity: 1 },
+      { id: 'prod11', name: 'Visual Studio Licenses', category: 'Development', quantity: 25 }
+    ],
+    recentOrders: [
+      { id: 'ord5', date: '2024-03-20', amount: 25000, status: 'delivered' },
+      { id: 'ord6', date: '2024-03-01', amount: 18000, status: 'delivered' }
+    ],
     notes: 'Volume licensing partner. Excellent support for enterprise solutions.',
     documents: 12,
     orders: 56,
@@ -488,19 +515,52 @@ export default function VendorsPage() {
                 {/* Products */}
                 <div className="mb-4">
                   <p className="text-xs text-gray-400 mb-2">Products Supplied:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {vendor.productsSupplied.slice(0, 3).map((product, index) => (
-                      <span key={index} className="px-2 py-1 rounded bg-gray-800 text-xs text-gray-400">
-                        {product}
-                      </span>
+                  <div className="flex flex-wrap gap-2">
+                    {vendor.productsSupplied.slice(0, 2).map((product) => (
+                      <div
+                        key={product.id}
+                        className="px-2 py-1 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 text-xs flex items-center space-x-1"
+                        title={`${product.name} (Qty: ${product.quantity})`}
+                      >
+                        <Package className="h-3 w-3" />
+                        <span className="truncate max-w-20">{product.name}</span>
+                      </div>
                     ))}
-                    {vendor.productsSupplied.length > 3 && (
-                      <span className="px-2 py-1 rounded bg-gray-800 text-xs text-gray-400">
-                        +{vendor.productsSupplied.length - 3}
-                      </span>
+                    {vendor.productsSupplied.length > 2 && (
+                      <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
+                        +{vendor.productsSupplied.length - 2} more
+                      </div>
                     )}
                   </div>
                 </div>
+
+                {/* Recent Orders */}
+                {vendor.recentOrders && vendor.recentOrders.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 mb-2">Recent Orders:</p>
+                    <div className="space-y-2">
+                      {vendor.recentOrders.slice(0, 2).map((order) => (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-2 rounded-lg bg-gray-800/50"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              order.status === 'delivered' ? 'bg-green-400' :
+                              order.status === 'pending' ? 'bg-yellow-400' : 'bg-gray-400'
+                            }`} />
+                            <span className="text-xs text-gray-300">
+                              {new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          <span className="text-xs text-white font-medium">
+                            ${(order.amount / 1000).toFixed(1)}k
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-800">
@@ -513,9 +573,15 @@ export default function VendorsPage() {
                       <span className="text-xs text-white">{vendor.rating}</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs text-gray-400">
-                    <Clock className="h-3 w-3" />
-                    <span>Last order: {new Date(vendor.lastOrder).toLocaleDateString()}</span>
+                  <div className="flex items-center space-x-3 text-xs text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <Package className="h-3 w-3 text-green-400" />
+                      <span>{vendor.productsSupplied.length} products</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Truck className="h-3 w-3" />
+                      <span>{vendor.onTimeDelivery}% on-time</span>
+                    </div>
                   </div>
                 </div>
               </Link>

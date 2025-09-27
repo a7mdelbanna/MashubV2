@@ -9,10 +9,11 @@ import {
   Cloud, Shield, Layers, MoreVertical, Edit,
   Eye, Copy, Archive, DollarSign, Package,
   Users, TrendingUp, Star, CheckCircle, AlertCircle,
-  Download, Upload, ChevronLeft, ChevronRight
+  Download, Upload, ChevronLeft, ChevronRight,
+  Briefcase, X
 } from 'lucide-react'
 
-// Mock services data
+// Mock services data with client relationships
 const mockServices = [
   {
     id: 'srv1',
@@ -23,7 +24,12 @@ const mockServices = [
     image: null,
     status: 'active',
     rating: 4.8,
-    clients: 24,
+    assignedClients: [
+      { id: 'c1', name: 'TechCorp Inc.' },
+      { id: 'c4', name: 'RetailChain Pro' },
+      { id: 'c6', name: 'MediCare Plus' }
+    ],
+    relatedProjects: ['p1', 'p4'],
     revenue: 125000,
     packages: [
       { id: 'pkg1', name: 'Starter', price: 299, features: ['Basic POS', 'Inventory', '1 User'], popular: false },
@@ -43,7 +49,11 @@ const mockServices = [
     image: null,
     status: 'active',
     rating: 4.6,
-    clients: 18,
+    assignedClients: [
+      { id: 'c1', name: 'TechCorp Inc.' },
+      { id: 'c4', name: 'RetailChain Pro' }
+    ],
+    relatedProjects: ['p1'],
     revenue: 89000,
     packages: [
       { id: 'pkg4', name: 'Basic Store', price: 799, features: ['50 Products', 'Payment Gateway', 'Basic Theme'], popular: false },
@@ -63,7 +73,10 @@ const mockServices = [
     image: null,
     status: 'active',
     rating: 4.9,
-    clients: 8,
+    assignedClients: [
+      { id: 'c2', name: 'FinanceHub' }
+    ],
+    relatedProjects: ['p2'],
     revenue: 450000,
     packages: [
       { id: 'pkg7', name: 'Core Banking', price: 4999, features: ['Account Management', 'Transfers', 'Bill Pay'], popular: false },
@@ -83,7 +96,13 @@ const mockServices = [
     image: null,
     status: 'active',
     rating: 4.7,
-    clients: 32,
+    assignedClients: [
+      { id: 'c1', name: 'TechCorp Inc.' },
+      { id: 'c2', name: 'FinanceHub' },
+      { id: 'c3', name: 'GlobalHR Solutions' },
+      { id: 'c6', name: 'MediCare Plus' }
+    ],
+    relatedProjects: ['p3'],
     revenue: 156000,
     packages: [
       { id: 'pkg10', name: 'Team', price: 399, features: ['10 Users', 'Basic CRM', 'Email Integration'], popular: false },
@@ -103,7 +122,10 @@ const mockServices = [
     image: null,
     status: 'active',
     rating: 4.5,
-    clients: 15,
+    assignedClients: [
+      { id: 'c4', name: 'RetailChain Pro' }
+    ],
+    relatedProjects: ['p4'],
     revenue: 67000,
     packages: [
       { id: 'pkg13', name: 'Small Restaurant', price: 499, features: ['Table Management', 'Basic POS', 'Kitchen Display'], popular: false },
@@ -123,7 +145,8 @@ const mockServices = [
     image: null,
     status: 'development',
     rating: 0,
-    clients: 0,
+    assignedClients: [],
+    relatedProjects: [],
     revenue: 0,
     packages: [
       { id: 'pkg16', name: 'Educator', price: 299, features: ['100 Students', 'Video Courses', 'Quizzes'], popular: false },
@@ -170,8 +193,17 @@ export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedClient, setSelectedClient] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 9
+
+  // Get unique clients from services
+  const allClients = Array.from(new Set(
+    mockServices.flatMap(service => service.assignedClients.map(client => client.id))
+  )).map(clientId => {
+    const service = mockServices.find(s => s.assignedClients.some(c => c.id === clientId))
+    return service?.assignedClients.find(c => c.id === clientId)
+  }).filter(Boolean)
 
   const categories = ['all', ...new Set(mockServices.map(s => s.category))]
 
@@ -180,7 +212,8 @@ export default function ServicesPage() {
                           service.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory
     const matchesStatus = selectedStatus === 'all' || service.status === selectedStatus
-    return matchesSearch && matchesCategory && matchesStatus
+    const matchesClient = selectedClient === 'all' || service.assignedClients.some(client => client.id === selectedClient)
+    return matchesSearch && matchesCategory && matchesStatus && matchesClient
   })
 
   // Pagination
@@ -214,7 +247,7 @@ export default function ServicesPage() {
   }
 
   const totalRevenue = mockServices.reduce((sum, s) => sum + s.revenue, 0)
-  const totalClients = mockServices.reduce((sum, s) => sum + s.clients, 0)
+  const totalClients = allClients.length
   const activeServices = mockServices.filter(s => s.status === 'active').length
 
   return (
@@ -339,6 +372,19 @@ export default function ServicesPage() {
           <option value="maintenance">Maintenance</option>
         </select>
 
+        <select
+          value={selectedClient}
+          onChange={(e) => setSelectedClient(e.target.value)}
+          className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
+        >
+          <option value="all">All Clients</option>
+          {allClients.map(client => (
+            <option key={client?.id} value={client?.id}>
+              {client?.name}
+            </option>
+          ))}
+        </select>
+
         <div className="flex items-center bg-gray-800/50 rounded-lg p-1">
           <button
             onClick={() => setViewMode('grid')}
@@ -407,10 +453,34 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
+                {/* Client Badges */}
+                {service.assignedClients.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 mb-2">Assigned Clients:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {service.assignedClients.slice(0, 2).map((client) => (
+                        <div
+                          key={client.id}
+                          className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs flex items-center space-x-1"
+                          title={client.name}
+                        >
+                          <Users className="h-3 w-3" />
+                          <span className="truncate max-w-20">{client.name}</span>
+                        </div>
+                      ))}
+                      {service.assignedClients.length > 2 && (
+                        <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
+                          +{service.assignedClients.length - 2} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-gray-400">Clients</p>
-                    <p className="text-lg font-semibold text-white">{service.clients}</p>
+                    <p className="text-lg font-semibold text-white">{service.assignedClients.length}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">Revenue</p>
@@ -424,6 +494,24 @@ export default function ServicesPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Project Relationships */}
+                {service.relatedProjects.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 mb-2">Related Projects:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {service.relatedProjects.map((projectId) => (
+                        <div
+                          key={projectId}
+                          className="px-2 py-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs flex items-center space-x-1"
+                        >
+                          <Briefcase className="h-3 w-3" />
+                          <span>Project {projectId}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-800">
                   <div className="flex items-center space-x-2">
@@ -456,6 +544,7 @@ export default function ServicesPage() {
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Category</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Packages</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Clients</th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Projects</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Revenue</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Rating</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Status</th>
@@ -478,7 +567,35 @@ export default function ServicesPage() {
                     </td>
                     <td className="py-4 px-6 text-gray-300">{service.category}</td>
                     <td className="py-4 px-6 text-gray-300">{service.packages.length} packages</td>
-                    <td className="py-4 px-6 text-white font-medium">{service.clients}</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white font-medium">{service.assignedClients.length}</span>
+                        {service.assignedClients.length > 0 && (
+                          <div className="flex -space-x-1">
+                            {service.assignedClients.slice(0, 3).map((client, index) => (
+                              <div
+                                key={client.id}
+                                className="w-6 h-6 rounded-full bg-purple-500 border-2 border-gray-900 flex items-center justify-center text-xs text-white font-medium"
+                                title={client.name}
+                              >
+                                {client.name.charAt(0)}
+                              </div>
+                            ))}
+                            {service.assignedClients.length > 3 && (
+                              <div className="w-6 h-6 rounded-full bg-gray-600 border-2 border-gray-900 flex items-center justify-center text-xs text-white font-medium">
+                                +{service.assignedClients.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-1">
+                        <Briefcase className="h-4 w-4 text-blue-400" />
+                        <span className="text-gray-300">{service.relatedProjects.length} projects</span>
+                      </div>
+                    </td>
                     <td className="py-4 px-6 text-green-400 font-medium">${(service.revenue / 1000).toFixed(0)}k</td>
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-1">
