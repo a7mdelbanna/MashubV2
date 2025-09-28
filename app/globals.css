@@ -186,8 +186,32 @@
 
 ::-webkit-scrollbar-thumb {
   @apply bg-white/10 rounded-full;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-white/20;
+}
+
+/* Sidebar specific scrollbar */
+nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+nav::-webkit-scrollbar-thumb {
+  @apply bg-purple-500/20;
+}
+
+nav::-webkit-scrollbar-thumb:hover {
+  @apply bg-purple-500/40;
+}
+
+/* Smooth transitions for interactive elements */
+* {
+  scroll-behavior: smooth;
+}
+
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

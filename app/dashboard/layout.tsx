@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -9,20 +9,46 @@ import {
   HeadphonesIcon, GraduationCap, UserPlus, Package,
   Zap, Settings, LogOut, ChevronLeft, Bell,
   Search, Sparkles, Building2, Box, Building,
-  ShoppingCart, Calendar
+  ShoppingCart, Calendar, Command, HelpCircle, BookOpen,
+  ChevronRight, ChevronDown, Kanban, FileText, Shield,
+  GitBranch, ClipboardList, Map
 } from 'lucide-react'
+import { GlobalSearch } from '@/components/search/global-search'
 
-const sidebarItems = [
+interface SidebarItem {
+  name: string
+  path: string
+  icon: any
+  subItems?: SidebarItem[]
+}
+
+const sidebarItems: SidebarItem[] = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', path: '/dashboard/projects', icon: Briefcase },
+  {
+    name: 'Projects',
+    path: '/dashboard/projects',
+    icon: Briefcase,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/projects', icon: LayoutDashboard },
+      { name: 'Board', path: '/dashboard/projects/board', icon: Kanban },
+      { name: 'Backlog', path: '/dashboard/projects/backlog', icon: ClipboardList },
+      { name: 'Roadmap', path: '/dashboard/projects/roadmap', icon: Map },
+      { name: 'Documents', path: '/dashboard/projects/documents', icon: FileText },
+      { name: 'Team', path: '/dashboard/projects/team', icon: Users },
+      { name: 'Vault', path: '/dashboard/projects/vault', icon: Shield }
+    ]
+  },
   { name: 'Clients', path: '/dashboard/clients', icon: Building2 },
   { name: 'Products', path: '/dashboard/products', icon: Box },
   { name: 'Services', path: '/dashboard/services', icon: Zap },
+  { name: 'Courses', path: '/dashboard/courses', icon: BookOpen },
+  { name: 'Candidates', path: '/dashboard/candidates', icon: Users },
   { name: 'Vendors', path: '/dashboard/vendors', icon: Building },
   { name: 'Purchases', path: '/dashboard/purchases', icon: ShoppingCart },
   { name: 'Visits', path: '/dashboard/visits', icon: Calendar },
   { name: 'Finance', path: '/dashboard/finance', icon: DollarSign },
   { name: 'Support', path: '/dashboard/support', icon: HeadphonesIcon },
+  { name: 'Help', path: '/dashboard/help', icon: HelpCircle },
   { name: 'Settings', path: '/dashboard/settings', icon: Settings }
 ]
 
@@ -33,19 +59,36 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Projects'])
+
+  // Keyboard shortcut for search (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      } else if (e.key === 'Escape') {
+        setSearchOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
         <div className={cn(
-          "relative flex flex-col bg-gray-900/50 backdrop-blur-xl border-r border-gray-800 transition-all duration-300",
+          "relative flex flex-col bg-gray-900/80 backdrop-blur-2xl transition-all duration-300 shadow-2xl overflow-visible",
           sidebarCollapsed ? "w-20" : "w-64"
         )}>
           {/* Logo */}
-          <div className="p-6 border-b border-gray-800">
+          <div className="h-20 px-6 flex items-center border-b border-gray-800/50">
             <Link href="/dashboard" className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               {!sidebarCollapsed && (
@@ -58,74 +101,127 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
             {sidebarItems.map((item) => {
               const isActive = pathname === item.path
+              const isExpanded = expandedItems.includes(item.name)
+              const hasSubItems = item.subItems && item.subItems.length > 0
+              const isChildActive = hasSubItems && item.subItems.some(sub => pathname === sub.path)
+
               return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={cn(
-                    "flex items-center px-4 py-3 rounded-xl transition-all duration-300",
-                    isActive
-                      ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg"
-                      : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
+                <div key={item.path}>
+                  <button
+                    onClick={() => {
+                      if (hasSubItems) {
+                        setExpandedItems(prev =>
+                          prev.includes(item.name)
+                            ? prev.filter(i => i !== item.name)
+                            : [...prev, item.name]
+                        )
+                      } else {
+                        window.location.href = item.path
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group",
+                      (isActive || isChildActive)
+                        ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                        : "text-gray-400 hover:bg-gray-800/50 hover:text-white hover:translate-x-1"
+                    )}
+                  >
+                    <item.icon className={cn(
+                      "h-5 w-5",
+                      sidebarCollapsed ? "mx-auto" : "mr-3"
+                    )} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <span className="font-medium flex-1 text-left">{item.name}</span>
+                        {hasSubItems && (
+                          <ChevronRight className={cn(
+                            "h-4 w-4 transition-transform",
+                            isExpanded && "rotate-90"
+                          )} />
+                        )}
+                      </>
+                    )}
+                  </button>
+
+                  {/* Sub-items */}
+                  {hasSubItems && isExpanded && !sidebarCollapsed && (
+                    <div className="mt-2 ml-4 space-y-1">
+                      {item.subItems.map((subItem) => {
+                        const isSubActive = pathname === subItem.path
+                        return (
+                          <Link
+                            key={subItem.path}
+                            href={subItem.path}
+                            className={cn(
+                              "flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 group",
+                              isSubActive
+                                ? "bg-gradient-to-r from-violet-600/20 to-purple-600/20 text-purple-400 border-l-2 border-purple-500"
+                                : "text-gray-500 hover:bg-gray-800/30 hover:text-gray-300 hover:translate-x-1"
+                            )}
+                          >
+                            <subItem.icon className="h-4 w-4 mr-2 group-hover:text-purple-400 transition-colors" />
+                            <span>{subItem.name}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
                   )}
-                >
-                  <item.icon className={cn(
-                    "h-5 w-5",
-                    sidebarCollapsed ? "mx-auto" : "mr-3"
-                  )} />
-                  {!sidebarCollapsed && (
-                    <span className="font-medium">{item.name}</span>
-                  )}
-                </Link>
+                </div>
               )
             })}
           </nav>
 
           {/* User Section */}
-          <div className="p-4 border-t border-gray-800">
+          <div className="p-4 border-t border-gray-800/50">
             {!sidebarCollapsed ? (
-              <div className="rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/20 p-4">
-                <p className="text-xs text-gray-400 mb-2">MAS Business OS</p>
-                <p className="text-xs text-gray-500">v1.0</p>
-                <p className="text-xs text-green-400 mt-2">System performing optimally</p>
+              <div className="rounded-xl bg-gradient-to-br from-violet-600/10 to-purple-600/10 border border-violet-500/20 p-4 backdrop-blur-sm">
+                <p className="text-xs font-medium text-gray-300 mb-1">MAS Business OS</p>
+                <p className="text-xs text-gray-500">Version 1.0.0</p>
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <p className="text-xs text-green-400">System Online</p>
+                </div>
               </div>
             ) : (
-              <div className="w-full h-12 rounded-xl gradient-purple animate-pulse-glow" />
+              <div className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600/20 to-purple-600/20 animate-pulse" />
             )}
           </div>
 
           {/* Collapse Button */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-24 w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-lg hover:bg-purple-700 transition-colors"
+            className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-full flex items-center justify-center shadow-xl border-2 border-gray-700 hover:border-purple-500 transition-all duration-300 z-50 group"
           >
             <ChevronLeft className={cn(
-              "h-3 w-3 transition-transform",
+              "h-5 w-5 transition-transform duration-300 group-hover:scale-110",
               sidebarCollapsed && "rotate-180"
             )} />
           </button>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-gray-950/50">
           {/* Header */}
-          <header className="bg-gray-900/30 backdrop-blur-xl border-b border-gray-800">
-            <div className="flex items-center justify-between px-6 py-4">
+          <header className="h-20 bg-gray-900/40 backdrop-blur-xl border-b border-gray-800/50">
+            <div className="h-full flex items-center justify-between px-8">
               <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
 
               <div className="flex items-center space-x-4">
                 {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="pl-10 pr-4 py-2 w-64 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  />
-                </div>
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-all group"
+                >
+                  <Search className="h-5 w-5 text-gray-400 group-hover:text-purple-400" />
+                  <span className="text-gray-400 group-hover:text-gray-300">Search...</span>
+                  <div className="hidden sm:flex items-center gap-1 ml-8">
+                    <kbd className="px-1.5 py-0.5 text-xs text-gray-500 bg-gray-900 rounded">⌘</kbd>
+                    <kbd className="px-1.5 py-0.5 text-xs text-gray-500 bg-gray-900 rounded">K</kbd>
+                  </div>
+                </button>
 
                 {/* Notifications */}
                 <button className="relative p-2 rounded-xl hover:bg-gray-800 transition-colors">
@@ -151,19 +247,17 @@ export default function DashboardLayout({
                 </div>
               </div>
             </div>
-
-            {/* Welcome Message */}
-            <div className="px-6 pb-4">
-              <p className="text-gray-400 text-sm">Welcome back, Admin User!</p>
-            </div>
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
             {children}
           </main>
         </div>
       </div>
+
+      {/* Global Search Modal */}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   )
 }
