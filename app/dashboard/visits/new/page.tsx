@@ -7,8 +7,10 @@ import {
   ArrowLeft, Calendar, MapPin, Video, Globe,
   Building, User, Clock, DollarSign, FileText,
   ChevronRight, Search, CheckCircle, Users,
-  Phone, Mail, Plus, Save, AlertCircle, Zap
+  Phone, Mail, Plus, Save, AlertCircle, Zap, X
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import { visitDurationOptions } from '@/lib/select-options'
 
 const clients = [
   { id: 'c1', name: 'TechCorp Solutions', contact: 'John Smith', email: 'john@techcorp.com', phone: '+1 555-123-4567' },
@@ -46,6 +48,22 @@ const accountManagers = [
   { id: 'am4', name: 'Mark Thompson', email: 'mark.thompson@company.com' }
 ]
 
+// Create options for Select components
+const serviceOptions = services.map(service => ({
+  value: service.id,
+  label: `${service.name} - ${service.type}`
+}))
+
+const visitReasonOptions = visitReasons.map(reason => ({
+  value: reason,
+  label: reason
+}))
+
+const accountManagerOptions = accountManagers.map(am => ({
+  value: am.id,
+  label: `${am.name} - ${am.email}`
+}))
+
 export default function NewVisitPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -55,7 +73,7 @@ export default function NewVisitPage() {
   const [formData, setFormData] = useState({
     date: '',
     time: '',
-    duration: '1 hour',
+    duration: '60',
     service: '',
     reason: '',
     customReason: '',
@@ -218,21 +236,13 @@ export default function NewVisitPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Related Service (Optional)
-              </label>
-              <select
+              <Select
+                label="Related Service (Optional)"
+                options={serviceOptions}
                 value={formData.service}
-                onChange={(e) => setFormData({...formData, service: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-              >
-                <option value="">Select a service</option>
-                {services.map(service => (
-                  <option key={service.id} value={service.id}>
-                    {service.name} - {service.type}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFormData({...formData, service: value})}
+                placeholder="Select a service"
+              />
             </div>
           </div>
         )}
@@ -317,39 +327,25 @@ export default function NewVisitPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Duration
-                </label>
-                <select
+                <Select
+                  label="Duration"
+                  options={visitDurationOptions}
                   value={formData.duration}
-                  onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                >
-                  <option value="30 minutes">30 minutes</option>
-                  <option value="1 hour">1 hour</option>
-                  <option value="1.5 hours">1.5 hours</option>
-                  <option value="2 hours">2 hours</option>
-                  <option value="3 hours">3 hours</option>
-                  <option value="Half day">Half day</option>
-                  <option value="Full day">Full day</option>
-                </select>
+                  onChange={(value) => setFormData({...formData, duration: value})}
+                  placeholder="Select duration"
+                  required
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Reason for Visit
-                </label>
-                <select
+                <Select
+                  label="Reason for Visit"
+                  options={[...visitReasonOptions, { value: 'other', label: 'Other (specify)' }]}
                   value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                >
-                  <option value="">Select reason</option>
-                  {visitReasons.map(reason => (
-                    <option key={reason} value={reason}>{reason}</option>
-                  ))}
-                  <option value="other">Other (specify)</option>
-                </select>
+                  onChange={(value) => setFormData({...formData, reason: value})}
+                  placeholder="Select reason"
+                  required
+                />
               </div>
 
               {formData.reason === 'other' && (
@@ -419,21 +415,14 @@ export default function NewVisitPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Account Manager
-              </label>
-              <select
+              <Select
+                label="Account Manager"
+                options={accountManagerOptions}
                 value={formData.accountManager}
-                onChange={(e) => setFormData({...formData, accountManager: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-              >
-                <option value="">Select account manager</option>
-                {accountManagers.map(am => (
-                  <option key={am.id} value={am.id}>
-                    {am.name} - {am.email}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFormData({...formData, accountManager: value})}
+                placeholder="Select account manager"
+                required
+              />
             </div>
 
             <div>
@@ -587,7 +576,7 @@ export default function NewVisitPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400 text-sm">Duration</span>
-                      <span className="text-white">{formData.duration}</span>
+                      <span className="text-white">{visitDurationOptions.find(d => d.value === formData.duration)?.label || formData.duration}</span>
                     </div>
                   </div>
                 </div>

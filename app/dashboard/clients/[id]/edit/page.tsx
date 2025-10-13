@@ -8,12 +8,20 @@ import {
   MapPin, User, CreditCard, Calendar, Tag, Bell,
   Shield, Trash2, Archive, AlertTriangle
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import {
+  industryOptions,
+  currencyOptions,
+  paymentTermsOptions,
+  billingCycleOptions,
+  communicationMethodOptions
+} from '@/lib/select-options'
 
 // Mock client data
 const mockClient = {
   id: 'c1',
   name: 'TechCorp Solutions',
-  industry: 'Technology',
+  industry: 'technology',
   website: 'https://techcorp.example.com',
   description: 'Leading technology solutions provider specializing in cloud infrastructure and enterprise software.',
   logo: null,
@@ -34,8 +42,8 @@ const mockClient = {
   },
   financialInfo: {
     creditLimit: 500000,
-    paymentTerms: 'Net 30',
-    billingCycle: 'Monthly',
+    paymentTerms: 'net-30',
+    billingCycle: 'monthly',
     currency: 'USD',
     taxId: 'XX-XXXXXXX'
   },
@@ -50,11 +58,6 @@ const mockClient = {
   createdAt: '2024-01-15',
   lastModified: '2024-03-20'
 }
-
-const industries = [
-  'Technology', 'Finance', 'Healthcare', 'E-commerce',
-  'Education', 'Real Estate', 'Manufacturing', 'Retail'
-]
 
 const tiers = [
   { value: 'starter', label: 'Starter', color: 'from-gray-600 to-gray-500' },
@@ -165,18 +168,12 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Industry
-                    </label>
-                    <select
+                    <Select
+                      label="Industry"
+                      options={industryOptions}
                       value={formData.industry}
-                      onChange={(e) => setFormData({...formData, industry: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {industries.map(ind => (
-                        <option key={ind} value={ind}>{ind}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData({...formData, industry: value})}
+                    />
                   </div>
                 </div>
 
@@ -341,41 +338,40 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Payment Terms
-                    </label>
-                    <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                      <option>Net 15</option>
-                      <option selected>Net 30</option>
-                      <option>Net 45</option>
-                      <option>Net 60</option>
-                      <option>Due on Receipt</option>
-                    </select>
+                    <Select
+                      label="Payment Terms"
+                      options={paymentTermsOptions}
+                      value={formData.financialInfo.paymentTerms}
+                      onChange={(value) => setFormData({
+                        ...formData,
+                        financialInfo: {...formData.financialInfo, paymentTerms: value}
+                      })}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Billing Cycle
-                    </label>
-                    <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                      <option>Weekly</option>
-                      <option selected>Monthly</option>
-                      <option>Quarterly</option>
-                      <option>Annual</option>
-                    </select>
+                    <Select
+                      label="Billing Cycle"
+                      options={billingCycleOptions}
+                      value={formData.financialInfo.billingCycle}
+                      onChange={(value) => setFormData({
+                        ...formData,
+                        financialInfo: {...formData.financialInfo, billingCycle: value}
+                      })}
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Currency
-                    </label>
-                    <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                      <option selected>USD</option>
-                      <option>EUR</option>
-                      <option>GBP</option>
-                      <option>CAD</option>
-                    </select>
+                    <Select
+                      label="Currency"
+                      options={currencyOptions}
+                      value={formData.financialInfo.currency}
+                      onChange={(value) => setFormData({
+                        ...formData,
+                        financialInfo: {...formData.financialInfo, currency: value}
+                      })}
+                    />
                   </div>
                 </div>
 
@@ -426,39 +422,49 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Communication Method
-                    </label>
-                    <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                      <option selected>Email</option>
-                      <option>Phone</option>
-                      <option>Slack</option>
-                      <option>Teams</option>
-                    </select>
+                    <Select
+                      label="Communication Method"
+                      options={communicationMethodOptions}
+                      value={formData.preferences.communicationMethod}
+                      onChange={(value) => setFormData({
+                        ...formData,
+                        preferences: {...formData.preferences, communicationMethod: value}
+                      })}
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Invoice Delivery
-                    </label>
-                    <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                      <option selected>Email</option>
-                      <option>Portal</option>
-                      <option>Mail</option>
-                    </select>
+                    <Select
+                      label="Invoice Delivery"
+                      options={[
+                        { value: 'email', label: 'Email' },
+                        { value: 'portal', label: 'Portal' },
+                        { value: 'mail', label: 'Mail' }
+                      ]}
+                      value={formData.preferences.invoiceDelivery}
+                      onChange={(value) => setFormData({
+                        ...formData,
+                        preferences: {...formData.preferences, invoiceDelivery: value}
+                      })}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
-                    Project Update Frequency
-                  </label>
-                  <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                    <option>Daily</option>
-                    <option selected>Weekly</option>
-                    <option>Bi-weekly</option>
-                    <option>Monthly</option>
-                    <option>On Milestone</option>
-                  </select>
+                  <Select
+                    label="Project Update Frequency"
+                    options={[
+                      { value: 'daily', label: 'Daily' },
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'bi-weekly', label: 'Bi-weekly' },
+                      { value: 'monthly', label: 'Monthly' },
+                      { value: 'on-milestone', label: 'On Milestone' }
+                    ]}
+                    value={formData.preferences.projectUpdates}
+                    onChange={(value) => setFormData({
+                      ...formData,
+                      preferences: {...formData.preferences, projectUpdates: value}
+                    })}
+                  />
                 </div>
               </div>
             )}
@@ -541,15 +547,17 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
             <h3 className="text-lg font-semibold text-white mb-4">Status</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Account Status
-                </label>
-                <select className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-                  <option selected>Active</option>
-                  <option>Inactive</option>
-                  <option>On Hold</option>
-                  <option>Suspended</option>
-                </select>
+                <Select
+                  label="Account Status"
+                  options={[
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'on-hold', label: 'On Hold' },
+                    { value: 'suspended', label: 'Suspended' }
+                  ]}
+                  value={formData.status}
+                  onChange={(value) => setFormData({...formData, status: value})}
+                />
               </div>
 
               <div className="pt-4 border-t border-gray-800">

@@ -9,6 +9,13 @@ import {
   Calculator, Eye, Send, Copy, Settings, CheckCircle,
   Clock, Tag, CreditCard, Receipt, Globe, Hash, ChevronRight
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import {
+  invoiceStatusOptions,
+  currencyOptions,
+  paymentTermsOptions,
+  discountTypeOptions
+} from '@/lib/select-options'
 
 // Types
 interface InvoiceItem {
@@ -120,7 +127,7 @@ const mockInvoice: InvoiceData = {
   taxAmount: 889.25,
   total: 11434.25,
   currency: 'USD',
-  paymentTerms: 'Net 30',
+  paymentTerms: 'net-30',
   paymentMethods: ['Bank Transfer', 'Credit Card'],
   status: 'draft',
   notes: 'Thank you for choosing our development services. We look forward to working with you again.',
@@ -149,17 +156,37 @@ const projects = [
   { id: 'p4', name: 'Marketing Website' }
 ]
 
-const paymentTermsList = ['Due on Receipt', 'Net 15', 'Net 30', 'Net 45', 'Net 60']
 const paymentMethodsList = ['Bank Transfer', 'Credit Card', 'PayPal', 'Check', 'Wire Transfer', 'Cryptocurrency']
-const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
-const languages = ['English', 'Spanish', 'French', 'German', 'Italian']
-const templates = ['Professional', 'Modern', 'Classic', 'Minimal', 'Creative']
-const taxRates = [
-  { label: 'No Tax', value: 0 },
-  { label: 'Standard Rate (8.5%)', value: 8.5 },
-  { label: 'Reduced Rate (5%)', value: 5 },
-  { label: 'Higher Rate (10%)', value: 10 },
-  { label: 'Custom', value: -1 }
+
+const languageOptions = [
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'French', label: 'French' },
+  { value: 'German', label: 'German' },
+  { value: 'Italian', label: 'Italian' }
+]
+
+const templateOptions = [
+  { value: 'Professional', label: 'Professional' },
+  { value: 'Modern', label: 'Modern' },
+  { value: 'Classic', label: 'Classic' },
+  { value: 'Minimal', label: 'Minimal' },
+  { value: 'Creative', label: 'Creative' }
+]
+
+const taxRateOptions = [
+  { value: '0', label: 'No Tax' },
+  { value: '8.5', label: 'Standard Rate (8.5%)' },
+  { value: '5', label: 'Reduced Rate (5%)' },
+  { value: '10', label: 'Higher Rate (10%)' },
+  { value: 'custom', label: 'Custom' }
+]
+
+const recurringIntervalOptions = [
+  { value: '', label: 'One-time Invoice' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'yearly', label: 'Yearly' }
 ]
 
 export default function EditInvoicePage({ params }: { params: { id: string } }) {
@@ -171,6 +198,17 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [customTaxRate, setCustomTaxRate] = useState(8.5)
+
+  // Create dynamic options for clients and projects
+  const clientOptions = clients.map(client => ({
+    value: client.id,
+    label: client.name
+  }))
+
+  const projectOptions = projects.map(project => ({
+    value: project.id,
+    label: project.name
+  }))
 
   const sections = [
     { id: 'client', label: 'Client Information', icon: Building },
@@ -477,25 +515,22 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Currency</label>
-                    <select
+                    <Select
+                      label="Currency"
+                      options={currencyOptions}
                       value={formData.currency}
-                      onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {currencies.map(currency => (
-                        <option key={currency} value={currency}>{currency}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Select Client</label>
-                  <select
+                  <Select
+                    label="Select Client"
+                    options={clientOptions}
                     value={formData.client.id}
-                    onChange={(e) => {
-                      const selectedClient = clients.find(c => c.id === e.target.value)
+                    onChange={(value) => {
+                      const selectedClient = clients.find(c => c.id === value)
                       if (selectedClient) {
                         setFormData(prev => ({
                           ...prev,
@@ -507,12 +542,7 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                         }))
                       }
                     }}
-                    className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                  >
-                    {clients.map(client => (
-                      <option key={client.id} value={client.id}>{client.name}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
@@ -650,11 +680,12 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Associated Project (Optional)</label>
-                  <select
+                  <Select
+                    label="Associated Project (Optional)"
+                    options={projectOptions}
                     value={formData.project?.id || ''}
-                    onChange={(e) => {
-                      const selectedProject = projects.find(p => p.id === e.target.value)
+                    onChange={(value) => {
+                      const selectedProject = projects.find(p => p.id === value)
                       setFormData(prev => ({
                         ...prev,
                         project: selectedProject ? {
@@ -664,13 +695,8 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                         } : undefined
                       }))
                     }}
-                    className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                  >
-                    <option value="">Select Project (Optional)</option>
-                    {projects.map(project => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
-                    ))}
-                  </select>
+                    placeholder="Select Project (Optional)"
+                  />
                 </div>
 
                 <div>
@@ -766,25 +792,18 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-400 mb-1">Tax Rate (%)</label>
-                          <select
-                            value={item.taxRate === -1 ? 'custom' : item.taxRate}
-                            onChange={(e) => {
-                              const value = e.target.value
+                          <Select
+                            label="Tax Rate (%)"
+                            options={taxRateOptions}
+                            value={item.taxRate === -1 ? 'custom' : item.taxRate.toString()}
+                            onChange={(value) => {
                               if (value === 'custom') {
                                 handleItemChange(item.id, 'taxRate', customTaxRate)
                               } else {
                                 handleItemChange(item.id, 'taxRate', parseFloat(value))
                               }
                             }}
-                            className="w-full px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors text-sm"
-                          >
-                            {taxRates.map(rate => (
-                              <option key={rate.value} value={rate.value === -1 ? 'custom' : rate.value}>
-                                {rate.label}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
 
                         <div>
@@ -820,14 +839,13 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                               step="0.01"
                               min="0"
                             />
-                            <select
-                              value={formData.discountType}
-                              onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value as 'percentage' | 'fixed' }))}
-                              className="px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                            >
-                              <option value="percentage">%</option>
-                              <option value="fixed">$</option>
-                            </select>
+                            <div className="w-24">
+                              <Select
+                                options={discountTypeOptions}
+                                value={formData.discountType}
+                                onChange={(value) => setFormData(prev => ({ ...prev, discountType: value as 'percentage' | 'fixed' }))}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -867,24 +885,19 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Payment Terms</label>
-                    <select
+                    <Select
+                      label="Payment Terms"
+                      options={paymentTermsOptions}
                       value={formData.paymentTerms}
-                      onChange={(e) => {
-                        const newTerms = e.target.value
-                        const newDueDate = calculateDueDate(formData.issueDate, newTerms)
+                      onChange={(value) => {
+                        const newDueDate = calculateDueDate(formData.issueDate, value)
                         setFormData(prev => ({
                           ...prev,
-                          paymentTerms: newTerms,
+                          paymentTerms: value,
                           dueDate: newDueDate
                         }))
                       }}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {paymentTermsList.map(term => (
-                        <option key={term} value={term}>{term}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div>
@@ -1026,46 +1039,33 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Language</label>
-                    <select
+                    <Select
+                      label="Language"
+                      options={languageOptions}
                       value={formData.language}
-                      onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {languages.map(language => (
-                        <option key={language} value={language}>{language}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Template</label>
-                    <select
+                    <Select
+                      label="Template"
+                      options={templateOptions}
                       value={formData.template}
-                      onChange={(e) => setFormData(prev => ({ ...prev, template: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {templates.map(template => (
-                        <option key={template} value={template}>{template}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, template: value }))}
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Recurring Interval</label>
-                    <select
+                    <Select
+                      label="Recurring Interval"
+                      options={recurringIntervalOptions}
                       value={formData.recurringInterval || ''}
-                      onChange={(e) => setFormData(prev => ({
+                      onChange={(value) => setFormData(prev => ({
                         ...prev,
-                        recurringInterval: e.target.value as 'monthly' | 'quarterly' | 'yearly' | undefined
+                        recurringInterval: value ? value as 'monthly' | 'quarterly' | 'yearly' : undefined
                       }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      <option value="">One-time Invoice</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
+                    />
                   </div>
                 </div>
 

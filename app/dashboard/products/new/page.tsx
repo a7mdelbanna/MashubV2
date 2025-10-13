@@ -11,6 +11,8 @@ import {
   TrendingUp, Clock, AlertCircle, CheckCircle2
 } from 'lucide-react'
 import Link from 'next/link'
+import Select from '@/components/ui/select'
+import { productCategoryOptions, pricingModelOptions, currencyOptions } from '@/lib/select-options'
 
 interface ProductFormData {
   // Basic Information
@@ -177,6 +179,36 @@ export default function NewProductPage() {
     'SaaS Platform', 'Mobile App', 'Desktop Software', 'Web Application',
     'POS System', 'CRM Software', 'E-commerce Platform', 'Analytics Tool',
     'Marketing Tool', 'Development Tool', 'Design Software', 'Security Tool'
+  ]
+
+  // Select options for custom dropdowns
+  const categorySelectOptions = categories.map(cat => ({ value: cat, label: cat }))
+
+  const visibilityOptions = [
+    { value: 'public', label: 'Public - Visible to everyone' },
+    { value: 'private', label: 'Private - Visible to team only' },
+    { value: 'unlisted', label: 'Unlisted - Accessible via direct link' }
+  ]
+
+  const availabilityOptions = [
+    { value: 'available', label: 'Available for Purchase' },
+    { value: 'coming-soon', label: 'Coming Soon' },
+    { value: 'maintenance', label: 'Under Maintenance' },
+    { value: 'discontinued', label: 'Discontinued' }
+  ]
+
+  const supportLevelOptions = [
+    { value: 'basic', label: 'Basic Support' },
+    { value: 'standard', label: 'Standard Support' },
+    { value: 'premium', label: 'Premium Support' },
+    { value: 'enterprise', label: 'Enterprise Support' }
+  ]
+
+  const refundPolicyOptions = [
+    { value: '30-day', label: '30-day Money Back' },
+    { value: '14-day', label: '14-day Money Back' },
+    { value: '7-day', label: '7-day Money Back' },
+    { value: 'no-refund', label: 'No Refunds' }
   ]
 
   const productTypes = [
@@ -370,19 +402,14 @@ export default function NewProductPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Category *
-                </label>
-                <select
+                <Select
+                  label="Category"
+                  required
+                  options={categorySelectOptions}
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="">Select category</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  placeholder="Select category"
+                />
               </div>
 
               <div>
@@ -580,36 +607,25 @@ export default function NewProductPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Pricing Model *
-                </label>
-                <select
+                <Select
+                  label="Pricing Model"
+                  required
+                  options={pricingModelOptions}
                   value={formData.pricingModel}
-                  onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="subscription">Subscription (Monthly/Yearly)</option>
-                  <option value="one-time">One-time Payment</option>
-                  <option value="freemium">Freemium</option>
-                  <option value="usage-based">Usage-based</option>
-                  <option value="custom">Custom Pricing</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, pricingModel: value })}
+                  placeholder="Select pricing model"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Currency *
-                </label>
-                <select
+                <Select
+                  label="Currency"
+                  required
+                  options={currencyOptions}
                   value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="CAD">CAD - Canadian Dollar</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                  placeholder="Select currency"
+                />
               </div>
             </div>
 
@@ -1123,66 +1139,43 @@ export default function NewProductPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Product Visibility
-                </label>
-                <select
+                <Select
+                  label="Product Visibility"
+                  options={visibilityOptions}
                   value={formData.visibility}
-                  onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="public">Public - Visible to everyone</option>
-                  <option value="private">Private - Visible to team only</option>
-                  <option value="unlisted">Unlisted - Accessible via direct link</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, visibility: value })}
+                  placeholder="Select visibility"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Availability Status
-                </label>
-                <select
+                <Select
+                  label="Availability Status"
+                  options={availabilityOptions}
                   value={formData.availability}
-                  onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="available">Available for Purchase</option>
-                  <option value="coming-soon">Coming Soon</option>
-                  <option value="maintenance">Under Maintenance</option>
-                  <option value="discontinued">Discontinued</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, availability: value })}
+                  placeholder="Select availability"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Support Level
-                </label>
-                <select
+                <Select
+                  label="Support Level"
+                  options={supportLevelOptions}
                   value={formData.supportLevel}
-                  onChange={(e) => setFormData({ ...formData, supportLevel: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="basic">Basic Support</option>
-                  <option value="standard">Standard Support</option>
-                  <option value="premium">Premium Support</option>
-                  <option value="enterprise">Enterprise Support</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, supportLevel: value })}
+                  placeholder="Select support level"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Refund Policy
-                </label>
-                <select
+                <Select
+                  label="Refund Policy"
+                  options={refundPolicyOptions}
                   value={formData.refundPolicy}
-                  onChange={(e) => setFormData({ ...formData, refundPolicy: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="30-day">30-day Money Back</option>
-                  <option value="14-day">14-day Money Back</option>
-                  <option value="7-day">7-day Money Back</option>
-                  <option value="no-refund">No Refunds</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, refundPolicy: value })}
+                  placeholder="Select refund policy"
+                />
               </div>
             </div>
 

@@ -9,6 +9,8 @@ import {
   Mail, Globe, MapPin, DollarSign, Calendar, Package,
   Shield, Tag, Upload, X, ChevronDown
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import { currencyOptions, paymentTermsOptions, companySizeOptions } from '@/lib/select-options'
 
 const steps = [
   { number: 1, title: 'Basic Information', icon: Building },
@@ -24,12 +26,13 @@ const categories = [
   'Catering', 'Healthcare', 'Legal', 'Finance'
 ]
 
+const categoryOptions = categories.map(cat => ({
+  value: cat,
+  label: cat
+}))
+
 const paymentMethods = [
   'Wire Transfer', 'Credit Card', 'ACH', 'Check', 'PayPal', 'Cryptocurrency'
-]
-
-const paymentTermsList = [
-  'Due on Receipt', 'Net 15', 'Net 30', 'Net 45', 'Net 60', '2/10 Net 30'
 ]
 
 export default function NewVendorPage() {
@@ -76,7 +79,7 @@ export default function NewVendorPage() {
     certifications: [] as string[],
 
     // Payment Terms
-    paymentTerms: 'Net 30',
+    paymentTerms: 'net-30',
     currency: 'USD',
     paymentMethods: [] as string[],
     creditLimit: 50000,
@@ -275,20 +278,15 @@ export default function NewVendorPage() {
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Category *</label>
-                <select
+                <Select
+                  label="Category"
+                  required
+                  options={categoryOptions}
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className={`w-full px-4 py-2 bg-gray-800/50 border rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors ${
-                    errors.category ? 'border-red-500' : 'border-gray-700'
-                  }`}
-                >
-                  <option value="">Select category</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-                {errors.category && <p className="text-red-400 text-xs mt-1">{errors.category}</p>}
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  placeholder="Select category"
+                  error={errors.category}
+                />
               </div>
 
               <div className="col-span-2">
@@ -617,19 +615,13 @@ export default function NewVendorPage() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Number of Employees</label>
-                  <select
+                  <Select
+                    label="Number of Employees"
+                    options={companySizeOptions}
                     value={formData.employees}
-                    onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                  >
-                    <option value="">Select range</option>
-                    <option value="1-10">1-10</option>
-                    <option value="11-50">11-50</option>
-                    <option value="51-200">51-200</option>
-                    <option value="201-500">201-500</option>
-                    <option value="500+">500+</option>
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, employees: value })}
+                    placeholder="Select range"
+                  />
                 </div>
 
                 <div className="col-span-2">
@@ -676,30 +668,21 @@ export default function NewVendorPage() {
 
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Payment Terms</label>
-                <select
+                <Select
+                  label="Payment Terms"
+                  options={paymentTermsOptions}
                   value={formData.paymentTerms}
-                  onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                >
-                  {paymentTermsList.map(term => (
-                    <option key={term} value={term}>{term}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, paymentTerms: value })}
+                />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Currency</label>
-                <select
+                <Select
+                  label="Currency"
+                  options={currencyOptions}
                   value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="CAD">CAD - Canadian Dollar</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                />
               </div>
 
               <div>

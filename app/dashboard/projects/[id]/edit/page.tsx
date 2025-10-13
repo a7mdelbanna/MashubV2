@@ -10,6 +10,8 @@ import {
   AlertCircle, CheckCircle, Edit, Archive, Copy
 } from 'lucide-react'
 import Link from 'next/link'
+import Select from '@/components/ui/select'
+import { projectStatusOptions, priorityOptions } from '@/lib/select-options'
 
 // Mock data for dropdowns
 const clients = [
@@ -21,6 +23,11 @@ const clients = [
   { id: 'c6', name: 'MediCare Plus', logo: 'MP' }
 ]
 
+const clientOptions = clients.map(client => ({
+  value: client.id,
+  label: client.name
+}))
+
 const teamMembers = [
   { id: 't1', name: 'Sarah Chen', role: 'Project Manager', avatar: 'SC' },
   { id: 't2', name: 'Mike Johnson', role: 'Backend Developer', avatar: 'MJ' },
@@ -30,6 +37,36 @@ const teamMembers = [
   { id: 't6', name: 'Sophie Brown', role: 'iOS Developer', avatar: 'SB' },
   { id: 't7', name: 'Ryan Martinez', role: 'Android Developer', avatar: 'RM' },
   { id: 't8', name: 'Lisa Wang', role: 'QA Engineer', avatar: 'LW' }
+]
+
+const projectManagerOptions = teamMembers
+  .filter(m => m.role.includes('Manager'))
+  .map(member => ({
+    value: member.id,
+    label: `${member.name} - ${member.role}`
+  }))
+
+const projectTypeOptions = [
+  { value: 'web_app', label: 'Web Application' },
+  { value: 'mobile_app', label: 'Mobile Application' },
+  { value: 'pos', label: 'POS System' },
+  { value: 'hybrid', label: 'Hybrid Application' },
+  { value: 'custom', label: 'Custom Solution' }
+]
+
+const editPagePriorityOptions = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' }
+]
+
+const editPageStatusOptions = [
+  { value: 'planning', label: 'Planning' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'on_hold', label: 'On Hold' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' }
 ]
 
 const technologies = [
@@ -424,53 +461,36 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Project Type *
-                </label>
-                <select
+                <Select
+                  label="Project Type"
+                  required
+                  options={projectTypeOptions}
                   value={formData.type}
-                  onChange={(e) => handleFormChange({ type: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="web_app">Web Application</option>
-                  <option value="mobile_app">Mobile Application</option>
-                  <option value="pos">POS System</option>
-                  <option value="hybrid">Hybrid Application</option>
-                  <option value="custom">Custom Solution</option>
-                </select>
+                  onChange={(value) => handleFormChange({ type: value })}
+                  placeholder="Select project type"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Priority *
-                </label>
-                <select
+                <Select
+                  label="Priority"
+                  required
+                  options={editPagePriorityOptions}
                   value={formData.priority}
-                  onChange={(e) => handleFormChange({ priority: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
+                  onChange={(value) => handleFormChange({ priority: value })}
+                  placeholder="Select priority"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Status *
-                </label>
-                <select
+                <Select
+                  label="Status"
+                  required
+                  options={editPageStatusOptions}
                   value={formData.status}
-                  onChange={(e) => handleFormChange({ status: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="planning">Planning</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="on_hold">On Hold</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+                  onChange={(value) => handleFormChange({ status: value })}
+                  placeholder="Select status"
+                />
               </div>
             </div>
           </div>

@@ -9,6 +9,7 @@ import {
   MoreVertical, Star, Clock, Shield, AlertCircle,
   CheckCircle, X, Plus, Copy, Move
 } from 'lucide-react'
+import Select from '@/components/ui/select'
 
 // Mock document structure
 const mockDocuments = {
@@ -90,6 +91,24 @@ export default function ClientDocumentsPage({ params }: { params: { id: string }
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [fileTypeFilter, setFileTypeFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('modified')
+
+  // Local select options
+  const fileTypeOptions = [
+    { value: 'all', label: 'All Types' },
+    { value: 'documents', label: 'Documents' },
+    { value: 'spreadsheets', label: 'Spreadsheets' },
+    { value: 'images', label: 'Images' },
+    { value: 'archives', label: 'Archives' }
+  ]
+
+  const sortOptions = [
+    { value: 'modified', label: 'Last Modified' },
+    { value: 'name', label: 'Name' },
+    { value: 'size', label: 'Size' },
+    { value: 'type', label: 'Type' }
+  ]
 
   const totalSize = mockDocuments.folders.reduce((sum, f) => {
     const size = parseFloat(f.size)
@@ -191,20 +210,21 @@ export default function ClientDocumentsPage({ params }: { params: { id: string }
           />
         </div>
 
-        <select className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-          <option>All Types</option>
-          <option>Documents</option>
-          <option>Spreadsheets</option>
-          <option>Images</option>
-          <option>Archives</option>
-        </select>
+        <div className="w-48">
+          <Select
+            options={fileTypeOptions}
+            value={fileTypeFilter}
+            onChange={setFileTypeFilter}
+          />
+        </div>
 
-        <select className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors">
-          <option>Last Modified</option>
-          <option>Name</option>
-          <option>Size</option>
-          <option>Type</option>
-        </select>
+        <div className="w-48">
+          <Select
+            options={sortOptions}
+            value={sortBy}
+            onChange={setSortBy}
+          />
+        </div>
 
         <div className="flex items-center bg-gray-800/50 rounded-lg p-1">
           <button

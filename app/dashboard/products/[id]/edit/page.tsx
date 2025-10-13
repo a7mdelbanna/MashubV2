@@ -9,6 +9,7 @@ import {
   CheckCircle, Tag, Monitor, HardDrive, Printer, Scanner,
   Cpu, Mouse, Keyboard, Headphones, Camera, Box, Plus, Minus
 } from 'lucide-react'
+import Select from '@/components/ui/select'
 
 // Mock product data
 const mockProduct = {
@@ -103,6 +104,18 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     'Canon', 'Epson', 'Microsoft', 'Apple', 'Lenovo', 'ASUS'
   ]
 
+  // Select options
+  const categorySelectOptions = categories.map(cat => ({ value: cat, label: cat }))
+
+  const vendorSelectOptions = vendors.map(vendor => ({ value: vendor, label: vendor }))
+
+  const typeOptions = [
+    { value: 'hardware', label: 'Hardware' },
+    { value: 'software', label: 'Software' },
+    { value: 'accessory', label: 'Accessory' },
+    { value: 'consumable', label: 'Consumable' }
+  ]
+
   const statusOptions = [
     { value: 'in_stock', label: 'In Stock', color: 'text-green-400' },
     { value: 'low_stock', label: 'Low Stock', color: 'text-yellow-400' },
@@ -111,9 +124,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     { value: 'on_order', label: 'On Order', color: 'text-blue-400' }
   ]
 
+  const statusSelectOptions = statusOptions.map(({ value, label }) => ({ value, label }))
+
   const conditionOptions = [
     'new', 'refurbished', 'used', 'damaged'
   ]
+
+  const conditionSelectOptions = conditionOptions.map(cond => ({
+    value: cond,
+    label: cond.charAt(0).toUpperCase() + cond.slice(1)
+  }))
 
   const availableTags = [
     'Professional', '4K', 'IPS', 'Gaming', 'Wireless', 'USB-C',
@@ -282,30 +302,23 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-                  <select
+                  <Select
+                    label="Category"
+                    options={categorySelectOptions}
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, category: value })}
+                    placeholder="Select category"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Type</label>
-                  <select
+                  <Select
+                    label="Type"
+                    options={typeOptions}
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="hardware">Hardware</option>
-                    <option value="software">Software</option>
-                    <option value="accessory">Accessory</option>
-                    <option value="consumable">Consumable</option>
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, type: value })}
+                    placeholder="Select type"
+                  />
                 </div>
 
                 <div>
@@ -322,16 +335,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Vendor</label>
-                  <select
+                  <Select
+                    label="Vendor"
+                    options={vendorSelectOptions}
                     value={formData.vendor}
-                    onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {vendors.map(vendor => (
-                      <option key={vendor} value={vendor}>{vendor}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, vendor: value })}
+                    placeholder="Select vendor"
+                  />
                 </div>
 
                 <div>
@@ -462,31 +472,23 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Condition</label>
-                  <select
+                  <Select
+                    label="Condition"
+                    options={conditionSelectOptions}
                     value={formData.condition}
-                    onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {conditionOptions.map(condition => (
-                      <option key={condition} value={condition}>
-                        {condition.charAt(0).toUpperCase() + condition.slice(1)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, condition: value })}
+                    placeholder="Select condition"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                  <select
+                  <Select
+                    label="Status"
+                    options={statusSelectOptions}
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {statusOptions.map(status => (
-                      <option key={status.value} value={status.value}>{status.label}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, status: value })}
+                    placeholder="Select status"
+                  />
                 </div>
               </div>
 

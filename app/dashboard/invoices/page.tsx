@@ -9,6 +9,8 @@ import {
   ArrowUpDown, RefreshCw, TrendingUp, TrendingDown,
   CreditCard, Archive, Copy, Trash2, Mail
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import { dateRangeOptions } from '@/lib/select-options'
 
 // Mock invoice data
 const mockInvoices = [
@@ -92,29 +94,47 @@ const mockInvoices = [
   }
 ]
 
-const statusOptions = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'sent', label: 'Sent' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'overdue', label: 'Overdue' }
-]
-
-const sortOptions = [
-  { value: 'date_desc', label: 'Date (Newest)' },
-  { value: 'date_asc', label: 'Date (Oldest)' },
-  { value: 'amount_desc', label: 'Amount (High to Low)' },
-  { value: 'amount_asc', label: 'Amount (Low to High)' },
-  { value: 'status', label: 'Status' },
-  { value: 'client', label: 'Client Name' }
-]
-
 export default function InvoicesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('date_desc')
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
+  const [dateRange, setDateRange] = useState('this-month')
+  const [clientFilter, setClientFilter] = useState('all')
+  const [amountRange, setAmountRange] = useState('all')
+
+  // Local select options
+  const statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'sent', label: 'Sent' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'overdue', label: 'Overdue' }
+  ]
+
+  const sortOptions = [
+    { value: 'date_desc', label: 'Date (Newest)' },
+    { value: 'date_asc', label: 'Date (Oldest)' },
+    { value: 'amount_desc', label: 'Amount (High to Low)' },
+    { value: 'amount_asc', label: 'Amount (Low to High)' },
+    { value: 'status', label: 'Status' },
+    { value: 'client', label: 'Client Name' }
+  ]
+
+  const clientOptions = [
+    { value: 'all', label: 'All Clients' },
+    { value: 'techcorp', label: 'TechCorp Solutions' },
+    { value: 'financehub', label: 'FinanceHub' },
+    { value: 'globalhr', label: 'GlobalHR Solutions' }
+  ]
+
+  const amountRangeOptions = [
+    { value: 'all', label: 'All Amounts' },
+    { value: '0-5000', label: '$0 - $5,000' },
+    { value: '5000-15000', label: '$5,000 - $15,000' },
+    { value: '15000+', label: '$15,000+' }
+  ]
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -284,29 +304,21 @@ export default function InvoicesPage() {
               />
             </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-            >
-              {statusOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="w-48">
+              <Select
+                options={statusOptions}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
+            </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-            >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="w-56">
+              <Select
+                options={sortOptions}
+                value={sortBy}
+                onChange={setSortBy}
+              />
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -335,34 +347,24 @@ export default function InvoicesPage() {
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-800">
             <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Date Range</label>
-                <select className="w-full px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white text-sm">
-                  <option>All Time</option>
-                  <option>This Month</option>
-                  <option>Last Month</option>
-                  <option>This Quarter</option>
-                  <option>This Year</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Client</label>
-                <select className="w-full px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white text-sm">
-                  <option>All Clients</option>
-                  <option>TechCorp Solutions</option>
-                  <option>FinanceHub</option>
-                  <option>GlobalHR Solutions</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Amount Range</label>
-                <select className="w-full px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white text-sm">
-                  <option>All Amounts</option>
-                  <option>$0 - $5,000</option>
-                  <option>$5,000 - $15,000</option>
-                  <option>$15,000+</option>
-                </select>
-              </div>
+              <Select
+                label="Date Range"
+                options={dateRangeOptions}
+                value={dateRange}
+                onChange={setDateRange}
+              />
+              <Select
+                label="Client"
+                options={clientOptions}
+                value={clientFilter}
+                onChange={setClientFilter}
+              />
+              <Select
+                label="Amount Range"
+                options={amountRangeOptions}
+                value={amountRange}
+                onChange={setAmountRange}
+              />
             </div>
           </div>
         )}

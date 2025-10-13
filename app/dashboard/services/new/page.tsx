@@ -8,6 +8,17 @@ import {
   Calendar, FileText, Tag, Zap, Globe, Shield, Users, Star,
   Plus, Minus, CheckCircle, AlertCircle, Upload, Image
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import {
+  serviceCategoryOptions,
+  serviceTypeOptions,
+  statusOptions,
+  durationUnitOptions,
+  pricingModelOptions,
+  currencyOptions,
+  billingCycleOptions,
+  timeUnitOptions
+} from '@/lib/select-options'
 
 interface ServiceFormData {
   // Basic Information
@@ -86,18 +97,6 @@ export default function NewServicePage() {
     { id: 4, title: 'Review & Publish', icon: CheckCircle }
   ]
 
-  const categories = [
-    'Web Development',
-    'Mobile Development',
-    'UI/UX Design',
-    'Digital Marketing',
-    'Content Creation',
-    'Consulting',
-    'Data Analysis',
-    'Cloud Services',
-    'DevOps',
-    'Custom Software'
-  ]
 
   const skillOptions = [
     'React', 'Vue.js', 'Angular', 'Node.js', 'Python', 'Java',
@@ -263,35 +262,24 @@ export default function NewServicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Category *
-                </label>
-                <select
+                <Select
+                  label="Category"
+                  required
+                  options={serviceCategoryOptions}
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="">Select category</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  placeholder="Select category"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Service Type *
-                </label>
-                <select
+                <Select
+                  label="Service Type"
+                  required
+                  options={serviceTypeOptions}
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="project">One-time Project</option>
-                  <option value="recurring">Recurring Service</option>
-                  <option value="consultation">Consultation</option>
-                  <option value="retainer">Retainer</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, type: value })}
+                />
               </div>
 
               <div className="col-span-2">
@@ -308,18 +296,12 @@ export default function NewServicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Status
-                </label>
-                <select
+                <Select
+                  label="Status"
+                  options={statusOptions}
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, status: value })}
+                />
               </div>
 
               <div>
@@ -334,16 +316,13 @@ export default function NewServicePage() {
                     className="flex-1 px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
                     placeholder="Duration"
                   />
-                  <select
-                    value={formData.durationUnit}
-                    onChange={(e) => setFormData({ ...formData, durationUnit: e.target.value })}
-                    className="px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="hours">Hours</option>
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
+                  <div className="w-40">
+                    <Select
+                      options={durationUnitOptions}
+                      value={formData.durationUnit}
+                      onChange={(value) => setFormData({ ...formData, durationUnit: value })}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -375,19 +354,13 @@ export default function NewServicePage() {
 
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Pricing Model *
-                </label>
-                <select
+                <Select
+                  label="Pricing Model"
+                  required
+                  options={pricingModelOptions}
                   value={formData.pricingModel}
-                  onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="fixed">Fixed Price</option>
-                  <option value="hourly">Hourly Rate</option>
-                  <option value="milestone">Milestone-based</option>
-                  <option value="subscription">Subscription</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, pricingModel: value })}
+                />
               </div>
 
               <div>
@@ -407,36 +380,21 @@ export default function NewServicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Currency
-                </label>
-                <select
+                <Select
+                  label="Currency"
+                  options={currencyOptions}
                   value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="CAD">CAD - Canadian Dollar</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Billing Cycle
-                </label>
-                <select
+                <Select
+                  label="Billing Cycle"
+                  options={billingCycleOptions}
                   value={formData.billingCycle}
-                  onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="one-time">One-time Payment</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="annually">Annually</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, billingCycle: value })}
+                />
               </div>
 
               <div>
@@ -484,16 +442,13 @@ export default function NewServicePage() {
                       className="flex-1 px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
                       placeholder="30"
                     />
-                    <select
-                      value={formData.supportPeriodUnit}
-                      onChange={(e) => setFormData({ ...formData, supportPeriodUnit: e.target.value })}
-                      className="px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                    >
-                      <option value="days">Days</option>
-                      <option value="weeks">Weeks</option>
-                      <option value="months">Months</option>
-                      <option value="years">Years</option>
-                    </select>
+                    <div className="w-40">
+                      <Select
+                        options={timeUnitOptions}
+                        value={formData.supportPeriodUnit}
+                        onChange={(value) => setFormData({ ...formData, supportPeriodUnit: value })}
+                      />
+                    </div>
                   </div>
                 </div>
 

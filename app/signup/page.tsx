@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import Select from '@/components/ui/select'
+import { companySizeOptions, industryOptions, timezoneOptions, currencyOptions } from '@/lib/select-options'
 import {
   Sparkles, Building2, User, Mail, Lock, ArrowRight, ArrowLeft,
   Check, Briefcase, Users, Globe, Phone, Loader2,
@@ -56,43 +58,6 @@ const steps = [
     description: 'Select the perfect plan',
     gradient: 'gradient-purple'
   }
-]
-
-const companySizes = [
-  { value: '1-10', label: '1-10 employees' },
-  { value: '11-50', label: '11-50 employees' },
-  { value: '51-200', label: '51-200 employees' },
-  { value: '201-500', label: '201-500 employees' },
-  { value: '500+', label: '500+ employees' }
-]
-
-const industries = [
-  { value: 'software', label: 'Software Development' },
-  { value: 'mobile', label: 'Mobile App Development' },
-  { value: 'web', label: 'Web Development' },
-  { value: 'consulting', label: 'IT Consulting' },
-  { value: 'digital', label: 'Digital Agency' },
-  { value: 'other', label: 'Other' }
-]
-
-const timezones = [
-  { value: 'America/New_York', label: 'Eastern Time (ET)' },
-  { value: 'America/Chicago', label: 'Central Time (CT)' },
-  { value: 'America/Denver', label: 'Mountain Time (MT)' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
-  { value: 'Europe/London', label: 'London (GMT)' },
-  { value: 'Europe/Paris', label: 'Paris (CET)' },
-  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-  { value: 'Australia/Sydney', label: 'Sydney (AEDT)' }
-]
-
-const currencies = [
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'AUD', label: 'AUD - Australian Dollar' },
-  { value: 'JPY', label: 'JPY - Japanese Yen' }
 ]
 
 const plans = [
@@ -374,51 +339,27 @@ export default function SignupPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Company Size
-                        </label>
-                        <select
+                        <Select
+                          label="Company Size"
+                          required
                           value={data.companySize}
-                          onChange={(e) => handleInputChange('companySize', e.target.value)}
-                          className={cn(
-                            "w-full px-4 py-3 rounded-xl bg-gray-800/50 border transition-all",
-                            "text-white",
-                            "focus:bg-gray-800 focus:outline-none",
-                            errors.companySize ? "border-red-500" : "border-gray-700 focus:border-purple-500"
-                          )}
-                        >
-                          <option value="">Select company size</option>
-                          {companySizes.map(size => (
-                            <option key={size.value} value={size.value}>{size.label}</option>
-                          ))}
-                        </select>
-                        {errors.companySize && (
-                          <p className="text-red-400 text-sm mt-1">{errors.companySize}</p>
-                        )}
+                          onChange={(value) => handleInputChange('companySize', value)}
+                          options={companySizeOptions}
+                          placeholder="Select company size"
+                          error={errors.companySize}
+                        />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Industry
-                        </label>
-                        <select
+                        <Select
+                          label="Industry"
+                          required
                           value={data.industry}
-                          onChange={(e) => handleInputChange('industry', e.target.value)}
-                          className={cn(
-                            "w-full px-4 py-3 rounded-xl bg-gray-800/50 border transition-all",
-                            "text-white",
-                            "focus:bg-gray-800 focus:outline-none",
-                            errors.industry ? "border-red-500" : "border-gray-700 focus:border-purple-500"
-                          )}
-                        >
-                          <option value="">Select your industry</option>
-                          {industries.map(industry => (
-                            <option key={industry.value} value={industry.value}>{industry.label}</option>
-                          ))}
-                        </select>
-                        {errors.industry && (
-                          <p className="text-red-400 text-sm mt-1">{errors.industry}</p>
-                        )}
+                          onChange={(value) => handleInputChange('industry', value)}
+                          options={industryOptions}
+                          placeholder="Select your industry"
+                          error={errors.industry}
+                        />
                       </div>
 
                       <div>
@@ -571,33 +512,21 @@ export default function SignupPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Timezone
-                        </label>
-                        <select
+                        <Select
+                          label="Timezone"
                           value={data.timezone}
-                          onChange={(e) => handleInputChange('timezone', e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                        >
-                          {timezones.map(tz => (
-                            <option key={tz.value} value={tz.value}>{tz.label}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleInputChange('timezone', value)}
+                          options={timezoneOptions}
+                        />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Currency
-                        </label>
-                        <select
+                        <Select
+                          label="Currency"
                           value={data.currency}
-                          onChange={(e) => handleInputChange('currency', e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                        >
-                          {currencies.map(currency => (
-                            <option key={currency.value} value={currency.value}>{currency.label}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleInputChange('currency', value)}
+                          options={currencyOptions}
+                        />
                       </div>
                     </div>
                   )}

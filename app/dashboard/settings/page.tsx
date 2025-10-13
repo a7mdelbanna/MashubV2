@@ -8,6 +8,8 @@ import {
   Eye, EyeOff, Plus, X, Edit, Trash2, Monitor, Smartphone,
   Calendar, Clock, Languages, DollarSign, Tag, Link as LinkIcon
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import { industryOptions, currencyOptions, languageOptions, timezoneOptions } from '@/lib/select-options'
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('company')
@@ -79,6 +81,38 @@ export default function SettingsPage() {
     { id: 'integrations', label: 'Integrations', icon: Zap },
     { id: 'api', label: 'API & Webhooks', icon: Key },
     { id: 'billing', label: 'Billing & Plans', icon: CreditCard }
+  ]
+
+  // Local select options
+  const defaultViewOptions = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'projects', label: 'Projects' },
+    { value: 'clients', label: 'Clients' },
+    { value: 'finance', label: 'Finance' }
+  ]
+
+  const dateFormatOptions = [
+    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' }
+  ]
+
+  const timeFormatOptions = [
+    { value: '12', label: '12 Hour (AM/PM)' },
+    { value: '24', label: '24 Hour' }
+  ]
+
+  const itemsPerPageOptions = [
+    { value: '10', label: '10' },
+    { value: '25', label: '25' },
+    { value: '50', label: '50' },
+    { value: '100', label: '100' }
+  ]
+
+  const visibilityOptions = [
+    { value: 'Public', label: 'Public' },
+    { value: 'Team Only', label: 'Team Only' },
+    { value: 'Private', label: 'Private' }
   ]
 
   const handleSave = async () => {
@@ -166,22 +200,12 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Industry</label>
-                  <select
-                    value={companySettings.industry}
-                    onChange={(e) => setCompanySettings({...companySettings, industry: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="Technology">Technology</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Education">Education</option>
-                    <option value="Retail">Retail</option>
-                    <option value="Manufacturing">Manufacturing</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
+                <Select
+                  label="Industry"
+                  options={industryOptions}
+                  value={companySettings.industry.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}
+                  onChange={(value) => setCompanySettings({...companySettings, industry: industryOptions.find(opt => opt.value === value)?.label || value})}
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
@@ -274,53 +298,26 @@ export default function SettingsPage() {
               <div className="border-t border-gray-800 pt-6">
                 <h3 className="text-lg font-medium text-white mb-4">Regional Settings</h3>
                 <div className="grid grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Timezone</label>
-                    <select
-                      value={companySettings.timezone}
-                      onChange={(e) => setCompanySettings({...companySettings, timezone: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                    >
-                      <option value="America/Los_Angeles">Pacific Time</option>
-                      <option value="America/Denver">Mountain Time</option>
-                      <option value="America/Chicago">Central Time</option>
-                      <option value="America/New_York">Eastern Time</option>
-                      <option value="Europe/London">London</option>
-                      <option value="Europe/Paris">Paris</option>
-                      <option value="Asia/Tokyo">Tokyo</option>
-                    </select>
-                  </div>
+                  <Select
+                    label="Timezone"
+                    options={timezoneOptions}
+                    value={companySettings.timezone}
+                    onChange={(value) => setCompanySettings({...companySettings, timezone: value})}
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
-                    <select
-                      value={companySettings.currency}
-                      onChange={(e) => setCompanySettings({...companySettings, currency: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                    >
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="CAD">CAD - Canadian Dollar</option>
-                      <option value="JPY">JPY - Japanese Yen</option>
-                    </select>
-                  </div>
+                  <Select
+                    label="Currency"
+                    options={currencyOptions}
+                    value={companySettings.currency}
+                    onChange={(value) => setCompanySettings({...companySettings, currency: value})}
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Language</label>
-                    <select
-                      value={companySettings.language}
-                      onChange={(e) => setCompanySettings({...companySettings, language: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                    >
-                      <option value="English">English</option>
-                      <option value="Spanish">Spanish</option>
-                      <option value="French">French</option>
-                      <option value="German">German</option>
-                      <option value="Chinese">Chinese</option>
-                      <option value="Japanese">Japanese</option>
-                    </select>
-                  </div>
+                  <Select
+                    label="Language"
+                    options={languageOptions}
+                    value={companySettings.language.toLowerCase().substring(0, 2)}
+                    onChange={(value) => setCompanySettings({...companySettings, language: languageOptions.find(opt => opt.value === value)?.label || value})}
+                  />
                 </div>
               </div>
             </div>
@@ -360,47 +357,29 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Default Dashboard View</label>
-                  <select
-                    value={userPreferences.dashboard.defaultView}
-                    onChange={(e) => setUserPreferences({
-                      ...userPreferences,
-                      dashboard: {...userPreferences.dashboard, defaultView: e.target.value}
-                    })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="overview">Overview</option>
-                    <option value="projects">Projects</option>
-                    <option value="clients">Clients</option>
-                    <option value="finance">Finance</option>
-                  </select>
-                </div>
+                <Select
+                  label="Default Dashboard View"
+                  options={defaultViewOptions}
+                  value={userPreferences.dashboard.defaultView}
+                  onChange={(value) => setUserPreferences({
+                    ...userPreferences,
+                    dashboard: {...userPreferences.dashboard, defaultView: value}
+                  })}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Date Format</label>
-                  <select
-                    value={userPreferences.dateFormat}
-                    onChange={(e) => setUserPreferences({...userPreferences, dateFormat: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
+                <Select
+                  label="Date Format"
+                  options={dateFormatOptions}
+                  value={userPreferences.dateFormat}
+                  onChange={(value) => setUserPreferences({...userPreferences, dateFormat: value})}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Time Format</label>
-                  <select
-                    value={userPreferences.timeFormat}
-                    onChange={(e) => setUserPreferences({...userPreferences, timeFormat: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="12">12 Hour (AM/PM)</option>
-                    <option value="24">24 Hour</option>
-                  </select>
-                </div>
+                <Select
+                  label="Time Format"
+                  options={timeFormatOptions}
+                  value={userPreferences.timeFormat}
+                  onChange={(value) => setUserPreferences({...userPreferences, timeFormat: value})}
+                />
               </div>
 
               <div className="border-t border-gray-800 pt-6">
@@ -444,21 +423,16 @@ export default function SettingsPage() {
                     </label>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Items per Page</label>
-                    <select
-                      value={userPreferences.dashboard.itemsPerPage}
-                      onChange={(e) => setUserPreferences({
+                  <div className="max-w-xs">
+                    <Select
+                      label="Items per Page"
+                      options={itemsPerPageOptions}
+                      value={userPreferences.dashboard.itemsPerPage.toString()}
+                      onChange={(value) => setUserPreferences({
                         ...userPreferences,
-                        dashboard: {...userPreferences.dashboard, itemsPerPage: parseInt(e.target.value)}
+                        dashboard: {...userPreferences.dashboard, itemsPerPage: parseInt(value)}
                       })}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all max-w-xs"
-                    >
-                      <option value={10}>10</option>
-                      <option value={25}>25</option>
-                      <option value={50}>50</option>
-                      <option value={100}>100</option>
-                    </select>
+                    />
                   </div>
                 </div>
               </div>
@@ -609,11 +583,13 @@ export default function SettingsPage() {
                         <p className="text-white font-medium">Profile Visibility</p>
                         <p className="text-sm text-gray-400">Control who can see your profile information</p>
                       </div>
-                      <select className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white">
-                        <option>Public</option>
-                        <option>Team Only</option>
-                        <option>Private</option>
-                      </select>
+                      <div className="w-48">
+                        <Select
+                          options={visibilityOptions}
+                          value="Public"
+                          onChange={(value) => console.log(value)}
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-lg bg-gray-800/30">

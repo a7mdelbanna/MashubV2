@@ -10,6 +10,8 @@ import {
   CheckCircle2, Upload, AlertCircle, Globe, Shield
 } from 'lucide-react'
 import Link from 'next/link'
+import Select from '@/components/ui/select'
+import { projectStatusOptions, priorityOptions, currencyOptions } from '@/lib/select-options'
 
 interface ProjectFormData {
   // Project Details
@@ -107,9 +109,15 @@ export default function NewProjectPage() {
   ]
 
   // Mock data
-  const categories = [
-    'Web Development', 'Mobile App', 'E-commerce', 'Custom Software',
-    'API Development', 'Database Design', 'UI/UX Design', 'Consulting'
+  const categoryOptions = [
+    { value: 'Web Development', label: 'Web Development' },
+    { value: 'Mobile App', label: 'Mobile App' },
+    { value: 'E-commerce', label: 'E-commerce' },
+    { value: 'Custom Software', label: 'Custom Software' },
+    { value: 'API Development', label: 'API Development' },
+    { value: 'Database Design', label: 'Database Design' },
+    { value: 'UI/UX Design', label: 'UI/UX Design' },
+    { value: 'Consulting', label: 'Consulting' }
   ]
 
   const projectTypes = [
@@ -131,6 +139,11 @@ export default function NewProjectPage() {
     { id: 'c3', name: 'GlobalHR Solutions', contacts: ['David Wilson', 'Jennifer Lee'] }
   ]
 
+  const clientOptions = mockClients.map(client => ({
+    value: client.id,
+    label: client.name
+  }))
+
   const mockTeamMembers = [
     { id: 't1', name: 'Alex Johnson', role: 'Frontend Developer', avatar: 'AJ' },
     { id: 't2', name: 'Sarah Chen', role: 'Backend Developer', avatar: 'SC' },
@@ -138,6 +151,13 @@ export default function NewProjectPage() {
     { id: 't4', name: 'Lisa Kim', role: 'Project Manager', avatar: 'LK' },
     { id: 't5', name: 'Tom Wilson', role: 'DevOps Engineer', avatar: 'TW' }
   ]
+
+  const projectManagerOptions = mockTeamMembers
+    .filter(m => m.role.includes('Manager'))
+    .map(member => ({
+      value: member.id,
+      label: `${member.name} - ${member.role}`
+    }))
 
   const availableSkills = [
     'React', 'Node.js', 'Python', 'TypeScript', 'AWS', 'Docker',
@@ -354,19 +374,14 @@ export default function NewProjectPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Category *
-                </label>
-                <select
+                <Select
+                  label="Category"
+                  required
+                  options={categoryOptions}
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="">Select category</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  placeholder="Select category"
+                />
               </div>
 
               <div>
@@ -475,36 +490,31 @@ export default function NewProjectPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Client *
-                </label>
-                <select
+                <Select
+                  label="Client"
+                  required
+                  options={clientOptions}
                   value={formData.clientId}
-                  onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="">Select client</option>
-                  {mockClients.map(client => (
-                    <option key={client.id} value={client.id}>{client.name}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, clientId: value })}
+                  placeholder="Select client"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Primary Contact
-                </label>
-                <select
+                <Select
+                  label="Primary Contact"
+                  options={formData.clientId && mockClients.find(c => c.id === formData.clientId)
+                    ? mockClients.find(c => c.id === formData.clientId)!.contacts.map(contact => ({
+                        value: contact,
+                        label: contact
+                      }))
+                    : []
+                  }
                   value={formData.clientContact}
-                  onChange={(e) => setFormData({ ...formData, clientContact: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                  onChange={(value) => setFormData({ ...formData, clientContact: value })}
+                  placeholder="Select contact"
                   disabled={!formData.clientId}
-                >
-                  <option value="">Select contact</option>
-                  {formData.clientId && mockClients.find(c => c.id === formData.clientId)?.contacts.map(contact => (
-                    <option key={contact} value={contact}>{contact}</option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 
@@ -603,19 +613,14 @@ export default function NewProjectPage() {
             <h2 className="text-xl font-semibold text-white mb-6">Team & Resources</h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Project Manager *
-              </label>
-              <select
+              <Select
+                label="Project Manager"
+                required
+                options={projectManagerOptions}
                 value={formData.projectManager}
-                onChange={(e) => setFormData({ ...formData, projectManager: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-              >
-                <option value="">Select project manager</option>
-                {mockTeamMembers.filter(m => m.role.includes('Manager')).map(member => (
-                  <option key={member.id} value={member.id}>{member.name} - {member.role}</option>
-                ))}
-              </select>
+                onChange={(value) => setFormData({ ...formData, projectManager: value })}
+                placeholder="Select project manager"
+              />
             </div>
 
             <div>
@@ -794,19 +799,13 @@ export default function NewProjectPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Currency
-                </label>
-                <select
+                <Select
+                  label="Currency"
+                  options={currencyOptions}
                   value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="CAD">CAD - Canadian Dollar</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                  placeholder="Select currency"
+                />
               </div>
 
               {formData.type === 'hourly' && (

@@ -9,6 +9,16 @@ import {
   Calendar, CreditCard, Tag, Settings, Upload
 } from 'lucide-react'
 import Link from 'next/link'
+import Select from '@/components/ui/select'
+import {
+  industryOptions,
+  currencyOptions,
+  paymentTermsOptions,
+  billingCycleOptions,
+  communicationMethodOptions,
+  timezoneOptions,
+  languageOptions
+} from '@/lib/select-options'
 
 interface ClientFormData {
   // Basic Information
@@ -82,8 +92,8 @@ export default function NewClientPage() {
       phone: ''
     },
     creditLimit: 50000,
-    paymentTerms: 'Net 30',
-    billingCycle: 'Monthly',
+    paymentTerms: 'net-30',
+    billingCycle: 'monthly',
     taxId: '',
     currency: 'USD',
     tier: 'starter',
@@ -92,7 +102,7 @@ export default function NewClientPage() {
     preferences: {
       communication: 'email',
       timezone: 'America/New_York',
-      language: 'English'
+      language: 'en'
     }
   })
 
@@ -103,32 +113,11 @@ export default function NewClientPage() {
     { id: 4, name: 'Settings', icon: Settings }
   ]
 
-  const industries = [
-    'Technology', 'Finance', 'Healthcare', 'Retail', 'Manufacturing',
-    'Education', 'Real Estate', 'Consulting', 'Marketing', 'Legal',
-    'Non-Profit', 'Government', 'Other'
-  ]
-
-  const paymentTermOptions = [
-    'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on Receipt', 'Custom'
-  ]
-
-  const billingCycleOptions = [
-    'Weekly', 'Bi-Weekly', 'Monthly', 'Quarterly', 'Annually'
-  ]
-
   const tierOptions = [
     { value: 'starter', label: 'Starter', description: 'Basic features and support' },
     { value: 'professional', label: 'Professional', description: 'Advanced features and priority support' },
     { value: 'enterprise', label: 'Enterprise', description: 'Full features and dedicated support' }
   ]
-
-  const timezones = [
-    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-    'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Australia/Sydney'
-  ]
-
-  const languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Portuguese']
 
   const availableTags = [
     'Priority', 'Long-term', 'New Client', 'VIP', 'Strategic Partner',
@@ -250,19 +239,14 @@ export default function NewClientPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Industry *
-                </label>
-                <select
+                <Select
+                  label="Industry"
+                  required={true}
+                  options={industryOptions}
                   value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="">Select industry</option>
-                  {industries.map(industry => (
-                    <option key={industry} value={industry}>{industry}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, industry: value })}
+                  placeholder="Select industry"
+                />
               </div>
             </div>
 
@@ -487,49 +471,30 @@ export default function NewClientPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Currency
-                </label>
-                <select
+                <Select
+                  label="Currency"
+                  options={currencyOptions}
                   value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="CAD">CAD - Canadian Dollar</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Payment Terms
-                </label>
-                <select
+                <Select
+                  label="Payment Terms"
+                  options={paymentTermsOptions}
                   value={formData.paymentTerms}
-                  onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  {paymentTermOptions.map(term => (
-                    <option key={term} value={term}>{term}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, paymentTerms: value })}
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Billing Cycle
-                </label>
-                <select
+                <Select
+                  label="Billing Cycle"
+                  options={billingCycleOptions}
                   value={formData.billingCycle}
-                  onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  {billingCycleOptions.map(cycle => (
-                    <option key={cycle} value={cycle}>{cycle}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, billingCycle: value })}
+                />
               </div>
             </div>
 
@@ -608,58 +573,39 @@ export default function NewClientPage() {
 
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Preferred Communication
-                </label>
-                <select
+                <Select
+                  label="Preferred Communication"
+                  options={communicationMethodOptions}
                   value={formData.preferences.communication}
-                  onChange={(e) => setFormData({
+                  onChange={(value) => setFormData({
                     ...formData,
-                    preferences: { ...formData.preferences, communication: e.target.value }
+                    preferences: { ...formData.preferences, communication: value }
                   })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="email">Email</option>
-                  <option value="phone">Phone</option>
-                  <option value="video">Video Call</option>
-                  <option value="in-person">In Person</option>
-                </select>
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Timezone
-                </label>
-                <select
+                <Select
+                  label="Timezone"
+                  options={timezoneOptions}
                   value={formData.preferences.timezone}
-                  onChange={(e) => setFormData({
+                  onChange={(value) => setFormData({
                     ...formData,
-                    preferences: { ...formData.preferences, timezone: e.target.value }
+                    preferences: { ...formData.preferences, timezone: value }
                   })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  {timezones.map(tz => (
-                    <option key={tz} value={tz}>{tz}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Language
-                </label>
-                <select
+                <Select
+                  label="Language"
+                  options={languageOptions}
                   value={formData.preferences.language}
-                  onChange={(e) => setFormData({
+                  onChange={(value) => setFormData({
                     ...formData,
-                    preferences: { ...formData.preferences, language: e.target.value }
+                    preferences: { ...formData.preferences, language: value }
                   })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  {languages.map(lang => (
-                    <option key={lang} value={lang}>{lang}</option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 

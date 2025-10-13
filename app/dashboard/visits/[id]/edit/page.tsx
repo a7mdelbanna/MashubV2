@@ -10,6 +10,7 @@ import {
   Navigation, Route, Compass, Target, Users, ClipboardList,
   MessageSquare, Bell, Zap, Shield, Award, Activity
 } from 'lucide-react'
+import Select from '@/components/ui/select'
 
 // Mock visit data
 const mockVisit = {
@@ -348,29 +349,25 @@ export default function EditVisitPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Visit Type</label>
-                  <select
+                  <Select
+                    label="Visit Type"
+                    options={visitTypes}
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {visitTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, type: value })}
+                    placeholder="Select visit type"
+                    required
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Priority</label>
-                  <select
+                  <Select
+                    label="Priority"
+                    options={priorityOptions}
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {priorityOptions.map(priority => (
-                      <option key={priority.value} value={priority.value}>{priority.label}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, priority: value })}
+                    placeholder="Select priority"
+                    required
+                  />
                 </div>
 
                 <div>
@@ -411,16 +408,14 @@ export default function EditVisitPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                  <select
+                  <Select
+                    label="Status"
+                    options={statusOptions}
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    {statusOptions.map(status => (
-                      <option key={status.value} value={status.value}>{status.label}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, status: value })}
+                    placeholder="Select status"
+                    required
+                  />
                 </div>
               </div>
 
@@ -554,14 +549,18 @@ export default function EditVisitPage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Parking Information</label>
-                    <select className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all">
-                      <option value="">Select parking type</option>
-                      <option value="free">Free parking available</option>
-                      <option value="paid">Paid parking</option>
-                      <option value="street">Street parking</option>
-                      <option value="none">No parking available</option>
-                    </select>
+                    <Select
+                      label="Parking Information"
+                      options={[
+                        { value: 'free', label: 'Free parking available' },
+                        { value: 'paid', label: 'Paid parking' },
+                        { value: 'street', label: 'Street parking' },
+                        { value: 'none', label: 'No parking available' }
+                      ]}
+                      value=""
+                      onChange={(value) => console.log('Parking:', value)}
+                      placeholder="Select parking type"
+                    />
                   </div>
                 </div>
               </div>
@@ -873,13 +872,19 @@ export default function EditVisitPage({ params }: { params: { id: string } }) {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">Follow-up Type</label>
-                          <select className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all">
-                            <option value="call">Phone Call</option>
-                            <option value="email">Email</option>
-                            <option value="meeting">In-Person Meeting</option>
-                            <option value="video">Video Call</option>
-                          </select>
+                          <Select
+                            label="Follow-up Type"
+                            options={[
+                              { value: 'call', label: 'Phone Call' },
+                              { value: 'email', label: 'Email' },
+                              { value: 'meeting', label: 'In-Person Meeting' },
+                              { value: 'video', label: 'Video Call' }
+                            ]}
+                            value="call"
+                            onChange={(value) => console.log('Follow-up type:', value)}
+                            placeholder="Select follow-up type"
+                            required
+                          />
                         </div>
                       </div>
 

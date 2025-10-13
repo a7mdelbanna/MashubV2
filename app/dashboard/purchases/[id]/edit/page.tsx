@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Select from '@/components/ui/select'
 import {
   ArrowLeft, Save, X, Plus, Trash2, Building, User, Mail,
   Phone, MapPin, Package, Calendar, DollarSign, FileText,
@@ -414,16 +415,15 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Department</label>
-                <select
+                <Select
+                  label="Department"
                   value={formData.department}
-                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors text-sm"
-                >
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                  options={departments.map(dept => ({
+                    value: dept,
+                    label: dept
+                  }))}
+                />
               </div>
 
               <div className="flex items-center space-x-2">
@@ -546,11 +546,11 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
                 <h2 className="text-xl font-semibold text-white mb-4">Vendor Information</h2>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Select Vendor</label>
-                  <select
+                  <Select
+                    label="Select Vendor"
                     value={formData.vendor.id}
-                    onChange={(e) => {
-                      const selectedVendor = vendors.find(v => v.id === e.target.value)
+                    onChange={(value) => {
+                      const selectedVendor = vendors.find(v => v.id === value)
                       if (selectedVendor) {
                         setFormData(prev => ({
                           ...prev,
@@ -562,12 +562,11 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
                         }))
                       }
                     }}
-                    className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                  >
-                    {vendors.map(vendor => (
-                      <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
-                    ))}
-                  </select>
+                    options={vendors.map(vendor => ({
+                      value: vendor.id,
+                      label: vendor.name
+                    }))}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
@@ -758,14 +757,16 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
                               step="0.01"
                               min="0"
                             />
-                            <select
-                              value={formData.discountType}
-                              onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value as 'percentage' | 'fixed' }))}
-                              className="px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                            >
-                              <option value="percentage">%</option>
-                              <option value="fixed">$</option>
-                            </select>
+                            <div className="w-24">
+                              <Select
+                                value={formData.discountType}
+                                onChange={(value) => setFormData(prev => ({ ...prev, discountType: value as 'percentage' | 'fixed' }))}
+                                options={[
+                                  { value: 'percentage', label: '%' },
+                                  { value: 'fixed', label: '$' }
+                                ]}
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -1007,42 +1008,39 @@ export default function EditPurchaseOrderPage({ params }: { params: { id: string
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Payment Terms</label>
-                    <select
+                    <Select
+                      label="Payment Terms"
                       value={formData.paymentTerms}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paymentTerms: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {paymentTerms.map(term => (
-                        <option key={term} value={term}>{term}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, paymentTerms: value }))}
+                      options={paymentTerms.map(term => ({
+                        value: term,
+                        label: term
+                      }))}
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Payment Method</label>
-                    <select
+                    <Select
+                      label="Payment Method"
                       value={formData.paymentMethod}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {paymentMethods.map(method => (
-                        <option key={method} value={method}>{method}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
+                      options={paymentMethods.map(method => ({
+                        value: method,
+                        label: method
+                      }))}
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Currency</label>
-                    <select
+                    <Select
+                      label="Currency"
                       value={formData.currency}
-                      onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {currencies.map(currency => (
-                        <option key={currency} value={currency}>{currency}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                      options={currencies.map(currency => ({
+                        value: currency,
+                        label: currency
+                      }))}
+                    />
                   </div>
                 </div>
               </div>

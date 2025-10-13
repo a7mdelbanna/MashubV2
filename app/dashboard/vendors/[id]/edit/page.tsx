@@ -9,6 +9,8 @@ import {
   DollarSign, Tag, FileText, ChevronRight, Package,
   Shield, Check, AlertCircle
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import { currencyOptions, paymentTermsOptions, companySizeOptions } from '@/lib/select-options'
 
 // Mock vendor data - in reality this would come from an API
 const mockVendorData = {
@@ -46,10 +48,10 @@ const mockVendorData = {
   taxId: 'XX-XXXXXXX',
   businessLicense: 'BL-2023-001',
   established: '2010',
-  employees: '500+',
+  employees: '1000+',
   certifications: ['ISO 9001', 'ISO 14001', 'Authorized Reseller'],
 
-  paymentTerms: 'Net 30',
+  paymentTerms: 'net-30',
   currency: 'USD',
   paymentMethods: ['Wire Transfer', 'Credit Card', 'ACH'],
   creditLimit: 100000,
@@ -64,7 +66,18 @@ const categories = [
   'Consulting', 'Logistics', 'Maintenance', 'Security'
 ]
 
-const paymentTermsList = ['Due on Receipt', 'Net 15', 'Net 30', 'Net 45', 'Net 60']
+const categoryOptions = categories.map(cat => ({
+  value: cat,
+  label: cat
+}))
+
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'pending', label: 'Pending' }
+]
+
 const paymentMethods = ['Wire Transfer', 'Credit Card', 'ACH', 'Check', 'PayPal']
 
 export default function EditVendorPage() {
@@ -192,16 +205,13 @@ export default function EditVendorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Category *</label>
-                    <select
+                    <Select
+                      label="Category"
+                      required
+                      options={categoryOptions}
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, category: value })}
+                    />
                   </div>
 
                   <div>
@@ -215,17 +225,12 @@ export default function EditVendorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Status</label>
-                    <select
+                    <Select
+                      label="Status"
+                      options={statusOptions}
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                      <option value="pending">Pending</option>
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, status: value })}
+                    />
                   </div>
 
                   <div className="col-span-2">
@@ -454,18 +459,12 @@ export default function EditVendorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Number of Employees</label>
-                    <select
+                    <Select
+                      label="Number of Employees"
+                      options={companySizeOptions}
                       value={formData.employees}
-                      onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      <option value="1-10">1-10</option>
-                      <option value="11-50">11-50</option>
-                      <option value="51-200">51-200</option>
-                      <option value="201-500">201-500</option>
-                      <option value="500+">500+</option>
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, employees: value })}
+                    />
                   </div>
 
                   <div className="col-span-2">
@@ -501,30 +500,21 @@ export default function EditVendorPage() {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Payment Terms</label>
-                    <select
+                    <Select
+                      label="Payment Terms"
+                      options={paymentTermsOptions}
                       value={formData.paymentTerms}
-                      onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      {paymentTermsList.map(term => (
-                        <option key={term} value={term}>{term}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, paymentTerms: value })}
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Currency</label>
-                    <select
+                    <Select
+                      label="Currency"
+                      options={currencyOptions}
                       value={formData.currency}
-                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
-                    >
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="CAD">CAD - Canadian Dollar</option>
-                    </select>
+                      onChange={(value) => setFormData({ ...formData, currency: value })}
+                    />
                   </div>
 
                   <div>

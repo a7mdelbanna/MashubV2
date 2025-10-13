@@ -6,8 +6,15 @@ import Link from 'next/link'
 import {
   ArrowLeft, Save, X, Plus, Minus, Calendar, DollarSign,
   User, Building, Mail, Hash, FileText, Send, Eye,
-  Calculator, Percent, Clock, Copy, Upload, Image
+  Calculator, Percent, Clock, Copy, Upload, Image, CheckCircle
 } from 'lucide-react'
+import Select from '@/components/ui/select'
+import {
+  invoiceStatusOptions,
+  currencyOptions,
+  paymentTermsOptions,
+  discountTypeOptions
+} from '@/lib/select-options'
 
 interface InvoiceItem {
   description: string
@@ -73,7 +80,7 @@ export default function NewInvoicePage() {
     discountValue: 0,
     discountAmount: 0,
     total: 0,
-    paymentTerms: 'Net 30',
+    paymentTerms: 'net-30',
     currency: 'USD',
     notes: '',
     terms: 'Payment is due within 30 days of invoice date. Late payments may incur additional charges.',
@@ -104,16 +111,31 @@ export default function NewInvoicePage() {
     { id: 4, title: 'Review & Send', icon: Send }
   ]
 
-  const paymentTermsOptions = [
-    'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on Receipt', 'Custom'
-  ]
+  // Create dynamic options for clients and projects
+  const clientOptions = clients.map(client => ({
+    value: client.id,
+    label: client.name
+  }))
 
-  const currencyOptions = [
-    { code: 'USD', symbol: '$', name: 'US Dollar' },
-    { code: 'EUR', symbol: '€', name: 'Euro' },
-    { code: 'GBP', symbol: '£', name: 'British Pound' },
-    { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' }
-  ]
+  const projectOptions = filteredProjects.map(project => ({
+    value: project.id,
+    label: project.name
+  }))
+
+  const validateStep = (step: number) => {
+    switch(step) {
+      case 1:
+        return formData.invoiceNumber && formData.issueDate && formData.dueDate && formData.clientId
+      case 2:
+        return formData.items.length > 0 && formData.items.every(item => item.description && item.quantity > 0)
+      case 3:
+        return formData.paymentTerms && formData.currency
+      case 4:
+        return true
+      default:
+        return false
+    }
+  }
 
   const handleNext = () => {
     if (currentStep < 4) {
@@ -274,19 +296,12 @@ export default function NewInvoicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Status
-                </label>
-                <select
+                <Select
+                  label="Status"
+                  options={invoiceStatusOptions}
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="sent">Sent</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, status: value })}
+                />
               </div>
 
               <div>
@@ -320,39 +335,25 @@ export default function NewInvoicePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Client *
-                </label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <select
-                    value={formData.clientId}
-                    onChange={(e) => setFormData({ ...formData, clientId: e.target.value, projectId: '' })}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  >
-                    <option value="">Select client</option>
-                    {clients.map(client => (
-                      <option key={client.id} value={client.id}>{client.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Client"
+                  required
+                  options={clientOptions}
+                  value={formData.clientId}
+                  onChange={(value) => setFormData({ ...formData, clientId: value, projectId: '' })}
+                  placeholder="Select client"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Project (Optional)
-                </label>
-                <select
+                <Select
+                  label="Project (Optional)"
+                  options={projectOptions}
                   value={formData.projectId}
-                  onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, projectId: value })}
                   disabled={!formData.clientId}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all disabled:opacity-50"
-                >
-                  <option value="">Select project</option>
-                  {filteredProjects.map(project => (
-                    <option key={project.id} value={project.id}>{project.name}</option>
-                  ))}
-                </select>
+                  placeholder="Select project"
+                />
               </div>
             </div>
 
@@ -463,14 +464,14 @@ export default function NewInvoicePage() {
                       <div className="flex items-center justify-between">
                         <span className="text-gray-400">Discount</span>
                         <div className="flex items-center space-x-2">
-                          <select
-                            value={formData.discountType}
-                            onChange={(e) => handleDiscountChange(e.target.value as 'percentage' | 'fixed', formData.discountValue)}
-                            className="px-2 py-1 rounded bg-gray-700 text-white text-sm"
-                          >
-                            <option value="percentage">%</option>
-                            <option value="fixed">$</option>
-                          </select>
+                          <div className="w-20">
+                            <Select
+                              options={discountTypeOptions}
+                              value={formData.discountType}
+                              onChange={(value) => handleDiscountChange(value as 'percentage' | 'fixed', formData.discountValue)}
+                              className="text-sm"
+                            />
+                          </div>
                           <input
                             type="number"
                             step="0.01"
@@ -527,31 +528,21 @@ export default function NewInvoicePage() {
 
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Payment Terms</label>
-                <select
+                <Select
+                  label="Payment Terms"
+                  options={paymentTermsOptions}
                   value={formData.paymentTerms}
-                  onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  {paymentTermsOptions.map(term => (
-                    <option key={term} value={term}>{term}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, paymentTerms: value })}
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
-                <select
+                <Select
+                  label="Currency"
+                  options={currencyOptions}
                   value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                >
-                  {currencyOptions.map(currency => (
-                    <option key={currency.code} value={currency.code}>
-                      {currency.symbol} {currency.name} ({currency.code})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                />
               </div>
             </div>
 

@@ -354,29 +354,29 @@ export default function FinancePage() {
       <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
         <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link href="/dashboard/invoices/new" className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
-            <FileText className="h-8 w-8 text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <p className="text-white font-medium">Create Invoice</p>
-            <p className="text-xs text-gray-400">Generate new invoice</p>
+          <Link href="/dashboard/finance/transactions/new" className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
+            <Plus className="h-8 w-8 text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+            <p className="text-white font-medium">New Transaction</p>
+            <p className="text-xs text-gray-400">Record income/expense</p>
           </Link>
 
-          <button className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
+          <Link href="/dashboard/finance/reports" className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
             <Download className="h-8 w-8 text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <p className="text-white font-medium">Export Reports</p>
-            <p className="text-xs text-gray-400">Download financial data</p>
-          </button>
+            <p className="text-white font-medium">Generate Reports</p>
+            <p className="text-xs text-gray-400">P&L, Balance Sheet, etc.</p>
+          </Link>
 
-          <button className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
+          <Link href="/dashboard/finance/categories" className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
             <Target className="h-8 w-8 text-green-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <p className="text-white font-medium">Set Budget</p>
-            <p className="text-xs text-gray-400">Configure spending limits</p>
-          </button>
+            <p className="text-white font-medium">Manage Budgets</p>
+            <p className="text-xs text-gray-400">Set category budgets</p>
+          </Link>
 
-          <button className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
+          <Link href="/dashboard/finance/recurring" className="p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-center group">
             <Calendar className="h-8 w-8 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <p className="text-white font-medium">Schedule Payment</p>
-            <p className="text-xs text-gray-400">Set up recurring payments</p>
-          </button>
+            <p className="text-white font-medium">Recurring Payments</p>
+            <p className="text-xs text-gray-400">Automate transactions</p>
+          </Link>
         </div>
       </div>
     </div>

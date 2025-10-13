@@ -11,7 +11,9 @@ import {
   Search, Sparkles, Building2, Box, Building,
   ShoppingCart, Calendar, Command, HelpCircle, BookOpen,
   ChevronRight, ChevronDown, Kanban, FileText, Shield,
-  GitBranch, ClipboardList, Map
+  GitBranch, ClipboardList, Map, Wallet, TrendingUp,
+  UserCircle, Tags, Repeat, CheckSquare, BarChart3,
+  CreditCard, Coins
 } from 'lucide-react'
 import { GlobalSearch } from '@/components/search/global-search'
 
@@ -46,7 +48,23 @@ const sidebarItems: SidebarItem[] = [
   { name: 'Vendors', path: '/dashboard/vendors', icon: Building },
   { name: 'Purchases', path: '/dashboard/purchases', icon: ShoppingCart },
   { name: 'Visits', path: '/dashboard/visits', icon: Calendar },
-  { name: 'Finance', path: '/dashboard/finance', icon: DollarSign },
+  {
+    name: 'Finance',
+    path: '/dashboard/finance',
+    icon: DollarSign,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/finance', icon: LayoutDashboard },
+      { name: 'Accounts', path: '/dashboard/finance/accounts', icon: Wallet },
+      { name: 'Transactions', path: '/dashboard/finance/transactions', icon: TrendingUp },
+      { name: 'Categories', path: '/dashboard/finance/categories', icon: Tags },
+      { name: 'Contacts', path: '/dashboard/finance/contacts', icon: UserCircle },
+      { name: 'Payment Methods', path: '/dashboard/finance/payment-methods', icon: CreditCard },
+      { name: 'Recurring', path: '/dashboard/finance/recurring', icon: Repeat },
+      { name: 'Reconciliation', path: '/dashboard/finance/reconciliation', icon: CheckSquare },
+      { name: 'Reports', path: '/dashboard/finance/reports', icon: BarChart3 },
+      { name: 'Settings', path: '/dashboard/finance/settings/currencies', icon: Coins }
+    ]
+  },
   { name: 'Support', path: '/dashboard/support', icon: HeadphonesIcon },
   { name: 'Help', path: '/dashboard/help', icon: HelpCircle },
   { name: 'Settings', path: '/dashboard/settings', icon: Settings }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Select from '@/components/ui/select'
 import {
   ArrowLeft, ShoppingCart, Building, Package, Plus,
   Calendar, DollarSign, FileText, ChevronRight,
@@ -238,19 +239,18 @@ export default function NewPurchaseOrderPage() {
                 <div key={index} className="p-4 rounded-lg border border-gray-700">
                   <div className="grid grid-cols-4 gap-4">
                     <div className="col-span-2">
-                      <label className="block text-sm text-gray-400 mb-1">Product</label>
-                      <select
+                      <Select
+                        label="Product"
                         value={item.productId}
-                        onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                      >
-                        <option value="">Select Product</option>
-                        {vendorProducts.map(product => (
-                          <option key={product.id} value={product.id}>
-                            {product.name} - ${product.price}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => handleItemChange(index, 'productId', value)}
+                        options={[
+                          { value: '', label: 'Select Product' },
+                          ...vendorProducts.map(product => ({
+                            value: product.id,
+                            label: `${product.name} - $${product.price}`
+                          }))
+                        ]}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">Quantity</label>
@@ -310,20 +310,18 @@ export default function NewPurchaseOrderPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Payment Terms
-                </label>
-                <select
+                <Select
+                  label="Payment Terms"
                   value={formData.paymentTerms}
-                  onChange={(e) => setFormData({...formData, paymentTerms: e.target.value})}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
-                >
-                  <option value="Net 15">Net 15</option>
-                  <option value="Net 30">Net 30</option>
-                  <option value="Net 45">Net 45</option>
-                  <option value="Net 60">Net 60</option>
-                  <option value="Due on Receipt">Due on Receipt</option>
-                </select>
+                  onChange={(value) => setFormData({...formData, paymentTerms: value})}
+                  options={[
+                    { value: 'Net 15', label: 'Net 15' },
+                    { value: 'Net 30', label: 'Net 30' },
+                    { value: 'Net 45', label: 'Net 45' },
+                    { value: 'Net 60', label: 'Net 60' },
+                    { value: 'Due on Receipt', label: 'Due on Receipt' }
+                  ]}
+                />
               </div>
 
               <div className="col-span-2">
