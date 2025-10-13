@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Briefcase, DollarSign, Users,
   HeadphonesIcon, GraduationCap, UserPlus, Package,
   Zap, Settings, LogOut, ChevronLeft, Bell,
-  Search, Sparkles, Building2, Box, Building,
+  Search, Sparkles, Building2, Box, Receipt,
   ShoppingCart, Calendar, Command, HelpCircle, BookOpen,
   ChevronRight, ChevronDown, Kanban, FileText, Shield,
   GitBranch, ClipboardList, Map, Wallet, TrendingUp,
@@ -41,11 +41,11 @@ const sidebarItems: SidebarItem[] = [
     ]
   },
   { name: 'Clients', path: '/dashboard/clients', icon: Building2 },
+  { name: 'Invoices', path: '/dashboard/invoices', icon: Receipt },
   { name: 'Products', path: '/dashboard/products', icon: Box },
   { name: 'Services', path: '/dashboard/services', icon: Zap },
   { name: 'Courses', path: '/dashboard/courses', icon: BookOpen },
   { name: 'Candidates', path: '/dashboard/candidates', icon: Users },
-  { name: 'Vendors', path: '/dashboard/vendors', icon: Building },
   { name: 'Purchases', path: '/dashboard/purchases', icon: ShoppingCart },
   { name: 'Visits', path: '/dashboard/visits', icon: Calendar },
   {

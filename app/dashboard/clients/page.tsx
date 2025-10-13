@@ -7,9 +7,17 @@ import {
   Globe, MapPin, Calendar, DollarSign, Briefcase,
   TrendingUp, MoreVertical, ArrowUpRight, Star,
   Users, Clock, CheckCircle2, AlertCircle, Zap,
-  FileText, Calendar as CalendarIcon, Eye
+  FileText, Calendar as CalendarIcon, Eye, Heart,
+  Activity, Target, Award
 } from 'lucide-react'
 import Link from 'next/link'
+import { Client, ClientStatus, ClientLifecycleStage } from '@/types/clients'
+import {
+  getClientStatusColor,
+  getLifecycleStageColor,
+  getHealthLevelColor,
+  calculateClientHealth
+} from '@/lib/clients-utils'
 
 // Mock data for clients with relationships
 const clients = [
