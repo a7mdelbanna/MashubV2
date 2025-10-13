@@ -13,7 +13,9 @@ import {
   ChevronRight, ChevronDown, Kanban, FileText, Shield,
   GitBranch, ClipboardList, Map, Wallet, TrendingUp,
   UserCircle, Tags, Repeat, CheckSquare, BarChart3,
-  CreditCard, Coins
+  CreditCard, Coins, MessageSquare, Mail, Target,
+  Clock, Star, Lightbulb, Video, CalendarDays,
+  PackageOpen, DollarSignIcon, MessageCircle, Layers, FolderTree
 } from 'lucide-react'
 import { GlobalSearch } from '@/components/search/global-search'
 
@@ -37,15 +39,79 @@ const sidebarItems: SidebarItem[] = [
       { name: 'Roadmap', path: '/dashboard/projects/roadmap', icon: Map },
       { name: 'Documents', path: '/dashboard/projects/documents', icon: FileText },
       { name: 'Team', path: '/dashboard/projects/team', icon: Users },
-      { name: 'Vault', path: '/dashboard/projects/vault', icon: Shield }
+      { name: 'Vault', path: '/dashboard/projects/vault', icon: Shield },
+      { name: 'Analytics', path: '/dashboard/projects/analytics', icon: BarChart3 },
+      { name: 'Time Tracking', path: '/dashboard/projects/time-tracking', icon: Clock },
+      { name: 'Resources', path: '/dashboard/projects/resources', icon: Users },
+      { name: 'Reports', path: '/dashboard/projects/reports', icon: FileText },
+      { name: 'Templates', path: '/dashboard/projects/templates', icon: Layers }
     ]
   },
-  { name: 'Clients', path: '/dashboard/clients', icon: Building2 },
+  {
+    name: 'Clients',
+    path: '/dashboard/clients',
+    icon: Building2,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/clients', icon: LayoutDashboard },
+      { name: 'Analytics', path: '/dashboard/clients/analytics', icon: BarChart3 },
+      { name: 'Interactions', path: '/dashboard/clients/interactions', icon: MessageSquare },
+      { name: 'Deals', path: '/dashboard/clients/deals', icon: Target },
+      { name: 'Emails', path: '/dashboard/clients/emails', icon: Mail },
+      { name: 'Reports', path: '/dashboard/clients/reports', icon: FileText }
+    ]
+  },
   { name: 'Invoices', path: '/dashboard/invoices', icon: Receipt },
-  { name: 'Products', path: '/dashboard/products', icon: Box },
-  { name: 'Services', path: '/dashboard/services', icon: Zap },
-  { name: 'Courses', path: '/dashboard/courses', icon: BookOpen },
-  { name: 'Candidates', path: '/dashboard/candidates', icon: Users },
+  {
+    name: 'Products',
+    path: '/dashboard/products',
+    icon: Box,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/products', icon: LayoutDashboard },
+      { name: 'Categories', path: '/dashboard/products/categories', icon: FolderTree },
+      { name: 'Inventory', path: '/dashboard/products/inventory', icon: PackageOpen },
+      { name: 'Analytics', path: '/dashboard/products/analytics', icon: BarChart3 },
+      { name: 'Pricing', path: '/dashboard/products/pricing', icon: DollarSign },
+      { name: 'Orders', path: '/dashboard/products/orders', icon: ShoppingCart }
+    ]
+  },
+  {
+    name: 'Services',
+    path: '/dashboard/services',
+    icon: Zap,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/services', icon: LayoutDashboard },
+      { name: 'Analytics', path: '/dashboard/services/analytics', icon: BarChart3 },
+      { name: 'Subscriptions', path: '/dashboard/services/subscriptions', icon: Repeat },
+      { name: 'Deliveries', path: '/dashboard/services/deliveries', icon: Package },
+      { name: 'Bookings', path: '/dashboard/services/bookings', icon: CalendarDays },
+      { name: 'Reviews', path: '/dashboard/services/reviews', icon: Star }
+    ]
+  },
+  {
+    name: 'Courses',
+    path: '/dashboard/courses',
+    icon: BookOpen,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/courses', icon: LayoutDashboard },
+      { name: 'Catalog', path: '/dashboard/courses', icon: BookOpen },
+      { name: 'Students', path: '/dashboard/courses/students', icon: GraduationCap },
+      { name: 'Analytics', path: '/dashboard/courses/analytics', icon: BarChart3 }
+    ]
+  },
+  {
+    name: 'Candidates',
+    path: '/dashboard/candidates',
+    icon: UserPlus,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/candidates', icon: LayoutDashboard },
+      { name: 'Positions', path: '/dashboard/candidates/positions', icon: Briefcase },
+      { name: 'Analytics', path: '/dashboard/candidates/analytics', icon: BarChart3 },
+      { name: 'Interviews', path: '/dashboard/candidates/interviews', icon: Video },
+      { name: 'Emails', path: '/dashboard/candidates/emails', icon: Mail },
+      { name: 'Reports', path: '/dashboard/candidates/reports', icon: FileText },
+      { name: 'Compare', path: '/dashboard/candidates/compare', icon: GitBranch }
+    ]
+  },
   { name: 'Purchases', path: '/dashboard/purchases', icon: ShoppingCart },
   { name: 'Visits', path: '/dashboard/visits', icon: Calendar },
   {
@@ -66,7 +132,18 @@ const sidebarItems: SidebarItem[] = [
     ]
   },
   { name: 'Support', path: '/dashboard/support', icon: HeadphonesIcon },
-  { name: 'Help', path: '/dashboard/help', icon: HelpCircle },
+  {
+    name: 'Help',
+    path: '/dashboard/help',
+    icon: HelpCircle,
+    subItems: [
+      { name: 'Dashboard', path: '/dashboard/help', icon: LayoutDashboard },
+      { name: 'Articles', path: '/dashboard/help/articles', icon: BookOpen },
+      { name: 'Tickets', path: '/dashboard/help/tickets', icon: MessageCircle },
+      { name: 'Analytics', path: '/dashboard/help/analytics', icon: BarChart3 },
+      { name: 'FAQs', path: '/dashboard/help/faqs', icon: Lightbulb }
+    ]
+  },
   { name: 'Settings', path: '/dashboard/settings', icon: Settings }
 ]
 
