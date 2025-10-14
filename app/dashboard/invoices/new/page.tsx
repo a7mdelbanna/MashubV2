@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -111,16 +111,22 @@ export default function NewInvoicePage() {
     { id: 4, title: 'Review & Send', icon: Send }
   ]
 
+  // Filter projects based on selected client
+  const filteredProjects = useMemo(() =>
+    projects.filter(p => p.clientId === formData.clientId),
+    [formData.clientId]
+  )
+
   // Create dynamic options for clients and projects
-  const clientOptions = clients.map(client => ({
+  const clientOptions = useMemo(() => clients.map(client => ({
     value: client.id,
     label: client.name
-  }))
+  })), [])
 
-  const projectOptions = filteredProjects.map(project => ({
+  const projectOptions = useMemo(() => filteredProjects.map(project => ({
     value: project.id,
     label: project.name
-  }))
+  })), [filteredProjects])
 
   const validateStep = (step: number) => {
     switch(step) {
@@ -215,7 +221,6 @@ export default function NewInvoicePage() {
     calculateTotals(formData.items, formData.taxRate, type, value)
   }
 
-  const filteredProjects = projects.filter(p => p.clientId === formData.clientId)
   const selectedClient = clients.find(c => c.id === formData.clientId)
   const selectedProject = projects.find(p => p.id === formData.projectId)
 

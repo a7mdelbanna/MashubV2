@@ -13,12 +13,19 @@ import {
   getRoleColor,
   getRoleIcon
 } from '@/lib/team-utils'
+import CreateRoleModal from '@/components/team/CreateRoleModal'
+import RoleDetailsModal from '@/components/team/RoleDetailsModal'
 
 export default function RolesManagementPage() {
   const [roles, setRoles] = useState<Role[]>([])
   const [systemRoles, setSystemRoles] = useState<Role[]>([])
   const [customRoles, setCustomRoles] = useState<Role[]>([])
   const [userCounts, setUserCounts] = useState<Record<string, number>>({})
+
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null)
 
   useEffect(() => {
     loadRoles()
@@ -78,6 +85,11 @@ export default function RolesManagementPage() {
     return descriptions[roleSlug] || 'Custom role with specific permissions'
   }
 
+  const handleViewDetails = (role: Role) => {
+    setSelectedRole(role)
+    setShowDetailsModal(true)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -93,7 +105,10 @@ export default function RolesManagementPage() {
             </div>
           </div>
 
-          <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>Create Role</span>
           </button>
@@ -232,7 +247,10 @@ export default function RolesManagementPage() {
 
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
-                  <button className="flex-1 px-4 py-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-white transition-colors flex items-center justify-center space-x-2">
+                  <button
+                    onClick={() => handleViewDetails(role)}
+                    className="flex-1 px-4 py-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-white transition-colors flex items-center justify-center space-x-2"
+                  >
                     <Eye className="h-4 w-4" />
                     <span>View Details</span>
                   </button>
@@ -261,7 +279,10 @@ export default function RolesManagementPage() {
             )}
           </div>
 
-          <button className="px-4 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 transition-colors flex items-center space-x-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 transition-colors flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>Create Custom Role</span>
           </button>
@@ -312,7 +333,10 @@ export default function RolesManagementPage() {
 
                   {/* Actions */}
                   <div className="flex items-center space-x-2">
-                    <button className="flex-1 px-4 py-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-white transition-colors flex items-center justify-center space-x-2">
+                    <button
+                      onClick={() => handleViewDetails(role)}
+                      className="flex-1 px-4 py-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-white transition-colors flex items-center justify-center space-x-2"
+                    >
                       <Eye className="h-4 w-4" />
                       <span>View</span>
                     </button>
@@ -334,7 +358,10 @@ export default function RolesManagementPage() {
             <p className="text-sm text-gray-500 mb-4">
               Create custom roles tailored to your organization's needs
             </p>
-            <button className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center space-x-2 mx-auto">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center space-x-2 mx-auto"
+            >
               <Plus className="h-4 w-4" />
               <span>Create First Custom Role</span>
             </button>
@@ -390,6 +417,23 @@ export default function RolesManagementPage() {
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateRoleModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={() => loadRoles()}
+      />
+
+      <RoleDetailsModal
+        isOpen={showDetailsModal}
+        role={selectedRole}
+        userCount={selectedRole ? (userCounts[selectedRole.slug] || 0) : 0}
+        onClose={() => {
+          setShowDetailsModal(false)
+          setSelectedRole(null)
+        }}
+      />
     </div>
   )
 }

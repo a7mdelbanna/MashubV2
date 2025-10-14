@@ -20,6 +20,9 @@ import {
   DEFAULT_ROLES
 } from '@/lib/team-utils'
 import { initializeMockTeamData } from '@/lib/mock-team-data'
+import InviteMemberModal from '@/components/team/InviteMemberModal'
+import EditMemberModal from '@/components/team/EditMemberModal'
+import PermissionEditorModal from '@/components/team/PermissionEditorModal'
 
 export default function TeamMembersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -35,6 +38,12 @@ export default function TeamMembersPage() {
     suspended: 0,
     inactive: 0
   })
+
+  // Modal states
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showPermissionModal, setShowPermissionModal] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   useEffect(() => {
     // Initialize mock data on first load
@@ -126,6 +135,16 @@ export default function TeamMembersPage() {
     }
   }
 
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user)
+    setShowEditModal(true)
+  }
+
+  const handleEditPermissions = (user: User) => {
+    setSelectedUser(user)
+    setShowPermissionModal(true)
+  }
+
   const getTimeAgo = (date: string) => {
     const now = new Date().getTime()
     const past = new Date(date).getTime()
@@ -168,7 +187,10 @@ export default function TeamMembersPage() {
             </div>
           </div>
 
-          <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2">
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2"
+          >
             <UserPlus className="h-4 w-4" />
             <span>Invite Member</span>
           </button>
@@ -379,10 +401,18 @@ export default function TeamMembersPage() {
 
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
-                  <button className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
+                  <button
+                    onClick={() => handleEditPermissions(user)}
+                    className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                    title="Edit Permissions"
+                  >
                     <Shield className="h-4 w-4" />
                   </button>
-                  <button className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
+                  <button
+                    onClick={() => handleEditUser(user)}
+                    className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                    title="Edit Member"
+                  >
                     <Edit className="h-4 w-4" />
                   </button>
                   {user.status === 'active' ? (
@@ -424,6 +454,33 @@ export default function TeamMembersPage() {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <InviteMemberModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        onInvite={() => loadUsers()}
+      />
+
+      <EditMemberModal
+        isOpen={showEditModal}
+        user={selectedUser}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedUser(null)
+        }}
+        onUpdate={() => loadUsers()}
+      />
+
+      <PermissionEditorModal
+        isOpen={showPermissionModal}
+        user={selectedUser}
+        onClose={() => {
+          setShowPermissionModal(false)
+          setSelectedUser(null)
+        }}
+        onUpdate={() => loadUsers()}
+      />
     </div>
   )
 }

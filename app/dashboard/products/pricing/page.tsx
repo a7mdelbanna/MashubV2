@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DollarSign, Plus, TrendingUp, Package, Tag, Edit2, Copy, AlertCircle, Check } from 'lucide-react'
+import EditPriceModal from '@/components/products/EditPriceModal'
 
 interface PricingTier {
   id: string
@@ -425,6 +426,21 @@ export default function PricingPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Price Modal */}
+      <EditPriceModal
+        isOpen={showPriceModal}
+        variant={selectedVariant}
+        onClose={() => {
+          setShowPriceModal(false)
+          setSelectedVariant(null)
+        }}
+        onUpdate={() => {
+          // Reload variants or update local state
+          setShowPriceModal(false)
+          setSelectedVariant(null)
+        }}
+      />
     </div>
   )
 }

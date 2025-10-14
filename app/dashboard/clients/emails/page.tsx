@@ -19,6 +19,7 @@ import {
   Zap,
   Calendar
 } from 'lucide-react'
+import AddEmailTemplateModal from '@/components/clients/AddEmailTemplateModal'
 
 interface EmailTemplate {
   id: string
@@ -473,6 +474,16 @@ export default function ClientEmailsPage() {
           )}
         </div>
       )}
+
+      {/* Add Template Modal */}
+      <AddEmailTemplateModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreate={() => {
+          // Reload templates or update state
+          setShowAddModal(false)
+        }}
+      />
 
       {/* Use Template Modal */}
       {selectedTemplate && (
