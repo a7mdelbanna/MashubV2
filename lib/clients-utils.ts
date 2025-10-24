@@ -566,3 +566,30 @@ export function getClientInitials(name: string): string {
   }
   return name.substring(0, 2).toUpperCase()
 }
+
+/**
+ * Get lifecycle stage color
+ */
+export function getLifecycleStageColor(stage: string): string {
+  const colors: Record<string, string> = {
+    lead: 'bg-gray-100 text-gray-800',
+    prospect: 'bg-blue-100 text-blue-800',
+    customer: 'bg-green-100 text-green-800',
+    advocate: 'bg-purple-100 text-purple-800',
+    churned: 'bg-red-100 text-red-800'
+  }
+  return colors[stage] || 'bg-gray-100 text-gray-800'
+}
+
+/**
+ * Get health level color
+ */
+export function getHealthLevelColor(level: string): string {
+  const colors: Record<string, string> = {
+    critical: 'bg-red-100 text-red-800',
+    at_risk: 'bg-yellow-100 text-yellow-800',
+    healthy: 'bg-green-100 text-green-800',
+    excellent: 'bg-emerald-100 text-emerald-800'
+  }
+  return colors[level] || 'bg-gray-100 text-gray-800'
+}

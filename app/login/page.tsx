@@ -7,6 +7,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/auth-context'
 
 interface LoginData {
   email: string
@@ -47,6 +48,7 @@ const portals = [
 
 export default function LoginPage() {
   const router = useRouter()
+  const { signIn } = useAuth()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [data, setData] = useState<LoginData>({
@@ -94,28 +96,11 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      // Here we would call the auth context signIn method
-      // For now, simulate the login
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Redirect based on portal
-      switch (data.portal) {
-        case 'superadmin':
-          router.push('/superadmin')
-          break
-        case 'admin':
-          router.push('/dashboard')
-          break
-        case 'employee':
-          router.push('/employee')
-          break
-        case 'client':
-          router.push('/client')
-          break
-      }
-    } catch (error) {
+      // Call Firebase signIn - it will handle routing based on user type
+      await signIn(data.email, data.password, data.portal)
+    } catch (error: any) {
       console.error('Login error:', error)
-      setErrors({ submit: 'Invalid email or password' })
+      setErrors({ submit: error.message || 'Invalid email or password' })
     } finally {
       setLoading(false)
     }

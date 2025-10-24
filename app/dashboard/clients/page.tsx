@@ -8,7 +8,7 @@ import {
   TrendingUp, MoreVertical, ArrowUpRight, Star,
   Users, Clock, CheckCircle2, AlertCircle, Zap,
   FileText, Calendar as CalendarIcon, Eye, Heart,
-  Activity, Target, Award
+  Activity, Target, Award, Smartphone
 } from 'lucide-react'
 import Link from 'next/link'
 import { Client, ClientStatus, ClientLifecycleStage } from '@/types/clients'
@@ -35,7 +35,6 @@ const clients = [
     status: 'active',
     joinDate: new Date('2023-03-15'),
     totalProjects: 8,
-    activeProjects: 2,
     completedProjects: 5,
     totalRevenue: 485000,
     outstandingBalance: 45000,
@@ -73,7 +72,6 @@ const clients = [
     status: 'active',
     joinDate: new Date('2023-01-10'),
     totalProjects: 12,
-    activeProjects: 3,
     completedProjects: 8,
     totalRevenue: 725000,
     outstandingBalance: 0,
@@ -109,7 +107,6 @@ const clients = [
     status: 'active',
     joinDate: new Date('2023-06-20'),
     totalProjects: 4,
-    activeProjects: 1,
     completedProjects: 2,
     totalRevenue: 185000,
     outstandingBalance: 25000,
@@ -145,7 +142,6 @@ const clients = [
     status: 'active',
     joinDate: new Date('2023-04-05'),
     totalProjects: 6,
-    activeProjects: 1,
     completedProjects: 4,
     totalRevenue: 320000,
     outstandingBalance: 15000,
@@ -182,7 +178,6 @@ const clients = [
     status: 'inactive',
     joinDate: new Date('2023-02-28'),
     totalProjects: 3,
-    activeProjects: 0,
     completedProjects: 2,
     totalRevenue: 125000,
     outstandingBalance: 0,
@@ -218,7 +213,6 @@ const clients = [
     status: 'active',
     joinDate: new Date('2023-05-15'),
     totalProjects: 5,
-    activeProjects: 2,
     completedProjects: 3,
     totalRevenue: 410000,
     outstandingBalance: 65000,

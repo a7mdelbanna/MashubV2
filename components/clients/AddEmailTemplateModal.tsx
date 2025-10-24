@@ -220,7 +220,7 @@ export default function AddEmailTemplateModal({ isOpen, onClose, onCreate }: Add
                   <p className="mt-1 text-xs text-red-400">{errors.subject}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-400">
-                  Use {{`{{variable_name}}`}} for dynamic content
+                  Use {'{{'} variable_name {'}}'}  for dynamic content
                 </p>
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function AddEmailTemplateModal({ isOpen, onClose, onCreate }: Add
                 <p className="mt-1 text-xs text-red-400">{errors.body}</p>
               )}
               <p className="mt-1 text-xs text-gray-400">
-                Use {{`{{variable_name}}`}} to insert dynamic content. Variables will be automatically detected.
+                Use {'{{'} variable_name {'}}'}  to insert dynamic content. Variables will be automatically detected.
               </p>
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function AddEmailTemplateModal({ isOpen, onClose, onCreate }: Add
                       key={variable}
                       className="px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-xs font-mono border border-purple-500/30"
                     >
-                      {{`{{${variable}}}`}}
+                      {'{{'}{variable}{'}}'}
                     </span>
                   ))}
                 </div>
@@ -295,12 +295,12 @@ export default function AddEmailTemplateModal({ isOpen, onClose, onCreate }: Add
               <div>
                 <p className="text-blue-300 text-sm font-medium mb-2">Common Variables</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-blue-400/80">
-                  <div><code>{{`{{client_name}}`}}</code> - Client's full name</div>
-                  <div><code>{{`{{company_name}}`}}</code> - Your company name</div>
-                  <div><code>{{`{{sender_name}}`}}</code> - Your name</div>
-                  <div><code>{{`{{sender_title}}`}}</code> - Your job title</div>
-                  <div><code>{{`{{client_email}}`}}</code> - Client's email</div>
-                  <div><code>{{`{{date}}`}}</code> - Current date</div>
+                  <div><code>{'{{'} client_name {'}}'}</code> - Client's full name</div>
+                  <div><code>{'{{'} company_name {'}}'}</code> - Your company name</div>
+                  <div><code>{'{{'} sender_name {'}}'}</code> - Your name</div>
+                  <div><code>{'{{'} sender_title {'}}'}</code> - Your job title</div>
+                  <div><code>{'{{'} client_email {'}}'}</code> - Client's email</div>
+                  <div><code>{'{{'} date {'}}'}</code> - Current date</div>
                 </div>
               </div>
             </div>

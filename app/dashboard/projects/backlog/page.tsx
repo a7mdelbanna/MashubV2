@@ -2,17 +2,43 @@
 
 import { useState } from 'react'
 import { Plus, Search, Filter, MoreVertical, Clock, PlayCircle, ChevronRight, Calendar, TrendingUp } from 'lucide-react'
-import { Task, Sprint } from '@/types/projects'
+import { Task, Sprint } from '@/types/agile'
 import {
   getPriorityColor,
   formatTimeEstimate,
   sortTasksByPriority,
-  getSprintProgress,
+  calculateSprintProgress,
   getSprintDaysRemaining
-} from '@/lib/projects-utils'
+} from '@/lib/agile-utils'
+import { TaskChecklistBadgeCompact } from '@/components/projects/task-checklist-badge'
+import { AdvancedFilters } from '@/components/projects/advanced-filters'
+import { WorkItemFilter } from '@/types/agile'
+import { filterTasks } from '@/lib/agile-utils'
+import { TaskDetailModal } from '@/components/projects/task-detail-modal'
+import { TaskFormModal } from '@/components/projects/task-form-modal'
+import { StartSprintModal } from '@/components/projects/start-sprint-modal'
+
+// Legacy function names for backward compatibility
+const getSprintProgress = calculateSprintProgress
+
+// Mock checklist instances for demonstration
+const mockChecklistInstances = [
+  {
+    id: 'checklist-inst-3',
+    items: [
+      { id: 'item-9', title: 'Setup Stripe account', completed: true },
+      { id: 'item-10', title: 'Configure webhooks', completed: false },
+      { id: 'item-11', title: 'Test payment flow', completed: false },
+      { id: 'item-12', title: 'Handle errors', completed: false }
+    ],
+    totalItems: 4,
+    completedItems: 1,
+    isProductionReady: false
+  }
+]
 
 // Mock data
-const mockSprints: Sprint[] = [
+const mockSprints: any[] = [
   {
     id: 'sprint-1',
     projectId: 'proj-1',
@@ -49,88 +75,195 @@ const mockSprints: Sprint[] = [
   }
 ]
 
-const mockBacklogTasks: Task[] = [
+const mockBacklogTasks: any[] = [
   {
     id: '10',
     projectId: 'proj-1',
+    storyId: 'story-3',
+    epicId: 'epic-2',
     title: 'Implement payment gateway integration',
     description: 'Integrate Stripe payment gateway with backend',
-    type: 'backend',
+    type: 'feature',
     status: 'backlog',
     priority: 'high',
-    storyPoints: 8,
-    estimatedHours: 16,
-    timeSpent: 0,
-    tags: ['payment', 'integration'],
+    reporterId: 'user-2',
     dependencies: [],
     blockedBy: [],
-    subtasks: [],
-    attachments: [],
+    timeEstimate: {
+      original: 960, // 16 hours
+      remaining: 960,
+      actual: 0,
+      confidence: 'medium'
+    },
+    storyPoints: 8,
+    tags: ['payment', 'integration'],
+    labels: [],
     commentsCount: 0,
-    createdAt: '2025-10-10T10:00:00Z',
-    updatedAt: '2025-10-10T10:00:00Z'
+    attachmentsCount: 0,
+    watchers: [],
+    checklistItemId: 'item-9',
+    checklistInstanceId: 'checklist-inst-3',
+    definitionOfDoneCompleted: false,
+    customFields: [],
+    createdAt: new Date('2025-10-10T10:00:00Z'),
+    updatedAt: new Date('2025-10-10T10:00:00Z'),
+    createdBy: 'user-2'
   },
   {
     id: '11',
     projectId: 'proj-1',
+    storyId: 'story-3',
+    epicId: 'epic-2',
     title: 'Design checkout UI',
     description: 'Create user-friendly checkout interface',
-    type: 'design',
+    type: 'feature',
     status: 'backlog',
     priority: 'high',
     assigneeId: 'user-1',
     assigneeName: 'Sarah Chen',
-    storyPoints: 5,
-    estimatedHours: 10,
-    timeSpent: 0,
-    tags: ['ui', 'checkout'],
+    reporterId: 'user-2',
     dependencies: [],
     blockedBy: [],
-    subtasks: [],
-    attachments: [],
+    timeEstimate: {
+      original: 600, // 10 hours
+      remaining: 600,
+      actual: 0,
+      confidence: 'high'
+    },
+    storyPoints: 5,
+    tags: ['ui', 'checkout'],
+    labels: [],
     commentsCount: 2,
-    createdAt: '2025-10-11T10:00:00Z',
-    updatedAt: '2025-10-12T14:00:00Z'
+    attachmentsCount: 0,
+    watchers: [],
+    definitionOfDoneCompleted: false,
+    customFields: [],
+    createdAt: new Date('2025-10-11T10:00:00Z'),
+    updatedAt: new Date('2025-10-12T14:00:00Z'),
+    createdBy: 'user-2'
   },
   {
     id: '12',
     projectId: 'proj-1',
+    storyId: 'story-3',
+    epicId: 'epic-2',
     title: 'Add order confirmation emails',
     description: 'Send email notifications after successful orders',
     type: 'feature',
     status: 'backlog',
     priority: 'medium',
-    storyPoints: 3,
-    estimatedHours: 6,
-    timeSpent: 0,
-    tags: ['email', 'notifications'],
-    dependencies: ['10'],
+    reporterId: 'user-2',
+    dependencies: [],
     blockedBy: [],
-    subtasks: [],
-    attachments: [],
+    timeEstimate: {
+      original: 360, // 6 hours
+      remaining: 360,
+      actual: 0,
+      confidence: 'medium'
+    },
+    storyPoints: 3,
+    tags: ['email', 'notifications'],
+    labels: [],
     commentsCount: 1,
-    createdAt: '2025-10-11T10:00:00Z',
-    updatedAt: '2025-10-11T10:00:00Z'
+    attachmentsCount: 0,
+    watchers: [],
+    definitionOfDoneCompleted: false,
+    customFields: [],
+    createdAt: new Date('2025-10-11T10:00:00Z'),
+    updatedAt: new Date('2025-10-11T10:00:00Z'),
+    createdBy: 'user-2'
   }
 ]
 
 export default function ProjectBacklogPage() {
-  const [sprints] = useState<Sprint[]>(mockSprints)
-  const [backlogTasks] = useState<Task[]>(mockBacklogTasks)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [sprints, setSprints] = useState<any[]>(mockSprints)
+  const [backlogTasks, setBacklogTasks] = useState<any[]>(mockBacklogTasks)
+  const [advancedFilters, setAdvancedFilters] = useState<WorkItemFilter>({})
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [expandedSprint, setExpandedSprint] = useState<string | null>(sprints.find(s => s.status === 'active')?.id || null)
+
+  // Modal states
+  const [showTaskDetail, setShowTaskDetail] = useState(false)
+  const [showNewTask, setShowNewTask] = useState(false)
+  const [showStartSprint, setShowStartSprint] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<any | null>(null)
+  const [selectedSprint, setSelectedSprint] = useState<any | null>(null)
+
+  // Mock data for filter dropdowns
+  const mockAssignees = [
+    { id: 'user-1', name: 'Sarah Chen' },
+    { id: 'user-2', name: 'Mike Johnson' },
+    { id: 'user-3', name: 'Alex Rivera' }
+  ]
+
+  const mockEpics = [
+    { id: 'epic-1', name: 'Authentication System' },
+    { id: 'epic-2', name: 'Payment Integration' }
+  ]
+
+  const mockSprintsList = [
+    { id: 'sprint-1', name: 'Sprint 12' },
+    { id: 'sprint-2', name: 'Sprint 13' }
+  ]
 
   const activeSprint = sprints.find(s => s.status === 'active')
   const upcomingSprints = sprints.filter(s => s.status === 'planning')
 
-  const filteredBacklog = sortTasksByPriority(
-    backlogTasks.filter(task =>
-      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  )
+  // Apply advanced filters
+  const filteredBacklog = sortTasksByPriority(filterTasks(backlogTasks, advancedFilters))
 
   const totalBacklogPoints = backlogTasks.reduce((sum, task) => sum + (task.storyPoints || 0), 0)
+
+  // Handlers
+  const handleTaskClick = (task: any) => {
+    setSelectedTask(task)
+    setShowTaskDetail(true)
+  }
+
+  const handleNewTask = () => {
+    setShowNewTask(true)
+  }
+
+  const handleStartSprint = (sprint: any) => {
+    setSelectedSprint(sprint)
+    setShowStartSprint(true)
+  }
+
+  const handleTaskCreate = (taskData: Partial<Task>) => {
+    const newTask = {
+      ...taskData,
+      id: `task_${Date.now()}`,
+      projectId: 'proj-1',
+      dependencies: [],
+      blockedBy: [],
+      labels: [],
+      commentsCount: 0,
+      attachmentsCount: 0,
+      watchers: [],
+      definitionOfDoneCompleted: false,
+      customFields: [],
+      reporterId: 'user-1',
+      createdBy: 'user-1'
+    }
+    setBacklogTasks(prev => [...prev, newTask as any])
+    console.log('Task created:', newTask)
+  }
+
+  const handleTaskUpdate = (updatedTask: Partial<Task>) => {
+    setBacklogTasks(prev =>
+      prev.map(task => (task.id === selectedTask?.id ? { ...task, ...updatedTask } : task))
+    )
+    console.log('Task updated:', updatedTask)
+  }
+
+  const handleSprintStart = (sprintData: Partial<Sprint>) => {
+    setSprints(prev =>
+      prev.map(sprint =>
+        sprint.id === selectedSprint?.id ? { ...sprint, ...sprintData, status: 'active' } : sprint
+      )
+    )
+    console.log('Sprint started:', sprintData)
+  }
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
@@ -145,11 +278,18 @@ export default function ProjectBacklogPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg flex items-center gap-2 transition-colors">
+            <button
+              onClick={() => upcomingSprints.length > 0 && handleStartSprint(upcomingSprints[0])}
+              disabled={upcomingSprints.length === 0}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <PlayCircle className="w-4 h-4" />
               Start Sprint
             </button>
-            <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 transition-colors">
+            <button
+              onClick={handleNewTask}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+            >
               <Plus className="w-4 h-4" />
               New Task
             </button>
@@ -296,9 +436,14 @@ export default function ProjectBacklogPage() {
               </span>
             </div>
 
-            <button className="px-3 py-1.5 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-lg flex items-center gap-2 text-sm transition-colors">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
+                showAdvancedFilters ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
               <Filter className="w-4 h-4" />
-              Filters
+              Advanced Filters
             </button>
           </div>
 
@@ -308,11 +453,24 @@ export default function ProjectBacklogPage() {
             <input
               type="text"
               placeholder="Search backlog tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={advancedFilters.search || ''}
+              onChange={(e) => setAdvancedFilters({ ...advancedFilters, search: e.target.value || undefined })}
               className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
             />
           </div>
+
+          {/* Advanced Filter Panel */}
+          {showAdvancedFilters && (
+            <div className="mt-4">
+              <AdvancedFilters
+                filters={advancedFilters}
+                onChange={setAdvancedFilters}
+                availableAssignees={mockAssignees}
+                availableEpics={mockEpics}
+                availableSprints={mockSprintsList}
+              />
+            </div>
+          )}
         </div>
 
         {/* Backlog Tasks */}
@@ -333,6 +491,7 @@ export default function ProjectBacklogPage() {
             filteredBacklog.map(task => (
               <div
                 key={task.id}
+                onClick={() => handleTaskClick(task)}
                 className="p-4 hover:bg-gray-800/50 transition-colors cursor-pointer"
               >
                 <div className="flex items-start justify-between">
@@ -348,6 +507,32 @@ export default function ProjectBacklogPage() {
                       <p className="text-sm text-gray-400 mb-3">{task.description}</p>
                     )}
 
+                    {/* Checklist Badge */}
+                    {task.checklistItemId && task.checklistInstanceId && (
+                      <div className="mb-3">
+                        <TaskChecklistBadgeCompact
+                          taskId={task.id}
+                          checklistItemId={task.checklistItemId}
+                          checklistInstanceId={task.checklistInstanceId}
+                          totalItems={
+                            mockChecklistInstances.find(
+                              i => i.id === task.checklistInstanceId
+                            )?.totalItems || 0
+                          }
+                          completedItems={
+                            mockChecklistInstances.find(
+                              i => i.id === task.checklistInstanceId
+                            )?.completedItems || 0
+                          }
+                          isProductionReady={
+                            mockChecklistInstances.find(
+                              i => i.id === task.checklistInstanceId
+                            )?.isProductionReady || false
+                          }
+                        />
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-4 text-xs text-gray-400">
                       {task.storyPoints && (
                         <span className="flex items-center gap-1">
@@ -357,10 +542,10 @@ export default function ProjectBacklogPage() {
                           <span>Story Points</span>
                         </span>
                       )}
-                      {task.estimatedHours && (
+                      {task.timeEstimate && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {formatTimeEstimate(task.estimatedHours * 60)}
+                          {formatTimeEstimate(task.timeEstimate.remaining)}
                         </span>
                       )}
                       {task.assigneeName && (
@@ -394,6 +579,41 @@ export default function ProjectBacklogPage() {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          isOpen={showTaskDetail}
+          onClose={() => {
+            setShowTaskDetail(false)
+            setSelectedTask(null)
+          }}
+          onSave={handleTaskUpdate}
+          checklistInstance={mockChecklistInstances.find(i => i.id === selectedTask.checklistInstanceId)}
+        />
+      )}
+
+      <TaskFormModal
+        isOpen={showNewTask}
+        onClose={() => setShowNewTask(false)}
+        onSubmit={handleTaskCreate}
+        defaultStatus="backlog"
+        title="Create New Task"
+      />
+
+      {selectedSprint && (
+        <StartSprintModal
+          isOpen={showStartSprint}
+          onClose={() => {
+            setShowStartSprint(false)
+            setSelectedSprint(null)
+          }}
+          onStart={handleSprintStart}
+          sprint={selectedSprint}
+          backlogTasks={backlogTasks}
+        />
+      )}
     </div>
   )
 }

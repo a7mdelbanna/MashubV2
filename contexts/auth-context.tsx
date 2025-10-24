@@ -77,33 +77,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
-      // Verify portal access
+      // Get user document
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid))
       if (userDoc.exists()) {
         const userData = userDoc.data() as User
 
-        // Check if user has access to the selected portal
-        if (!userData.portalAccess?.includes(portal as any)) {
+        // SuperAdmin check - they can access SuperAdmin portal directly
+        if (userData.isSuperAdmin && portal === 'superadmin') {
+          router.push('/superadmin')
+          return
+        }
+
+        // For non-superadmin users, check portal access
+        if (!userData.isSuperAdmin && !userData.portalAccess?.includes(portal as any)) {
           await firebaseSignOut(auth)
           throw new Error(`You don't have access to the ${portal} portal`)
         }
 
-        // Redirect based on portal
-        switch (portal) {
-          case 'superadmin':
-            router.push('/superadmin')
-            break
-          case 'admin':
-            router.push('/dashboard')
-            break
-          case 'employee':
-            router.push('/employee')
-            break
-          case 'client':
-            router.push('/client')
-            break
-          default:
-            router.push('/dashboard')
+        // Redirect based on user type and portal
+        if (userData.isSuperAdmin) {
+          // SuperAdmin defaults to SuperAdmin portal
+          router.push('/superadmin')
+        } else {
+          // Regular users redirect based on selected portal
+          switch (portal) {
+            case 'admin':
+              router.push('/dashboard')
+              break
+            case 'employee':
+              router.push('/employee')
+              break
+            case 'client':
+              router.push('/client')
+              break
+            default:
+              router.push('/dashboard')
+          }
         }
       }
     } catch (error: any) {

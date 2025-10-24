@@ -277,6 +277,9 @@ export interface ChecklistTemplate {
 
   items: ChecklistItem[]
 
+  // Default assignments (copied when creating project instance)
+  defaultAssignments?: ChecklistItemAssignment[]
+
   createdAt: Date
   updatedAt: Date
 }
@@ -289,11 +292,49 @@ export interface ChecklistItem {
   required: boolean
   order: number
 
+  // Assignment (can be userId or team/role string)
+  assignedTo?: string // userId or role name (e.g., 'user_123' or 'QA Team')
+  assignedType?: 'user' | 'team' // Track assignment type
+
+  // Agile integration
+  linkedTaskId?: string // Reference to Task in agile system
+
   // Completion tracking
   completed: boolean
   completedAt?: Date
   completedBy?: string
   notes?: string
+}
+
+export interface ChecklistItemAssignment {
+  checklistItemId: string
+  assignedTo: string // userId or role name
+  assignedType: 'user' | 'team'
+}
+
+// Checklist Instance (project-level instantiation of template)
+export interface ChecklistInstance {
+  id: string
+  projectId: string
+  templateId: string
+  templateName: string
+  appTypes: AppType[]
+
+  items: ChecklistItem[] // Copy of template items with instance-specific data
+
+  // Progress tracking
+  totalItems: number
+  completedItems: number
+  requiredItems: number
+  completedRequiredItems: number
+
+  // Status
+  status: 'not_started' | 'in_progress' | 'completed'
+  isProductionReady: boolean // All required items completed
+
+  createdAt: Date
+  updatedAt: Date
+  completedAt?: Date
 }
 
 // Project Types (Updated to remove direct client, add apps/catalog)
@@ -327,6 +368,9 @@ export interface Project {
 
   // New: Checklist Templates
   checklistTemplates: ChecklistTemplate[]
+
+  // New: Checklist Instances (project-level checklists with assignments)
+  checklistInstances: ChecklistInstance[]
 
   // Health indicators
   health: {
@@ -387,6 +431,10 @@ export interface Task {
   epicId?: string
   storyId?: string
   sprintId?: string
+
+  // Checklist integration
+  checklistItemId?: string // If created from checklist item
+  checklistInstanceId?: string // Parent checklist instance
 
   createdAt: Date
   updatedAt: Date
@@ -469,6 +517,60 @@ export interface Sprint {
 
   createdAt: Date
   updatedAt: Date
+}
+
+// File & Document Types
+export type FileType = 'document' | 'image' | 'video' | 'audio' | 'archive' | 'other'
+
+export interface ProjectFile {
+  id: string
+  projectId: string
+  name: string
+  type: FileType
+  extension: string
+  size: number
+  uploadedBy: string
+  uploadedAt: string
+  version: number
+  versions: FileVersion[]
+  folder: string
+  tags: string[]
+  isStarred: boolean
+  downloads: number
+  lastAccessed?: string
+
+  // App assignment (multiple apps can use same file)
+  assignedApps: string[] // App IDs that have access to this file
+}
+
+export interface FileVersion {
+  version: number
+  uploadedBy: string
+  uploadedAt: string
+  size: number
+  changes?: string
+}
+
+export interface FolderStructure {
+  name: string
+  path: string
+  fileCount: number
+  subfolders?: FolderStructure[]
+
+  // App assignment for entire folder
+  assignedApps?: string[] // App IDs
+}
+
+// App-level file view (reference to project files)
+export interface AppFile {
+  id: string
+  appId: string
+  projectFileId: string // Reference to ProjectFile
+  purpose: 'config' | 'secret' | 'resource' | 'documentation' | 'asset' | 'other'
+  required: boolean
+  lastAccessedBy?: string
+  lastAccessedAt?: Date
+  notes?: string
 }
 
 // Finance Types (Updated for App-level billing)

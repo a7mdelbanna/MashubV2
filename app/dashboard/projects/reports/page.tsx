@@ -19,7 +19,7 @@ const mockPerformanceData = {
     atRisk: 6,
     delayed: 2,
     completed: 16,
-    avgComplet ion: 68
+    avgCompletion: 68
   },
   byStatus: [
     { status: 'On Track', count: 24, percentage: 50 },

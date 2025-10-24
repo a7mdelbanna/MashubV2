@@ -11,7 +11,7 @@ import {
   Building2, CreditCard, Receipt, Activity, PieChart,
   BarChart3, User, Send, Trash2, ChevronRight,
   UserCheck, Gift, Package, Zap, Map, Navigation,
-  PhoneCall, Smartphone, Home
+  PhoneCall, Smartphone, Home, ArrowUpRight
 } from 'lucide-react'
 import Link from 'next/link'
 import { getClientApps } from '@/lib/mock-project-data'
@@ -240,7 +240,6 @@ const clientData = {
 
   // Statistics
   totalProjects: 8,
-  activeProjects: 2,
   completedProjects: 5,
   totalInvoices: 24,
   paidInvoices: 20,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar, Smartphone } from 'lucide-react'
+import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar, Smartphone, X } from 'lucide-react'
 import { Task, TaskStatus, TaskPriority } from '@/types/projects'
 import {
   getTaskStatusColor,
@@ -189,6 +189,17 @@ export default function ProjectBoardPage() {
   const [selectedScope, setSelectedScope] = useState<'all' | 'project' | 'app'>('all')
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [viewDensity, setViewDensity] = useState<'compact' | 'comfortable'>('comfortable')
+
+  // Modal states
+  const [showTaskDetail, setShowTaskDetail] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
+  // Handlers
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task)
+    setShowTaskDetail(true)
+  }
 
   // Get unique apps from tasks
   const appsInTasks = MOCK_APPS.filter(app =>
@@ -213,25 +224,51 @@ export default function ProjectBoardPage() {
   }))
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-700">
-        <div className="flex items-center justify-between mb-4">
+    <div className="h-[calc(100vh-4rem)] flex flex-col" style={{ zoom: 0.8 }}>
+      {/* Header - Sticky */}
+      <div className="sticky top-0 z-20 bg-gray-900 p-3 sm:p-4 md:p-6 border-b border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-purple bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-purple bg-clip-text text-transparent">
               Project Board
             </h1>
-            <p className="text-gray-400 mt-1">Kanban board view for project tasks</p>
+            <p className="text-gray-400 mt-1 text-sm sm:text-base">Kanban board view for project tasks</p>
           </div>
 
-          <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 transition-colors">
-            <Plus className="w-4 h-4" />
-            New Task
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1 bg-gray-800/80 border border-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setViewDensity('comfortable')}
+                className={`px-3 sm:px-4 py-2 rounded font-medium text-xs sm:text-sm transition-all ${
+                  viewDensity === 'comfortable'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <span className="hidden sm:inline">Comfortable</span>
+                <span className="sm:hidden">Comfy</span>
+              </button>
+              <button
+                onClick={() => setViewDensity('compact')}
+                className={`px-3 sm:px-4 py-2 rounded font-medium text-xs sm:text-sm transition-all ${
+                  viewDensity === 'compact'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                Compact
+              </button>
+            </div>
+            <button className="px-4 sm:px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 text-sm sm:text-base">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Task</span>
+              <span className="sm:hidden">New</span>
+            </button>
+          </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -357,39 +394,41 @@ export default function ProjectBoardPage() {
       </div>
 
       {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="h-full flex gap-4 p-6 min-w-max">
+      <div className="flex-1 relative overflow-hidden">
+        <div className="h-full overflow-x-auto overflow-y-hidden scroll-smooth">
+          <div className={`h-full flex p-3 sm:p-4 md:p-6 min-w-max ${viewDensity === 'compact' ? 'gap-2 sm:gap-3' : 'gap-3 sm:gap-4'}`}>
           {tasksByStatus.map(column => (
-            <div key={column.status} className="w-80 flex flex-col">
+            <div key={column.status} className={`flex flex-col ${viewDensity === 'compact' ? 'w-56 sm:w-64' : 'w-64 sm:w-72'}`}>
               {/* Column Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full bg-${column.color}-500`}></div>
-                  <h3 className="font-semibold text-white">{column.label}</h3>
-                  <span className="px-2 py-0.5 bg-gray-700 rounded text-xs text-gray-300">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className={`w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-${column.color}-500`}></div>
+                  <h3 className="font-semibold text-white text-sm sm:text-base">{column.label}</h3>
+                  <span className="px-1.5 sm:px-2 py-0.5 bg-gray-700 rounded text-xs text-gray-300">
                     {column.tasks.length}
                   </span>
                 </div>
                 <button className="p-1 hover:bg-gray-700 rounded transition-colors">
-                  <Plus className="w-4 h-4 text-gray-400" />
+                  <Plus className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400" />
                 </button>
               </div>
 
               {/* Task Cards */}
-              <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+              <div className={`flex-1 overflow-y-auto pb-2 sm:pb-4 ${viewDensity === 'compact' ? 'space-y-1.5 sm:space-y-2' : 'space-y-2 sm:space-y-3'}`}>
                 {column.tasks.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 text-sm">
+                  <div className="text-center py-6 sm:py-8 text-gray-500 text-xs sm:text-sm">
                     No tasks
                   </div>
                 ) : (
                   column.tasks.map(task => (
                     <div
                       key={task.id}
-                      className="bg-gray-800 rounded-lg border border-gray-700 p-4 cursor-pointer hover:border-purple-500 transition-colors"
+                      onClick={() => handleTaskClick(task)}
+                      className={`bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:border-purple-500 transition-colors ${viewDensity === 'compact' ? 'p-2.5 sm:p-3' : 'p-3 sm:p-4'}`}
                     >
                       {/* Task Header */}
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-white flex-1 line-clamp-2">
+                      <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+                        <h4 className="font-medium text-white flex-1 line-clamp-2 text-sm sm:text-base">
                           {task.title}
                         </h4>
                         <button className="p-1 hover:bg-gray-700 rounded transition-colors">
@@ -399,19 +438,19 @@ export default function ProjectBoardPage() {
 
                       {/* Task Description */}
                       {task.description && (
-                        <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-3 line-clamp-2">
                           {task.description}
                         </p>
                       )}
 
                       {/* Priority Badge */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
                           {task.priority.toUpperCase()}
                         </span>
                         {task.blockedBy.length > 0 && (
-                          <span className="px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-xs font-medium flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
+                          <span className="px-1.5 sm:px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-xs font-medium flex items-center gap-1">
+                            <AlertCircle className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
                             Blocked
                           </span>
                         )}
@@ -419,19 +458,20 @@ export default function ProjectBoardPage() {
 
                       {/* Tags */}
                       {task.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {task.tags.slice(0, 3).map(tag => (
+                        <div className="flex flex-wrap gap-1 mb-2 sm:mb-3">
+                          {task.tags.slice(0, 2).map(tag => (
                             <span
                               key={tag}
-                              className="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs flex items-center gap-1"
+                              className="px-1.5 sm:px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs flex items-center gap-1"
                             >
-                              <Tag className="w-3 h-3" />
-                              {tag}
+                              <Tag className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
+                              <span className="hidden sm:inline">{tag}</span>
+                              <span className="sm:hidden">{tag.length > 8 ? tag.slice(0, 8) + '...' : tag}</span>
                             </span>
                           ))}
-                          {task.tags.length > 3 && (
-                            <span className="px-2 py-0.5 text-gray-500 text-xs">
-                              +{task.tags.length - 3}
+                          {task.tags.length > 2 && (
+                            <span className="px-1.5 sm:px-2 py-0.5 text-gray-500 text-xs">
+                              +{task.tags.length - 2}
                             </span>
                           )}
                         </div>
@@ -439,7 +479,7 @@ export default function ProjectBoardPage() {
 
                       {/* Task Meta */}
                       <div className="flex items-center justify-between text-xs text-gray-400">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                           {task.storyPoints && (
                             <span className="flex items-center gap-1">
                               <div className="w-4 h-4 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs">
@@ -489,27 +529,131 @@ export default function ProjectBoardPage() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </div>
 
       {/* Footer Stats */}
-      <div className="p-4 border-t border-gray-700 flex items-center justify-between text-sm">
-        <div className="flex items-center gap-6 text-gray-400">
-          <span>Total Tasks: <span className="text-white font-medium">{filteredTasks.length}</span></span>
-          <span>In Progress: <span className="text-yellow-400 font-medium">
+      <div className="p-3 sm:p-4 border-t border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 text-gray-400">
+          <span className="whitespace-nowrap">Total: <span className="text-white font-medium">{filteredTasks.length}</span></span>
+          <span className="whitespace-nowrap">In Progress: <span className="text-yellow-400 font-medium">
             {filteredTasks.filter(t => t.status === 'in_progress').length}
           </span></span>
-          <span>Completed: <span className="text-green-400 font-medium">
+          <span className="whitespace-nowrap">Completed: <span className="text-green-400 font-medium">
             {filteredTasks.filter(t => t.status === 'done').length}
           </span></span>
-          <span>Blocked: <span className="text-red-400 font-medium">
+          <span className="whitespace-nowrap">Blocked: <span className="text-red-400 font-medium">
             {filteredTasks.filter(t => t.status === 'blocked').length}
           </span></span>
         </div>
-        <div className="text-gray-500">
+        <div className="text-gray-500 text-xs hidden md:block">
           Press <kbd className="px-2 py-0.5 bg-gray-800 rounded border border-gray-700">N</kbd> to create new task
         </div>
       </div>
+
+      {/* Task Detail Modal */}
+      {showTaskDetail && selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowTaskDetail(false)}>
+          <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-gray-800" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <h2 className="text-xl font-semibold text-white">{selectedTask.title}</h2>
+              <button
+                onClick={() => setShowTaskDetail(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-4">
+                {/* Description */}
+                {selectedTask.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                    <p className="text-white">{selectedTask.description}</p>
+                  </div>
+                )}
+
+                {/* Status & Priority */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Status</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${getTaskStatusColor(selectedTask.status)}`}>
+                      {selectedTask.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Priority</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${getPriorityColor(selectedTask.priority)}`}>
+                      {selectedTask.priority.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Assignee & Due Date */}
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedTask.assigneeName && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Assignee</label>
+                      <p className="text-white">{selectedTask.assigneeName}</p>
+                    </div>
+                  )}
+                  {selectedTask.dueDate && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Due Date</label>
+                      <p className="text-white">{new Date(selectedTask.dueDate).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Story Points & Time */}
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedTask.storyPoints && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Story Points</label>
+                      <p className="text-white">{selectedTask.storyPoints}</p>
+                    </div>
+                  )}
+                  {selectedTask.estimatedHours && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Estimated Hours</label>
+                      <p className="text-white">{selectedTask.estimatedHours}h</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tags */}
+                {selectedTask.tags.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Tags</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTask.tags.map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-800 flex justify-end gap-3">
+              <button
+                onClick={() => setShowTaskDetail(false)}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

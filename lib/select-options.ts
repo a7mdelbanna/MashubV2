@@ -582,3 +582,18 @@ export const allCurrenciesOptions: SelectOption[] = [
   { value: 'ZMW', label: 'ZMW - Zambian Kwacha' },
   { value: 'ZWL', label: 'ZWL - Zimbabwean Dollar' }
 ]
+
+
+// PSP Provider Options
+export const pspProviderOptions = [
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'paypal', label: 'PayPal' },
+  { value: 'square', label: 'Square' },
+  { value: 'braintree', label: 'Braintree' },
+  { value: 'adyen', label: 'Adyen' },
+  { value: 'authorize', label: 'Authorize.Net' },
+  { value: 'worldpay', label: 'Worldpay' },
+  { value: 'mollie', label: 'Mollie' },
+  { value: 'checkout', label: 'Checkout.com' },
+  { value: 'other', label: 'Other' }
+]

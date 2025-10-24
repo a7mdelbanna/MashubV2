@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().isSuperAdmin == true;
+    }
+
+    function userTenant() {
+      return getUserData().tenantId;
+    }
+
+    function belongsToTenant(tenantId) {
+      return isAuthenticated() && userTenant() == tenantId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+
+    match /users/{userId} {
+      // SuperAdmin can read all users
+      allow read: if isSuperAdmin();
+
+      // Users can read their own data
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+
+      // Users in same tenant can read each other
+      allow read: if isAuthenticated() &&
+                     resource.data.tenantId == userTenant();
+
+      // SuperAdmin can create/update any user
+      allow write: if isSuperAdmin();
+
+      // Users can update their own profile (limited fields)
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       !request.resource.data.diff(resource.data).affectedKeys()
+                         .hasAny(['role', 'tenantId', 'permissions', 'isSuperAdmin']);
+    }
+
+    // ============================================
+    // TENANTS COLLECTION
+    // ============================================
+
+    match /tenants/{tenantId} {
+      // SuperAdmin can do anything
+      allow read, write: if isSuperAdmin();
+
+      // Tenant members can read their tenant
+      allow read: if belongsToTenant(tenantId);
+
+      // Tenant admins can update their tenant (except subscription/features/status)
+      allow update: if belongsToTenant(tenantId) &&
+                       isAdmin() &&
+                       !request.resource.data.diff(resource.data).affectedKeys()
+                         .hasAny(['subscription', 'features', 'status']);
+    }
+
+    // ============================================
+    // TENANT INVITATIONS
+    // ============================================
+
+    match /tenant_invitations/{invitationId} {
+      allow read: if isSuperAdmin() ||
+                     resource.data.tenantId == userTenant() ||
+                     resource.data.email == request.auth.token.email;
+      allow create: if isSuperAdmin() ||
+                       (belongsToTenant(request.resource.data.tenantId) && isAdmin());
+      allow update: if resource.data.email == request.auth.token.email;
+      allow delete: if isSuperAdmin() || belongsToTenant(resource.data.tenantId);
+    }
+
+    // ============================================
+    // SYSTEM LOGS (Read-only via Cloud Functions)
+    // ============================================
+
+    match /system_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;  // Only via Cloud Functions or SuperAdmin service
+    }
+
+    // ============================================
+    // CLIENTS COLLECTION (Tenant-scoped)
+    // ============================================
+
+    match /clients/{clientId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow create: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+      allow update, delete: if isAuthenticated() &&
+                               resource.data.tenantId == userTenant() &&
+                               (getUserData().permissions.hasAny(['clients.write', 'all.write']) || isAdmin());
+    }
+
+    match /contacts/{contactId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /communications/{communicationId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /client_documents/{documentId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    // ============================================
+    // PROJECTS COLLECTION (Tenant-scoped)
+    // ============================================
+
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow create: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+      allow update, delete: if isAuthenticated() &&
+                               resource.data.tenantId == userTenant() &&
+                               (getUserData().permissions.hasAny(['projects.write', 'all.write']) ||
+                                isAdmin() ||
+                                resource.data.teamMemberIds.hasAny([request.auth.uid]));
+    }
+
+    match /project_tasks/{taskId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /sprints/{sprintId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /project_milestones/{milestoneId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    // Default: Deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

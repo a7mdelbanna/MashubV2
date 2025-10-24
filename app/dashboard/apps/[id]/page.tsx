@@ -9,12 +9,15 @@ import {
   Globe, Database, Key, Package, Calendar, Users,
   Activity, TrendingUp, AlertCircle, CheckCircle2,
   GitBranch, Edit, Copy, Download, Shield, Palette,
-  Code, Smartphone, Clock, Target, Bell
+  Code, Smartphone, Clock, Target, Bell, FolderOpen
 } from 'lucide-react'
 import { MOCK_APPS, MOCK_PROJECTS, getPricingCatalogItem } from '@/lib/mock-project-data'
 import { AppTypeIcon, AppTypeBadge } from '@/components/apps/app-type-badge'
 import { CredentialsVault } from '@/components/apps/credentials-vault'
 import { Checklist } from '@/components/apps/checklist'
+import { AppFilesView } from '@/components/apps/app-files-view'
+import { getChecklistItemsForApp } from '@/lib/checklist-task-service'
+import { ProjectFile } from '@/types'
 
 const STATUS_CONFIG = {
   development: {
@@ -73,13 +76,97 @@ export default function AppDetailPage() {
   // Get checklist template for this app type
   const checklist = project?.checklistTemplates.find(t => t.appTypes.includes(app.type))
 
+  // Mock project files (in real app, fetch from API)
+  const mockProjectFiles: ProjectFile[] = [
+    {
+      id: 'file_1',
+      projectId: project?.id || '',
+      name: 'API Documentation.pdf',
+      type: 'document',
+      extension: '.pdf',
+      size: 5242880,
+      uploadedBy: 'Ahmed Hassan',
+      uploadedAt: '2025-10-20T10:00:00Z',
+      version: 2,
+      versions: [
+        { version: 1, uploadedBy: 'Ahmed Hassan', uploadedAt: '2025-10-15T10:00:00Z', size: 4800000 },
+        { version: 2, uploadedBy: 'Ahmed Hassan', uploadedAt: '2025-10-20T10:00:00Z', size: 5242880, changes: 'Added authentication section' }
+      ],
+      folder: '/Documentation/API',
+      tags: ['api', 'docs', 'technical'],
+      isStarred: true,
+      downloads: 45,
+      assignedApps: [app.id] // Assigned to this app
+    },
+    {
+      id: 'file_2',
+      projectId: project?.id || '',
+      name: 'Brand Guidelines.pdf',
+      type: 'document',
+      extension: '.pdf',
+      size: 15728640,
+      uploadedBy: 'Sarah Ahmed',
+      uploadedAt: '2025-10-18T14:30:00Z',
+      version: 1,
+      versions: [
+        { version: 1, uploadedBy: 'Sarah Ahmed', uploadedAt: '2025-10-18T14:30:00Z', size: 15728640 }
+      ],
+      folder: '/Design/Brand',
+      tags: ['branding', 'design', 'guidelines'],
+      isStarred: false,
+      downloads: 22,
+      assignedApps: [app.id, 'other_app_id'] // Shared with multiple apps
+    },
+    {
+      id: 'file_3',
+      projectId: project?.id || '',
+      name: 'Logo Assets.zip',
+      type: 'archive',
+      extension: '.zip',
+      size: 8388608,
+      uploadedBy: 'Sarah Ahmed',
+      uploadedAt: '2025-10-19T09:15:00Z',
+      version: 1,
+      versions: [
+        { version: 1, uploadedBy: 'Sarah Ahmed', uploadedAt: '2025-10-19T09:15:00Z', size: 8388608 }
+      ],
+      folder: '/Design/Assets',
+      tags: ['logo', 'assets', 'design'],
+      isStarred: true,
+      downloads: 18,
+      assignedApps: [app.id]
+    },
+    {
+      id: 'file_4',
+      projectId: project?.id || '',
+      name: 'Database Schema.png',
+      type: 'image',
+      extension: '.png',
+      size: 2097152,
+      uploadedBy: 'Mohamed Ali',
+      uploadedAt: '2025-10-21T11:00:00Z',
+      version: 3,
+      versions: [
+        { version: 1, uploadedBy: 'Mohamed Ali', uploadedAt: '2025-10-10T11:00:00Z', size: 1800000 },
+        { version: 2, uploadedBy: 'Mohamed Ali', uploadedAt: '2025-10-15T11:00:00Z', size: 1900000, changes: 'Added user tables' },
+        { version: 3, uploadedBy: 'Mohamed Ali', uploadedAt: '2025-10-21T11:00:00Z', size: 2097152, changes: 'Added transactions table' }
+      ],
+      folder: '/Development/Database',
+      tags: ['database', 'schema', 'technical'],
+      isStarred: false,
+      downloads: 31,
+      assignedApps: [app.id]
+    }
+  ]
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'branding', label: 'Branding', icon: Palette },
     { id: 'config', label: 'Configuration', icon: Code },
     { id: 'credentials', label: 'Credentials', icon: Shield },
     { id: 'releases', label: 'Releases', icon: GitBranch },
-    { id: 'checklist', label: 'Checklist', icon: CheckCircle2 }
+    { id: 'checklist', label: 'Checklist', icon: CheckCircle2 },
+    { id: 'files', label: 'Files', icon: FolderOpen }
   ]
 
   return (
@@ -598,6 +685,28 @@ export default function AppDetailPage() {
         {/* Checklist Tab */}
         {activeTab === 'checklist' && checklist && (
           <Checklist template={checklist} readonly={true} />
+        )}
+
+        {/* Files Tab */}
+        {activeTab === 'files' && (
+          <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600">
+                <FolderOpen className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">App Files</h3>
+                <p className="text-sm text-gray-400">Files assigned to this app from the project</p>
+              </div>
+            </div>
+
+            <AppFilesView
+              appId={app.id}
+              projectFiles={mockProjectFiles}
+              onViewFile={(file) => console.log('View file:', file)}
+              onDownloadFile={(file) => console.log('Download file:', file)}
+            />
+          </div>
         )}
       </div>
     </div>

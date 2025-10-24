@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userTenant() {
+      return getUserData().tenantId;
+    }
+
+    // ============================================
+    // TENANT-SCOPED STORAGE
+    // ============================================
+
+    // Tenant files: tenants/{tenantId}/...
+    match /tenants/{tenantId}/{allPaths=**} {
+      allow read: if isAuthenticated() && userTenant() == tenantId;
+      allow write: if isAuthenticated() && userTenant() == tenantId;
+    }
+
+    // Client documents: tenants/{tenantId}/clients/{clientId}/...
+    match /tenants/{tenantId}/clients/{clientId}/{allPaths=**} {
+      allow read: if isAuthenticated() && userTenant() == tenantId;
+      allow write: if isAuthenticated() && userTenant() == tenantId;
+    }
+
+    // Project files: tenants/{tenantId}/projects/{projectId}/...
+    match /tenants/{tenantId}/projects/{projectId}/{allPaths=**} {
+      allow read: if isAuthenticated() && userTenant() == tenantId;
+      allow write: if isAuthenticated() && userTenant() == tenantId;
+    }
+
+    // User avatars: tenants/{tenantId}/users/{userId}/avatar...
+    match /tenants/{tenantId}/users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+                      (request.auth.uid == userId || userTenant() == tenantId);
+    }
+
+    // Default: Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -25,8 +25,12 @@ import {
   Star,
   ChevronRight,
   Plus,
-  ArrowUpDown
+  ArrowUpDown,
+  Smartphone
 } from 'lucide-react'
+import { FileAppAssignmentModal } from '@/components/projects/file-app-assignment-modal'
+import { MOCK_APPS, MOCK_PROJECTS } from '@/lib/mock-project-data'
+import { App } from '@/types'
 
 // Types
 type FileType = 'document' | 'image' | 'video' | 'audio' | 'archive' | 'other'
@@ -48,6 +52,7 @@ interface ProjectFile {
   isStarred: boolean
   downloads: number
   lastAccessed?: string
+  assignedApps: string[] // NEW: App IDs this file is assigned to
 }
 
 interface FileVersion {
@@ -256,13 +261,21 @@ function getFileTypeColor(type: FileType): string {
 }
 
 export default function ProjectDocumentsPage() {
-  const [files] = useState<ProjectFile[]>(mockFiles)
+  const [files, setFiles] = useState<ProjectFile[]>(mockFiles.map(f => ({ ...f, assignedApps: [] })))
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentFolder, setCurrentFolder] = useState<string>('/')
   const [sortBy, setSortBy] = useState<SortBy>('date')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedFileTypes, setSelectedFileTypes] = useState<FileType[]>([])
+
+  // NEW: File selection and app assignment
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
+  const [showAssignModal, setShowAssignModal] = useState(false)
+
+  // Get project and apps (in real app, fetch from API)
+  const project = MOCK_PROJECTS[0] // Using first project for demo
+  const projectApps: App[] = project?.apps || []
 
   // Filter and sort files
   const filteredFiles = files
@@ -298,6 +311,31 @@ export default function ProjectDocumentsPage() {
   // Breadcrumb navigation
   const breadcrumbs = currentFolder === '/' ? ['Root'] : ['Root', ...currentFolder.split('/').filter(Boolean)]
 
+  // File selection handlers
+  const toggleFileSelection = (fileId: string) => {
+    const newSelection = new Set(selectedFiles)
+    if (newSelection.has(fileId)) {
+      newSelection.delete(fileId)
+    } else {
+      newSelection.add(fileId)
+    }
+    setSelectedFiles(newSelection)
+  }
+
+  const handleAssignToApps = (fileIds: string[], appIds: string[]) => {
+    // Update files with new app assignments
+    setFiles(prevFiles =>
+      prevFiles.map(file =>
+        fileIds.includes(file.id)
+          ? { ...file, assignedApps: appIds }
+          : file
+      )
+    )
+    setSelectedFiles(new Set()) // Clear selection
+  }
+
+  const selectedFilesArray = files.filter(f => selectedFiles.has(f.id))
+
   return (
     <div className="p-8 max-w-[1800px] mx-auto">
       {/* Header */}
@@ -310,10 +348,21 @@ export default function ProjectDocumentsPage() {
             <p className="text-gray-400 mt-1">Manage and organize project files</p>
           </div>
 
-          <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 transition-colors">
-            <Upload className="w-4 h-4" />
-            Upload Files
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedFiles.size > 0 && (
+              <button
+                onClick={() => setShowAssignModal(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <Smartphone className="w-4 h-4" />
+                Assign to Apps ({selectedFiles.size})
+              </button>
+            )}
+            <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 transition-colors">
+              <Upload className="w-4 h-4" />
+              Upload Files
+            </button>
+          </div>
         </div>
 
         {/* Stats Bar */}
@@ -542,8 +591,20 @@ export default function ProjectDocumentsPage() {
               {filteredFiles.map(file => (
                 <div
                   key={file.id}
-                  className="bg-gray-800/50 rounded-lg border border-gray-700 p-4 hover:border-purple-500 transition-colors cursor-pointer"
+                  className={`bg-gray-800/50 rounded-lg border p-4 hover:border-purple-500 transition-colors relative ${
+                    selectedFiles.has(file.id) ? 'border-purple-500 ring-2 ring-purple-500/30' : 'border-gray-700'
+                  }`}
                 >
+                  {/* Selection Checkbox */}
+                  <div className="absolute top-3 right-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedFiles.has(file.id)}
+                      onChange={() => toggleFileSelection(file.id)}
+                      className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    />
+                  </div>
+
                   {/* File Icon */}
                   <div className={`w-12 h-12 rounded-lg ${getFileTypeColor(file.type)} flex items-center justify-center mb-3`}>
                     {getFileIcon(file.type, file.extension)}
@@ -589,6 +650,16 @@ export default function ProjectDocumentsPage() {
                     <span className="text-gray-400">Version {file.version}</span>
                     <span className="text-gray-500">{file.downloads} downloads</span>
                   </div>
+
+                  {/* App Assignment */}
+                  {file.assignedApps.length > 0 && (
+                    <div className="mb-3 flex items-center gap-1 text-xs">
+                      <Smartphone className="w-3 h-3 text-blue-400" />
+                      <span className="text-blue-400">
+                        {file.assignedApps.length === 1 ? '1 app' : `${file.assignedApps.length} apps`}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex items-center gap-2">
@@ -676,6 +747,15 @@ export default function ProjectDocumentsPage() {
           )}
         </div>
       </div>
+
+      {/* File App Assignment Modal */}
+      <FileAppAssignmentModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        files={selectedFilesArray}
+        apps={projectApps}
+        onAssign={handleAssignToApps}
+      />
     </div>
   )
 }

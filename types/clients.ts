@@ -6,6 +6,8 @@ export type ClientStatus = 'lead' | 'prospect' | 'active' | 'inactive' | 'churne
 export type ClientType = 'individual' | 'company' | 'enterprise' | 'government'
 export type ClientPriority = 'low' | 'medium' | 'high' | 'vip'
 export type ClientSource = 'referral' | 'marketing' | 'sales' | 'website' | 'social' | 'event' | 'other'
+export type ClientLifecycleStage = 'lead' | 'prospect' | 'customer' | 'advocate' | 'churned'
+export type HealthLevel = 'critical' | 'at_risk' | 'healthy' | 'excellent'
 
 export type ContractStatus = 'draft' | 'sent' | 'signed' | 'active' | 'expired' | 'terminated' | 'renewed'
 export type ContractType = 'one_time' | 'recurring' | 'retainer' | 'fixed_price' | 'time_materials'

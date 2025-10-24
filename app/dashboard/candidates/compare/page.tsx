@@ -424,7 +424,7 @@ export default function CompareCandidatesPage() {
                 </td>
                 {selectedCandidates.map((candidate) => {
                   const bestScore = getBestValue(selectedCandidates.map(c => c.overallScore || 0))
-                  const isB = (candidate.overallScore || 0) === bestScore
+                  const isBest = (candidate.overallScore || 0) === bestScore
 
                   return (
                     <td key={candidate.id} className="p-4 border-l border-gray-700">

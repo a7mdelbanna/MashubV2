@@ -12,6 +12,8 @@ import {
 import Link from 'next/link'
 import Select from '@/components/ui/select'
 import { projectStatusOptions, priorityOptions, currencyOptions } from '@/lib/select-options'
+import { ChecklistAssignmentModal } from '@/components/projects/checklist-assignment-modal'
+import { ChecklistTemplate, ChecklistItem, TeamMember } from '@/types'
 
 interface ProjectFormData {
   // Project Details
@@ -50,6 +52,10 @@ interface ProjectFormData {
   hourlyRate: number
   estimatedHours: number
 
+  // Checklist Templates
+  selectedChecklistTemplates: string[]
+  checklistAssignments: Record<string, { assignedTo: string; assignedType: 'user' | 'team' }>
+
   // Additional Settings
   visibility: string
   notifications: boolean
@@ -60,6 +66,7 @@ interface ProjectFormData {
 export default function NewProjectPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false)
   const [formData, setFormData] = useState<ProjectFormData>({
     // Project Details
     name: '',
@@ -93,6 +100,10 @@ export default function NewProjectPage() {
     hourlyRate: 150,
     estimatedHours: 0,
 
+    // Checklist Templates
+    selectedChecklistTemplates: [],
+    checklistAssignments: {},
+
     // Additional Settings
     visibility: 'team',
     notifications: true,
@@ -105,7 +116,8 @@ export default function NewProjectPage() {
     { id: 2, name: 'Client & Scope', icon: Target },
     { id: 3, name: 'Team & Resources', icon: Users },
     { id: 4, name: 'Timeline & Budget', icon: Calendar },
-    { id: 5, name: 'Review', icon: CheckCircle2 }
+    { id: 5, name: 'Checklist Templates', icon: FileText },
+    { id: 6, name: 'Review', icon: CheckCircle2 }
   ]
 
   // Mock data
@@ -176,14 +188,105 @@ export default function NewProjectPage() {
     { value: 'high', label: 'High Risk', description: 'Complex project with many variables' }
   ]
 
+  // Mock Checklist Templates with full items
+  const mockChecklistTemplates: ChecklistTemplate[] = [
+    {
+      id: 'checklist-web-dev',
+      name: 'Web Development Checklist',
+      description: 'Complete checklist for web application projects',
+      appTypes: ['web'],
+      items: [
+        { id: 'web-1', title: 'Setup development environment', description: 'Configure dev tools and environment', category: 'technical', required: true, order: 1, completed: false },
+        { id: 'web-2', title: 'Configure version control', description: 'Set up Git repository and branching strategy', category: 'technical', required: true, order: 2, completed: false },
+        { id: 'web-3', title: 'Design system setup', description: 'Create design tokens and component library', category: 'branding', required: false, order: 3, completed: false },
+        { id: 'web-4', title: 'API integration testing', description: 'Test all API endpoints', category: 'qa', required: true, order: 4, completed: false },
+        { id: 'web-5', title: 'Deployment pipeline', description: 'Configure CI/CD pipeline', category: 'deployment', required: true, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'checklist-mobile-app',
+      name: 'Mobile App Checklist',
+      description: 'Checklist for iOS and Android app development',
+      appTypes: ['mobile'],
+      items: [
+        { id: 'mobile-1', title: 'App store accounts setup', description: 'Configure Apple and Google developer accounts', category: 'deployment', required: true, order: 1, completed: false },
+        { id: 'mobile-2', title: 'Push notification setup', description: 'Configure FCM and APNs', category: 'technical', required: true, order: 2, completed: false },
+        { id: 'mobile-3', title: 'App icons and splash screens', description: 'Create all required asset sizes', category: 'branding', required: true, order: 3, completed: false },
+        { id: 'mobile-4', title: 'Privacy policy compliance', description: 'Ensure GDPR and privacy requirements', category: 'legal', required: true, order: 4, completed: false },
+        { id: 'mobile-5', title: 'Beta testing', description: 'Conduct beta testing with TestFlight/Play Console', category: 'qa', required: true, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'checklist-api',
+      name: 'API Development Checklist',
+      description: 'Best practices for RESTful API development',
+      appTypes: ['api'],
+      items: [
+        { id: 'api-1', title: 'API documentation', description: 'Create OpenAPI/Swagger documentation', category: 'documentation', required: true, order: 1, completed: false },
+        { id: 'api-2', title: 'Authentication implementation', description: 'Implement JWT/OAuth authentication', category: 'technical', required: true, order: 2, completed: false },
+        { id: 'api-3', title: 'Rate limiting', description: 'Configure rate limiting and throttling', category: 'technical', required: true, order: 3, completed: false },
+        { id: 'api-4', title: 'API security audit', description: 'Review security best practices', category: 'qa', required: true, order: 4, completed: false },
+        { id: 'api-5', title: 'Load testing', description: 'Perform load and stress testing', category: 'qa', required: false, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'checklist-security',
+      name: 'Security Audit Checklist',
+      description: 'Security review and compliance checklist',
+      appTypes: ['web', 'mobile', 'api'],
+      items: [
+        { id: 'sec-1', title: 'Authentication review', description: 'Review authentication mechanisms', category: 'technical', required: true, order: 1, completed: false },
+        { id: 'sec-2', title: 'Authorization testing', description: 'Test role-based access controls', category: 'qa', required: true, order: 2, completed: false },
+        { id: 'sec-3', title: 'Data encryption', description: 'Verify encryption at rest and in transit', category: 'technical', required: true, order: 3, completed: false },
+        { id: 'sec-4', title: 'Compliance documentation', description: 'Document compliance with regulations', category: 'legal', required: true, order: 4, completed: false },
+        { id: 'sec-5', title: 'Penetration testing', description: 'Conduct security penetration testing', category: 'qa', required: false, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  ]
+
+  // Convert mockTeamMembers to TeamMember type for modal
+  const teamMembersForModal: TeamMember[] = mockTeamMembers.map(m => ({
+    id: m.id,
+    name: m.name,
+    role: m.role,
+    avatar: m.avatar
+  }))
+
   const handleNext = () => {
-    if (currentStep < 5) {
+    // If on step 5 (Checklist Templates) and templates are selected, show assignment modal
+    if (currentStep === 5 && formData.selectedChecklistTemplates.length > 0) {
+      setShowAssignmentModal(true)
+    } else if (currentStep < 6) {
       setCurrentStep(currentStep + 1)
     } else {
       // Submit form
       console.log('Creating project:', formData)
       router.push('/dashboard/projects')
     }
+  }
+
+  const handleAssignmentSave = (assignments: Map<string, { assignedTo: string; assignedType: 'user' | 'team' }>) => {
+    // Convert Map to Record for formData
+    const assignmentRecord: Record<string, { assignedTo: string; assignedType: 'user' | 'team' }> = {}
+    assignments.forEach((value, key) => {
+      assignmentRecord[key] = value
+    })
+
+    setFormData(prev => ({
+      ...prev,
+      checklistAssignments: assignmentRecord
+    }))
+
+    setShowAssignmentModal(false)
+    setCurrentStep(6) // Proceed to Review step
   }
 
   const handleBack = () => {
@@ -872,7 +975,121 @@ export default function NewProjectPage() {
         )}
 
         {/* Step 5: Review */}
+        {/* Step 5: Checklist Templates */}
         {currentStep === 5 && (
+          <div className="space-y-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white mb-2">Checklist Templates</h2>
+              <p className="text-gray-400">Select pre-production checklists for your project and assign them to team members</p>
+            </div>
+
+            {/* Mock Checklist Templates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  id: 'checklist-web-dev',
+                  name: 'Web Development Checklist',
+                  description: 'Complete checklist for web application projects',
+                  itemsCount: 25,
+                  categories: ['Setup', 'Development', 'Testing', 'Deployment']
+                },
+                {
+                  id: 'checklist-mobile-app',
+                  name: 'Mobile App Checklist',
+                  description: 'Checklist for iOS and Android app development',
+                  itemsCount: 30,
+                  categories: ['Planning', 'Design', 'Development', 'Testing', 'Release']
+                },
+                {
+                  id: 'checklist-api',
+                  name: 'API Development Checklist',
+                  description: 'Best practices for RESTful API development',
+                  itemsCount: 18,
+                  categories: ['Design', 'Implementation', 'Documentation', 'Security']
+                },
+                {
+                  id: 'checklist-security',
+                  name: 'Security Audit Checklist',
+                  description: 'Security review and compliance checklist',
+                  itemsCount: 22,
+                  categories: ['Authentication', 'Authorization', 'Data Protection', 'Testing']
+                }
+              ].map((template) => {
+                const isSelected = formData.selectedChecklistTemplates.includes(template.id)
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        selectedChecklistTemplates: isSelected
+                          ? prev.selectedChecklistTemplates.filter(id => id !== template.id)
+                          : [...prev.selectedChecklistTemplates, template.id]
+                      }))
+                    }}
+                    className={cn(
+                      'p-6 rounded-xl border-2 text-left transition-all',
+                      isSelected
+                        ? 'bg-purple-500/10 border-purple-500'
+                        : 'bg-gray-800/30 border-gray-700 hover:border-gray-600'
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          'w-10 h-10 rounded-lg flex items-center justify-center',
+                          isSelected ? 'bg-purple-500/20' : 'bg-gray-700'
+                        )}>
+                          <FileText className={cn(
+                            'w-5 h-5',
+                            isSelected ? 'text-purple-400' : 'text-gray-400'
+                          )} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-white">{template.name}</h3>
+                          <p className="text-sm text-gray-400 mt-1">{template.itemsCount} items</p>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3">{template.description}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {template.categories.map((category) => (
+                        <span
+                          key={category}
+                          className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                        >
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {formData.selectedChecklistTemplates.length > 0 && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-400 mb-1">Assignment Step Next</h4>
+                    <p className="text-sm text-gray-300">
+                      After completing this step, you'll be able to assign checklist items to team members or teams.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 6: Review & Confirm */}
+        {currentStep === 6 && (
           <div className="space-y-8">
             <h2 className="text-xl font-semibold text-white mb-6">Review & Confirm</h2>
 
@@ -997,6 +1214,69 @@ export default function NewProjectPage() {
                 </div>
               </div>
             </div>
+
+            {/* Checklist Templates Summary */}
+            {formData.selectedChecklistTemplates.length > 0 && (
+              <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6">
+                <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Checklist Templates
+                </h3>
+                <div className="space-y-4">
+                  {mockChecklistTemplates
+                    .filter(t => formData.selectedChecklistTemplates.includes(t.id))
+                    .map(template => {
+                      const assignedItems = template.items.filter(item =>
+                        formData.checklistAssignments[item.id]
+                      ).length
+
+                      return (
+                        <div key={template.id} className="border-l-2 border-purple-500 pl-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="text-white font-medium">{template.name}</h4>
+                              <p className="text-sm text-gray-400">{template.description}</p>
+                            </div>
+                            <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded">
+                              {assignedItems}/{template.items.length} assigned
+                            </span>
+                          </div>
+
+                          {assignedItems > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {template.items
+                                .filter(item => formData.checklistAssignments[item.id])
+                                .slice(0, 3)
+                                .map(item => {
+                                  const assignment = formData.checklistAssignments[item.id]
+                                  const assignedMember = assignment.assignedType === 'user'
+                                    ? mockTeamMembers.find(m => m.id === assignment.assignedTo)
+                                    : null
+
+                                  return (
+                                    <div key={item.id} className="flex items-center gap-2 text-sm">
+                                      <CheckCircle2 className="w-3 h-3 text-green-400" />
+                                      <span className="text-gray-300">{item.title}</span>
+                                      <span className="text-gray-500">→</span>
+                                      <span className="text-purple-400">
+                                        {assignedMember ? assignedMember.name : assignment.assignedTo}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              {assignedItems > 3 && (
+                                <p className="text-xs text-gray-500 italic">
+                                  +{assignedItems - 3} more assignments
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1020,11 +1300,20 @@ export default function NewProjectPage() {
             onClick={handleNext}
             className="px-6 py-3 rounded-xl gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2"
           >
-            {currentStep === 5 ? 'Create Project' : 'Next'}
+            {currentStep === 6 ? 'Create Project' : 'Next'}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </div>
+
+      {/* Checklist Assignment Modal */}
+      <ChecklistAssignmentModal
+        isOpen={showAssignmentModal}
+        onClose={() => setShowAssignmentModal(false)}
+        templates={mockChecklistTemplates.filter(t => formData.selectedChecklistTemplates.includes(t.id))}
+        teamMembers={teamMembersForModal}
+        onAssign={handleAssignmentSave}
+      />
     </div>
   )
 }

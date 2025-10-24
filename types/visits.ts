@@ -144,7 +144,7 @@ export interface VisitAddress {
   placeId?: string // Google Places ID
 }
 
-export interface Contact Person {
+export interface ContactPerson {
   name: string
   title?: string
   email?: string
