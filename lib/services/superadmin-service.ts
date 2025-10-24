@@ -35,13 +35,31 @@ export interface TenantFeatures {
 
 export interface TenantSubscription {
   plan: 'free' | 'starter' | 'growth' | 'enterprise'
-  status: 'trial' | 'active' | 'suspended' | 'cancelled'
+  status: 'trial' | 'active' | 'free_access' | 'suspended' | 'cancelled'
   seats: number
   seatsUsed: number
   billingEmail: string
+
+  // Pricing
+  price?: number
+  billingPeriod?: 'monthly' | 'yearly'
+
+  // Trial Configuration
+  trialDays?: number | null
   trialEndsAt?: any
+
+  // Free Access Configuration
+  freeAccessDays?: number | null
+  freeAccessEndsAt?: any
+
+  // Billing Periods
   currentPeriodStart: any
   currentPeriodEnd: any
+  nextBillingDate?: any
+
+  // Stripe Integration (future)
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
 }
 
 // ===========================================
@@ -91,14 +109,42 @@ export const superadminService = {
     plan: 'free' | 'starter' | 'growth' | 'enterprise'
     billingEmail: string
     createdBy: string
+    // Trial/Free Access Configuration
+    accessType?: 'standard' | 'free_access' | 'no_trial' // Default: 'standard'
+    trialDays?: number | null // Custom trial duration (null = no trial)
+    freeAccessDays?: number | null // Free access duration
   }): Promise<string> {
     try {
       const features = this.getFeaturesForPlan(data.plan)
       const now = Timestamp.now()
-      const trialEnd = new Date()
-      trialEnd.setDate(trialEnd.getDate() + 14) // 14 days trial
       const periodEnd = new Date()
-      periodEnd.setDate(periodEnd.getDate() + 30) // 30 days period
+      periodEnd.setDate(periodEnd.getDate() + 30) // 30 days billing period
+
+      // Determine subscription status and dates based on access type
+      let subscriptionStatus: 'trial' | 'active' | 'free_access' = 'active'
+      let trialEndsAt: any = null
+      let freeAccessEndsAt: any = null
+      let trialDays: number | null = null
+      let freeAccessDays: number | null = null
+
+      const accessType = data.accessType || 'standard'
+
+      if (accessType === 'standard' && data.trialDays && data.trialDays > 0) {
+        // Standard with trial
+        subscriptionStatus = 'trial'
+        trialDays = data.trialDays
+        const trialEnd = new Date()
+        trialEnd.setDate(trialEnd.getDate() + data.trialDays)
+        trialEndsAt = Timestamp.fromDate(trialEnd)
+      } else if (accessType === 'free_access' && data.freeAccessDays && data.freeAccessDays > 0) {
+        // Free access period
+        subscriptionStatus = 'free_access'
+        freeAccessDays = data.freeAccessDays
+        const freeEnd = new Date()
+        freeEnd.setDate(freeEnd.getDate() + data.freeAccessDays)
+        freeAccessEndsAt = Timestamp.fromDate(freeEnd)
+      }
+      // else: no_trial or standard without trial = immediate active status
 
       const tenant = {
         name: data.name,
@@ -108,13 +154,19 @@ export const superadminService = {
         domain: data.domain || null,
         subscription: {
           plan: data.plan,
-          status: 'trial',
+          status: subscriptionStatus,
           seats: features.maxUsers,
           seatsUsed: 0,
           billingEmail: data.billingEmail,
-          trialEndsAt: Timestamp.fromDate(trialEnd),
+          price: 0, // Will be updated when integrating pricing
+          billingPeriod: 'monthly' as const,
+          trialDays,
+          trialEndsAt,
+          freeAccessDays,
+          freeAccessEndsAt,
           currentPeriodStart: now,
-          currentPeriodEnd: Timestamp.fromDate(periodEnd)
+          currentPeriodEnd: Timestamp.fromDate(periodEnd),
+          nextBillingDate: subscriptionStatus === 'active' ? Timestamp.fromDate(periodEnd) : null
         },
         features,
         settings: {
