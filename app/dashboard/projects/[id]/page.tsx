@@ -210,6 +210,7 @@ export default function ProjectDetailsPage() {
     { id: 'tasks', label: 'Tasks', icon: CheckCircle2, count: project.tasks.total },
     { id: 'team', label: 'Team', icon: Users, count: project.team.length },
     { id: 'files', label: 'Files', icon: Paperclip, count: project.documents.length },
+    { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'activity', label: 'Activity', icon: Activity }
   ]
 
@@ -338,6 +339,24 @@ export default function ProjectDetailsPage() {
         <div className="flex items-center gap-6">
           {tabs.map((tab) => {
             const Icon = tab.icon
+
+            // Use Link for pricing tab to navigate to pricing page
+            if (tab.id === 'pricing') {
+              return (
+                <Link key={tab.id} href={`/dashboard/projects/${project.id}/pricing`}>
+                  <button
+                    className={cn(
+                      "pb-3 px-1 border-b-2 transition-all flex items-center gap-2",
+                      "border-transparent text-gray-400 hover:text-white hover:border-purple-500"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                </Link>
+              )
+            }
+
             return (
               <button
                 key={tab.id}

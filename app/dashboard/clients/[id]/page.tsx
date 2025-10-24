@@ -14,6 +14,8 @@ import {
   PhoneCall, Smartphone, Home
 } from 'lucide-react'
 import Link from 'next/link'
+import { getClientApps } from '@/lib/mock-project-data'
+import { AppTypeBadge } from '@/components/apps/app-type-badge'
 
 // Mock enhanced client data
 const clientData = {
@@ -123,40 +125,6 @@ const clientData = {
       mobile: null,
       isPrimary: false,
       avatar: 'LJ'
-    }
-  ],
-
-  // Services & Products
-  assignedServices: [
-    {
-      id: 'srv1',
-      name: 'ShopLeez POS',
-      package: 'Professional',
-      price: 599,
-      monthlyPrice: 59,
-      status: 'active',
-      startDate: '2023-04-01',
-      renewalDate: '2024-04-01'
-    },
-    {
-      id: 'srv2',
-      name: 'E-Commerce Platform',
-      package: 'Pro Store',
-      price: 1499,
-      monthlyPrice: 149,
-      status: 'active',
-      startDate: '2023-06-15',
-      renewalDate: '2024-06-15'
-    },
-    {
-      id: 'srv4',
-      name: 'CRM System',
-      package: 'Business',
-      price: 799,
-      monthlyPrice: 79,
-      status: 'active',
-      startDate: '2023-08-01',
-      renewalDate: '2024-08-01'
     }
   ],
 
@@ -294,10 +262,12 @@ const clientData = {
   }
 }
 
+const clientApps = getClientApps('c1') // Get apps for this client
+
 const tabs = [
   { id: 'overview', label: 'Overview', icon: PieChart },
   { id: 'contacts', label: 'Contacts', icon: Users, count: clientData.relatedContacts.length },
-  { id: 'services', label: 'Services & Products', icon: Package, count: clientData.assignedServices.length + clientData.products.length },
+  { id: 'apps', label: 'Apps & Products', icon: Smartphone, count: clientApps.length + clientData.products.length },
   { id: 'projects', label: 'Projects', icon: Briefcase, count: clientData.totalProjects },
   { id: 'invoices', label: 'Invoices', icon: Receipt, count: clientData.recentInvoices.length },
   { id: 'visits', label: 'Visits', icon: Calendar, count: clientData.recentVisits.length },
@@ -417,11 +387,11 @@ export default function ClientDetailPage() {
 
         <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl border border-gray-800 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-400 text-sm">Services</span>
-            <Zap className="h-4 w-4 text-purple-400" />
+            <span className="text-gray-400 text-sm">Apps</span>
+            <Smartphone className="h-4 w-4 text-purple-400" />
           </div>
-          <p className="text-xl font-bold text-white">{clientData.assignedServices.length}</p>
-          <p className="text-xs text-gray-500">Active</p>
+          <p className="text-xl font-bold text-white">{clientApps.length}</p>
+          <p className="text-xs text-gray-500">Deployed</p>
         </div>
 
         <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl border border-gray-800 p-4">
@@ -651,32 +621,47 @@ export default function ClientDetailPage() {
               </div>
             )}
 
-            {activeTab === 'services' && (
+            {activeTab === 'apps' && (
               <div className="space-y-6">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white">Active Services</h3>
-                    <button className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors">
-                      Add Service
-                    </button>
+                    <h3 className="text-lg font-semibold text-white">Deployed Apps</h3>
+                    <Link
+                      href={`/dashboard/apps/new?client=${clientData.id}`}
+                      className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
+                    >
+                      Add App
+                    </Link>
                   </div>
                   <div className="space-y-3">
-                    {clientData.assignedServices.map((service) => (
-                      <div key={service.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
-                            <Zap className="h-5 w-5 text-white" />
+                    {clientApps.map((app) => (
+                      <Link key={app.id} href={`/dashboard/apps/${app.id}`}>
+                        <div className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800/70 transition-colors cursor-pointer">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+                              <Smartphone className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-white font-medium">{app.nameEn}</p>
+                                <AppTypeBadge type={app.type} size="sm" />
+                              </div>
+                              <p className="text-sm text-gray-400">
+                                Version {app.releases.current.version} • {app.status}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-white font-medium">{service.name}</p>
-                            <p className="text-sm text-gray-400">{service.package} Package • Since {service.startDate}</p>
+                          <div className="text-right">
+                            <div className={`text-xs px-2 py-1 rounded ${
+                              app.status === 'production' ? 'bg-green-500/20 text-green-400' :
+                              app.status === 'staging' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {app.status.toUpperCase()}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-white font-medium">${service.monthlyPrice}/mo</p>
-                          <p className="text-xs text-gray-400">Renews {service.renewalDate}</p>
-                        </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>

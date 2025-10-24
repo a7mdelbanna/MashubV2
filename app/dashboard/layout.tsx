@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Briefcase, DollarSign, Users,
   HeadphonesIcon, GraduationCap, UserPlus, Package,
-  Zap, Settings, LogOut, ChevronLeft, Bell,
+  Settings, LogOut, ChevronLeft, Bell,
   Search, Sparkles, Building2, Box, Receipt,
   ShoppingCart, Calendar, Command, HelpCircle, BookOpen,
   ChevronRight, ChevronDown, Kanban, FileText, Shield,
@@ -15,7 +15,7 @@ import {
   UserCircle, Tags, Repeat, CheckSquare, BarChart3,
   CreditCard, Coins, MessageSquare, Mail, Target,
   Clock, Star, Lightbulb, Video, CalendarDays,
-  PackageOpen, DollarSignIcon, MessageCircle, Layers, FolderTree
+  PackageOpen, MessageCircle, Layers, FolderTree, Smartphone
 } from 'lucide-react'
 import { GlobalSearch } from '@/components/search/global-search'
 
@@ -48,6 +48,16 @@ const sidebarItems: SidebarItem[] = [
     ]
   },
   {
+    name: 'Apps',
+    path: '/dashboard/apps',
+    icon: Smartphone,
+    subItems: [
+      { name: 'All Apps', path: '/dashboard/apps', icon: LayoutDashboard },
+      { name: 'Checklists', path: '/dashboard/apps/checklists', icon: CheckSquare },
+      { name: 'Releases', path: '/dashboard/apps/releases', icon: GitBranch }
+    ]
+  },
+  {
     name: 'Clients',
     path: '/dashboard/clients',
     icon: Building2,
@@ -72,19 +82,6 @@ const sidebarItems: SidebarItem[] = [
       { name: 'Analytics', path: '/dashboard/products/analytics', icon: BarChart3 },
       { name: 'Pricing', path: '/dashboard/products/pricing', icon: DollarSign },
       { name: 'Orders', path: '/dashboard/products/orders', icon: ShoppingCart }
-    ]
-  },
-  {
-    name: 'Services',
-    path: '/dashboard/services',
-    icon: Zap,
-    subItems: [
-      { name: 'Dashboard', path: '/dashboard/services', icon: LayoutDashboard },
-      { name: 'Analytics', path: '/dashboard/services/analytics', icon: BarChart3 },
-      { name: 'Subscriptions', path: '/dashboard/services/subscriptions', icon: Repeat },
-      { name: 'Deliveries', path: '/dashboard/services/deliveries', icon: Package },
-      { name: 'Bookings', path: '/dashboard/services/bookings', icon: CalendarDays },
-      { name: 'Reviews', path: '/dashboard/services/reviews', icon: Star }
     ]
   },
   {
@@ -155,7 +152,25 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Projects'])
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
+
+  // Auto-expand parent items based on current route
+  useEffect(() => {
+    const activeParents: string[] = []
+
+    sidebarItems.forEach(item => {
+      if (item.subItems) {
+        const hasActiveChild = item.subItems.some(sub => pathname === sub.path || pathname.startsWith(sub.path + '/'))
+        if (hasActiveChild || pathname === item.path) {
+          activeParents.push(item.name)
+        }
+      }
+    })
+
+    if (activeParents.length > 0) {
+      setExpandedItems(activeParents)
+    }
+  }, [pathname])
 
   // Keyboard shortcut for search (Cmd/Ctrl + K)
   useEffect(() => {
@@ -218,10 +233,10 @@ export default function DashboardLayout({
                       }
                     }}
                     className={cn(
-                      "w-full flex items-center px-4 py-3 rounded-xl transition-all duration-300 group",
+                      "w-full flex items-center px-4 py-3 rounded-xl transition-colors duration-150 group",
                       (isActive || isChildActive)
                         ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                        : "text-gray-400 hover:bg-gray-800/50 hover:text-white hover:translate-x-1"
+                        : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
                     )}
                   >
                     <item.icon className={cn(
@@ -251,13 +266,13 @@ export default function DashboardLayout({
                             key={subItem.path}
                             href={subItem.path}
                             className={cn(
-                              "flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 group",
+                              "flex items-center px-3 py-2 rounded-lg text-sm transition-colors duration-150 group",
                               isSubActive
                                 ? "bg-gradient-to-r from-violet-600/20 to-purple-600/20 text-purple-400 border-l-2 border-purple-500"
-                                : "text-gray-500 hover:bg-gray-800/30 hover:text-gray-300 hover:translate-x-1"
+                                : "text-gray-500 hover:bg-gray-800/30 hover:text-gray-300"
                             )}
                           >
-                            <subItem.icon className="h-4 w-4 mr-2 group-hover:text-purple-400 transition-colors" />
+                            <subItem.icon className="h-4 w-4 mr-2 group-hover:text-purple-400 transition-colors duration-150" />
                             <span>{subItem.name}</span>
                           </Link>
                         )
@@ -288,10 +303,10 @@ export default function DashboardLayout({
           {/* Collapse Button */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-full flex items-center justify-center shadow-xl border-2 border-gray-700 hover:border-purple-500 transition-all duration-300 z-50 group"
+            className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-full flex items-center justify-center shadow-xl border-2 border-gray-700 hover:border-purple-500 transition-colors duration-150 z-50 group"
           >
             <ChevronLeft className={cn(
-              "h-5 w-5 transition-transform duration-300 group-hover:scale-110",
+              "h-5 w-5 transition-transform duration-200",
               sidebarCollapsed && "rotate-180"
             )} />
           </button>
@@ -308,9 +323,9 @@ export default function DashboardLayout({
                 {/* Search */}
                 <button
                   onClick={() => setSearchOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-all group"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-800 hover:border-purple-500 transition-colors duration-150 group"
                 >
-                  <Search className="h-5 w-5 text-gray-400 group-hover:text-purple-400" />
+                  <Search className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors duration-150" />
                   <span className="text-gray-400 group-hover:text-gray-300">Search...</span>
                   <div className="hidden sm:flex items-center gap-1 ml-8">
                     <kbd className="px-1.5 py-0.5 text-xs text-gray-500 bg-gray-900 rounded">⌘</kbd>

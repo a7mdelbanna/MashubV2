@@ -6,17 +6,31 @@ import { cn } from '@/lib/utils'
 import {
   Briefcase, DollarSign, Users, HeadphonesIcon,
   TrendingUp, Plus, FileText, BarChart3,
-  Calendar, ArrowUpRight, MoreVertical
+  Calendar, ArrowUpRight, MoreVertical, Smartphone
 } from 'lucide-react'
+import { MOCK_PROJECTS, MOCK_APPS } from '@/lib/mock-project-data'
+
+// Calculate real metrics from mock data
+const activeProjects = MOCK_PROJECTS.filter(p => p.status === 'in_progress').length
+const totalApps = MOCK_APPS.length
+const appsInProduction = MOCK_APPS.filter(a => a.status === 'production').length
 
 const metrics = [
   {
     title: 'ACTIVE PROJECTS',
-    value: '24',
-    subtitle: 'From last month',
+    value: MOCK_PROJECTS.length.toString(),
+    subtitle: `${activeProjects} in progress`,
     change: { value: 12, type: 'increase' as const },
     icon: Briefcase,
     gradient: 'gradient-blue'
+  },
+  {
+    title: 'DEPLOYED APPS',
+    value: totalApps.toString(),
+    subtitle: `${appsInProduction} in production`,
+    change: { value: 15, type: 'increase' as const },
+    icon: Smartphone,
+    gradient: 'gradient-purple'
   },
   {
     title: 'TOTAL REVENUE',
@@ -25,14 +39,6 @@ const metrics = [
     change: { value: 8.2, type: 'increase' as const },
     icon: DollarSign,
     gradient: 'gradient-green'
-  },
-  {
-    title: 'ACTIVE USERS',
-    value: '89',
-    subtitle: 'Team members',
-    change: { value: 3.1, type: 'increase' as const },
-    icon: Users,
-    gradient: 'gradient-purple'
   },
   {
     title: 'SUPPORT TICKETS',
@@ -178,7 +184,7 @@ export default function DashboardPage() {
               {quickActions.map((action, index) => (
                 <button
                   key={index}
-                  className="group relative rounded-xl p-4 bg-gray-800/50 hover:bg-gray-800 transition-all duration-300 border border-gray-700 hover:border-gray-600"
+                  className="group relative rounded-xl p-4 bg-gray-800/50 hover:bg-gray-800 transition-colors duration-150 border border-gray-700 hover:border-gray-600"
                 >
                   <div className={cn(
                     "w-full h-24 rounded-lg flex flex-col items-center justify-center",

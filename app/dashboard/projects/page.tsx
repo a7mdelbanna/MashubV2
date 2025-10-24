@@ -12,9 +12,44 @@ import {
 import Link from 'next/link'
 import { ProjectCard } from '@/components/projects/project-card'
 import { ProjectFilters } from '@/components/projects/project-filters'
+import { MOCK_PROJECTS, getProjectClients } from '@/lib/mock-project-data'
 
-// Mock data for projects with enhanced relationships
-const projects = [
+// Use the new mock data structure
+const projects = MOCK_PROJECTS.map(project => {
+  // Get clients involved in this project (via apps)
+  const clients = getProjectClients(project.id)
+
+  return {
+    id: project.id,
+    name: project.name,
+    // Use first client for backward compatibility with existing UI
+    client: clients.length > 0 ? clients[0] : { id: 'none', name: 'No Client', logo: 'NC' },
+    description: project.description || '',
+    type: project.type === 'agile' ? 'custom' as const : 'web_app' as const,
+    status: project.status,
+    priority: 'medium' as const,
+    budget: project.budget,
+    spent: project.spent,
+    progress: project.progress,
+    startDate: project.startDate,
+    dueDate: project.dueDate,
+    manager: project.manager,
+    team: project.team.map(t => ({ ...t, avatar: t.name.split(' ').map(n => n[0]).join('') })),
+    // New: Include apps count
+    assignedServices: project.apps.map(app => ({ id: app.id, name: app.nameEn })),
+    relatedInvoices: [],
+    tasks: {
+      total: 50,
+      completed: 30,
+      inProgress: 15,
+      todo: 5
+    },
+    gradient: project.id.includes('retail') ? 'gradient-blue' : project.id.includes('fintech') ? 'gradient-green' : 'gradient-purple'
+  }
+})
+
+// Keep original mock structure for reference
+const legacyProjects = [
   {
     id: 'p1',
     name: 'E-Commerce Platform',

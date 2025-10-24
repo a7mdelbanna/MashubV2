@@ -18,6 +18,8 @@ import {
   getHealthLevelColor,
   calculateClientHealth
 } from '@/lib/clients-utils'
+import { getClientApps } from '@/lib/mock-project-data'
+import { AppTypeBadge } from '@/components/apps/app-type-badge'
 
 // Mock data for clients with relationships
 const clients = [
@@ -47,11 +49,6 @@ const clients = [
     tags: ['Enterprise', 'Long-term', 'Priority'],
     rating: 5,
     gradient: 'gradient-blue',
-    assignedServices: [
-      { id: 'srv1', name: 'ShopLeez POS' },
-      { id: 'srv2', name: 'E-Commerce Platform' },
-      { id: 'srv4', name: 'CRM System' }
-    ],
     activeProjects: [
       { id: 'p1', name: 'E-Commerce Platform', status: 'in_progress' }
     ],
@@ -90,10 +87,6 @@ const clients = [
     tags: ['Enterprise', 'Financial Services'],
     rating: 4.5,
     gradient: 'gradient-green',
-    assignedServices: [
-      { id: 'srv3', name: 'Mobile Banking App' },
-      { id: 'srv4', name: 'CRM System' }
-    ],
     activeProjects: [
       { id: 'p2', name: 'Mobile Banking App', status: 'in_progress' }
     ],
@@ -130,9 +123,6 @@ const clients = [
     tags: ['Mid-size', 'HR Tech'],
     rating: 4,
     gradient: 'gradient-purple',
-    assignedServices: [
-      { id: 'srv4', name: 'CRM System' }
-    ],
     activeProjects: [
       { id: 'p3', name: 'HR Management System', status: 'planning' }
     ],
@@ -169,11 +159,6 @@ const clients = [
     tags: ['Retail', 'POS Systems'],
     rating: 4.5,
     gradient: 'gradient-orange',
-    assignedServices: [
-      { id: 'srv1', name: 'ShopLeez POS' },
-      { id: 'srv2', name: 'E-Commerce Platform' },
-      { id: 'srv5', name: 'Restaurant Management' }
-    ],
     activeProjects: [
       { id: 'p4', name: 'POS System Upgrade', status: 'review' }
     ],
@@ -211,7 +196,6 @@ const clients = [
     tags: ['Startup', 'AI/ML'],
     rating: 3.5,
     gradient: 'gradient-pink',
-    assignedServices: [],
     activeProjects: [
       { id: 'p5', name: 'AI Chat Assistant', status: 'on_hold' }
     ],
@@ -248,10 +232,6 @@ const clients = [
     tags: ['Healthcare', 'HIPAA Compliant', 'Enterprise'],
     rating: 5,
     gradient: 'gradient-yellow',
-    assignedServices: [
-      { id: 'srv1', name: 'ShopLeez POS' },
-      { id: 'srv4', name: 'CRM System' }
-    ],
     activeProjects: [
       { id: 'p6', name: 'Healthcare Portal', status: 'completed' }
     ],
@@ -477,29 +457,30 @@ export default function ClientsPage() {
                   </div>
                 </div>
 
-                {/* Services */}
-                {client.assignedServices && client.assignedServices.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-400 mb-2">Services Used:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {client.assignedServices.slice(0, 2).map((service) => (
-                        <div
-                          key={service.id}
-                          className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs flex items-center space-x-1"
-                          title={service.name}
-                        >
-                          <Zap className="h-3 w-3" />
-                          <span className="truncate max-w-16">{service.name}</span>
-                        </div>
-                      ))}
-                      {client.assignedServices.length > 2 && (
-                        <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
-                          +{client.assignedServices.length - 2} more
-                        </div>
-                      )}
+                {/* Apps */}
+                {(() => {
+                  const clientApps = getClientApps(client.id)
+                  return clientApps.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-400 mb-2">Apps Deployed:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {clientApps.slice(0, 2).map((app) => (
+                          <AppTypeBadge
+                            key={app.id}
+                            type={app.type}
+                            label={app.nameEn}
+                            size="sm"
+                          />
+                        ))}
+                        {clientApps.length > 2 && (
+                          <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
+                            +{clientApps.length - 2} more
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 {/* Active Projects */}
                 {client.activeProjects && client.activeProjects.length > 0 && (
@@ -604,8 +585,8 @@ export default function ClientsPage() {
                       <span>{client.lastActivity.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Zap className="h-4 w-4 text-purple-400" />
-                      <span>{client.assignedServices?.length || 0} services</span>
+                      <Smartphone className="h-4 w-4 text-purple-400" />
+                      <span>{getClientApps(client.id).length} apps</span>
                     </div>
                   </div>
                   <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />

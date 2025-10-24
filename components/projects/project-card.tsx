@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import {
   Calendar, DollarSign, Users, Clock, MoreVertical,
   ArrowUpRight, CheckCircle2, AlertTriangle, TrendingUp,
-  Zap, FileText, Briefcase
+  Smartphone, FileText, Briefcase
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -78,10 +78,10 @@ export function ProjectCard({ project, viewMode, statusConfig, typeConfig }: Pro
 
               {/* Relationship Indicators */}
               <div className="flex items-center space-x-4 text-xs text-gray-400">
-                {project.assignedServices && project.assignedServices.length > 0 && (
+                {project.apps && project.apps.length > 0 && (
                   <div className="flex items-center space-x-1">
-                    <Zap className="h-3 w-3 text-purple-400" />
-                    <span>{project.assignedServices.length}</span>
+                    <Smartphone className="h-3 w-3 text-purple-400" />
+                    <span>{project.apps.length}</span>
                   </div>
                 )}
                 {project.relatedInvoices && project.relatedInvoices.length > 0 && (
@@ -195,24 +195,24 @@ export function ProjectCard({ project, viewMode, statusConfig, typeConfig }: Pro
             </div>
           </div>
 
-          {/* Assigned Services */}
-          {project.assignedServices && project.assignedServices.length > 0 && (
+          {/* Deployed Apps */}
+          {project.apps && project.apps.length > 0 && (
             <div className="mb-4">
-              <p className="text-xs text-gray-400 mb-2">Assigned Services:</p>
+              <p className="text-xs text-gray-400 mb-2">Deployed Apps:</p>
               <div className="flex flex-wrap gap-2">
-                {project.assignedServices.slice(0, 2).map((service: any) => (
+                {project.apps.slice(0, 2).map((app: any) => (
                   <div
-                    key={service.id}
+                    key={app.id}
                     className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs flex items-center space-x-1"
-                    title={service.name}
+                    title={app.nameEn}
                   >
-                    <Zap className="h-3 w-3" />
-                    <span className="truncate max-w-20">{service.name}</span>
+                    <Smartphone className="h-3 w-3" />
+                    <span className="truncate max-w-20">{app.nameEn}</span>
                   </div>
                 ))}
-                {project.assignedServices.length > 2 && (
+                {project.apps.length > 2 && (
                   <div className="px-2 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs">
-                    +{project.assignedServices.length - 2} more
+                    +{project.apps.length - 2} more
                   </div>
                 )}
               </div>
@@ -321,10 +321,10 @@ export function ProjectCard({ project, viewMode, statusConfig, typeConfig }: Pro
             </div>
 
             <div className="flex items-center space-x-3 text-xs text-gray-400">
-              {project.assignedServices && project.assignedServices.length > 0 && (
+              {project.apps && project.apps.length > 0 && (
                 <div className="flex items-center space-x-1">
-                  <Zap className="h-3 w-3 text-purple-400" />
-                  <span>{project.assignedServices.length} services</span>
+                  <Smartphone className="h-3 w-3 text-purple-400" />
+                  <span>{project.apps.length} apps</span>
                 </div>
               )}
               {project.relatedInvoices && project.relatedInvoices.length > 0 && (

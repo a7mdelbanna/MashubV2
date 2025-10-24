@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar } from 'lucide-react'
+import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar, Smartphone } from 'lucide-react'
 import { Task, TaskStatus, TaskPriority } from '@/types/projects'
 import {
   getTaskStatusColor,
@@ -9,6 +9,8 @@ import {
   formatTimeEstimate,
   sortTasksByPriority
 } from '@/lib/projects-utils'
+import { MOCK_APPS } from '@/lib/mock-project-data'
+import { AppTypeBadge } from '@/components/apps/app-type-badge'
 
 // Mock data - In production, this would come from API
 const mockTasks: Task[] = [
@@ -35,7 +37,10 @@ const mockTasks: Task[] = [
     commentsCount: 3,
     createdAt: '2025-10-10T10:00:00Z',
     updatedAt: '2025-10-13T14:30:00Z',
-    startedAt: '2025-10-12T09:00:00Z'
+    startedAt: '2025-10-12T09:00:00Z',
+    scope: 'app',
+    appId: 'app_shopleez_techcorp',
+    appName: 'TechCorp POS'
   },
   {
     id: '2',
@@ -59,7 +64,10 @@ const mockTasks: Task[] = [
     attachments: [],
     commentsCount: 1,
     createdAt: '2025-10-10T10:00:00Z',
-    updatedAt: '2025-10-10T10:00:00Z'
+    updatedAt: '2025-10-10T10:00:00Z',
+    scope: 'app',
+    appId: 'app_financehub_mobile',
+    appName: 'FinanceHub Mobile'
   },
   {
     id: '3',
@@ -84,7 +92,8 @@ const mockTasks: Task[] = [
     commentsCount: 5,
     createdAt: '2025-10-08T10:00:00Z',
     updatedAt: '2025-10-13T16:00:00Z',
-    startedAt: '2025-10-09T10:00:00Z'
+    startedAt: '2025-10-09T10:00:00Z',
+    scope: 'project'
   },
   {
     id: '4',
@@ -110,7 +119,8 @@ const mockTasks: Task[] = [
     createdAt: '2025-10-08T10:00:00Z',
     updatedAt: '2025-10-12T15:00:00Z',
     startedAt: '2025-10-08T14:00:00Z',
-    completedAt: '2025-10-12T15:00:00Z'
+    completedAt: '2025-10-12T15:00:00Z',
+    scope: 'project'
   },
   {
     id: '5',
@@ -135,7 +145,10 @@ const mockTasks: Task[] = [
     commentsCount: 7,
     createdAt: '2025-10-11T10:00:00Z',
     updatedAt: '2025-10-13T11:00:00Z',
-    startedAt: '2025-10-11T14:00:00Z'
+    startedAt: '2025-10-11T14:00:00Z',
+    scope: 'app',
+    appId: 'app_retailchain_website',
+    appName: 'RetailChain Website'
   },
   {
     id: '6',
@@ -155,7 +168,8 @@ const mockTasks: Task[] = [
     attachments: [],
     commentsCount: 0,
     createdAt: '2025-10-10T10:00:00Z',
-    updatedAt: '2025-10-10T10:00:00Z'
+    updatedAt: '2025-10-10T10:00:00Z',
+    scope: 'project'
   }
 ]
 
@@ -172,15 +186,24 @@ export default function ProjectBoardPage() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPriorities, setSelectedPriorities] = useState<TaskPriority[]>([])
+  const [selectedScope, setSelectedScope] = useState<'all' | 'project' | 'app'>('all')
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+
+  // Get unique apps from tasks
+  const appsInTasks = MOCK_APPS.filter(app =>
+    tasks.some(task => task.appId === app.id)
+  )
 
   // Filter tasks
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          task.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority)
+    const matchesScope = selectedScope === 'all' || task.scope === selectedScope
+    const matchesApp = !selectedAppId || task.appId === selectedAppId
 
-    return matchesSearch && matchesPriority
+    return matchesSearch && matchesPriority && matchesScope && matchesApp
   })
 
   // Group tasks by status
@@ -233,39 +256,102 @@ export default function ProjectBoardPage() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm text-gray-400">Priority:</span>
+          <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700 space-y-4">
+            {/* Priority Filter */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-gray-400">Priority:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(['critical', 'urgent', 'high', 'medium', 'low'] as TaskPriority[]).map(priority => (
+                  <button
+                    key={priority}
+                    onClick={() => {
+                      setSelectedPriorities(prev =>
+                        prev.includes(priority)
+                          ? prev.filter(p => p !== priority)
+                          : [...prev, priority]
+                      )
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      selectedPriorities.includes(priority)
+                        ? getPriorityColor(priority)
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                  </button>
+                ))}
+                {selectedPriorities.length > 0 && (
+                  <button
+                    onClick={() => setSelectedPriorities([])}
+                    className="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {(['critical', 'urgent', 'high', 'medium', 'low'] as TaskPriority[]).map(priority => (
-                <button
-                  key={priority}
-                  onClick={() => {
-                    setSelectedPriorities(prev =>
-                      prev.includes(priority)
-                        ? prev.filter(p => p !== priority)
-                        : [...prev, priority]
-                    )
-                  }}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    selectedPriorities.includes(priority)
-                      ? getPriorityColor(priority)
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                </button>
-              ))}
-              {selectedPriorities.length > 0 && (
-                <button
-                  onClick={() => setSelectedPriorities([])}
-                  className="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  Clear
-                </button>
-              )}
+
+            {/* Scope Filter */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-gray-400">Scope:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(['all', 'project', 'app'] as const).map(scope => (
+                  <button
+                    key={scope}
+                    onClick={() => {
+                      setSelectedScope(scope)
+                      if (scope !== 'app') setSelectedAppId(null)
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      selectedScope === scope
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {scope === 'all' ? 'All Tasks' : scope === 'project' ? 'Project-Level' : 'App-Level'}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* App Filter (only show when scope is 'app' or 'all') */}
+            {(selectedScope === 'app' || selectedScope === 'all') && appsInTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Smartphone className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-400">Filter by App:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedAppId(null)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      !selectedAppId
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    All Apps
+                  </button>
+                  {appsInTasks.map(app => (
+                    <button
+                      key={app.id}
+                      onClick={() => setSelectedAppId(app.id)}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
+                        selectedAppId === app.id
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {app.nameEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
