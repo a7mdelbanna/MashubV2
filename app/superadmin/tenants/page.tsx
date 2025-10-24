@@ -297,6 +297,9 @@ function CreateTenantModal({
     slug: '',
     billingEmail: '',
     plan: 'starter',
+    accessType: 'standard' as 'standard' | 'free_access' | 'no_trial',
+    trialDays: 14,
+    freeAccessDays: 30,
     adminName: '',
     adminEmail: '',
     adminPassword: ''
@@ -335,6 +338,9 @@ function CreateTenantModal({
         slug: formData.slug,
         billingEmail: formData.billingEmail,
         plan: formData.plan as any,
+        accessType: formData.accessType,
+        trialDays: formData.accessType === 'standard' ? formData.trialDays : null,
+        freeAccessDays: formData.accessType === 'free_access' ? formData.freeAccessDays : null,
         createdBy: currentUserId
       })
 
@@ -447,6 +453,111 @@ function CreateTenantModal({
                   <option value="growth">Growth - $199/mo, 50 users, All features</option>
                   <option value="enterprise">Enterprise - Custom pricing</option>
                 </select>
+              </div>
+
+              {/* Access Type Configuration */}
+              <div className="space-y-3 pt-4 border-t border-gray-800">
+                <label className="block text-sm font-medium text-gray-300">
+                  Access Configuration
+                </label>
+
+                {/* Access Type Radio Buttons */}
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-purple-500/50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="standard"
+                      checked={formData.accessType === 'standard'}
+                      onChange={e => setFormData({ ...formData, accessType: 'standard' })}
+                      className="w-4 h-4 text-purple-600"
+                    />
+                    <div className="flex-1">
+                      <div className="text-white font-medium">Standard with Trial</div>
+                      <div className="text-xs text-gray-400">Free trial period, then paid</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-purple-500/50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="free_access"
+                      checked={formData.accessType === 'free_access'}
+                      onChange={e => setFormData({ ...formData, accessType: 'free_access' })}
+                      className="w-4 h-4 text-purple-600"
+                    />
+                    <div className="flex-1">
+                      <div className="text-white font-medium">Free Access Period</div>
+                      <div className="text-xs text-gray-400">
+                        Free for X days, auto-suspend after expiry
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-purple-500/50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="no_trial"
+                      checked={formData.accessType === 'no_trial'}
+                      onChange={e => setFormData({ ...formData, accessType: 'no_trial' })}
+                      className="w-4 h-4 text-purple-600"
+                    />
+                    <div className="flex-1">
+                      <div className="text-white font-medium">No Trial</div>
+                      <div className="text-xs text-gray-400">
+                        Starts immediately on paid plan
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Trial Days Input - Only show if 'standard' */}
+                {formData.accessType === 'standard' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Trial Duration (days)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.trialDays}
+                      onChange={e =>
+                        setFormData({ ...formData, trialDays: parseInt(e.target.value) || 0 })
+                      }
+                      min="0"
+                      max="365"
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none"
+                      placeholder="14"
+                    />
+                    <p className="mt-1 text-xs text-gray-400">
+                      Tenant will have {formData.trialDays} days to evaluate before billing starts
+                    </p>
+                  </div>
+                )}
+
+                {/* Free Access Days Input - Only show if 'free_access' */}
+                {formData.accessType === 'free_access' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Free Access Duration (days)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.freeAccessDays}
+                      onChange={e =>
+                        setFormData({ ...formData, freeAccessDays: parseInt(e.target.value) || 0 })
+                      }
+                      min="1"
+                      max="365"
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder:text-gray-500 focus:border-purple-500 focus:outline-none"
+                      placeholder="30"
+                    />
+                    <p className="mt-1 text-xs text-gray-400">
+                      Tenant will be automatically suspended after {formData.freeAccessDays} days
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button
