@@ -1,759 +1,459 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { projectsService } from '@/lib/services/projects-service'
+import { Project, Task, Milestone, TimeEntry, ProjectTimeline } from '@/types/projects'
+import { PermissionGuard } from '@/components/auth/permission-guard'
+import { Can } from '@/components/auth/can'
 import { cn } from '@/lib/utils'
 import {
-  ArrowLeft, MoreVertical, Edit, Trash2, Share2, Download,
-  Calendar, Clock, DollarSign, Users, Briefcase, CheckCircle2,
-  AlertCircle, PlayCircle, PauseCircle, Star, MessageSquare,
-  Paperclip, Plus, Filter, Search, ChevronDown, ChevronRight,
-  FileText, Image, Code, Archive, ExternalLink, Activity,
-  TrendingUp, AlertTriangle, Target, GitBranch, Bug, Zap
+  ArrowLeft, MoreVertical, Edit, Trash2, Calendar, Clock, DollarSign,
+  Users, Briefcase, CheckCircle2, AlertCircle, PlayCircle, Star,
+  MessageSquare, Plus, Activity, TrendingUp, Target, FileText
 } from 'lucide-react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
-// Mock project data (in real app, fetch based on ID)
-const projectData = {
-  id: '1',
-  name: 'E-Commerce Platform',
-  description: 'Modern e-commerce platform with AI-powered recommendations, real-time inventory management, and advanced analytics dashboard',
-  client: {
-    id: 'c1',
-    name: 'TechCorp Inc.',
-    logo: 'TC',
-    contact: 'John Smith',
-    email: 'john@techcorp.com',
-    phone: '+1 (555) 123-4567'
-  },
-  type: 'web_app',
-  status: 'in_progress',
-  priority: 'high',
-  budget: 125000,
-  spent: 78500,
-  startDate: new Date('2024-01-15'),
-  dueDate: new Date('2024-06-30'),
-  manager: {
-    id: 'm1',
-    name: 'Sarah Chen',
-    avatar: 'SC',
-    email: 'sarah@mashub.com'
-  },
-  team: [
-    { id: 't1', name: 'Mike Johnson', role: 'Backend Dev', avatar: 'MJ', allocation: 100 },
-    { id: 't2', name: 'Emma Davis', role: 'Frontend Dev', avatar: 'ED', allocation: 80 },
-    { id: 't3', name: 'Alex Kim', role: 'UI/UX Designer', avatar: 'AK', allocation: 60 },
-    { id: 't4', name: 'James Wilson', role: 'DevOps', avatar: 'JW', allocation: 40 }
-  ],
-  progress: 65,
-  tasks: {
-    total: 48,
-    completed: 31,
-    inProgress: 12,
-    todo: 5
-  },
-  milestones: [
-    { id: 'm1', name: 'Project Kickoff', date: new Date('2024-01-15'), status: 'completed' },
-    { id: 'm2', name: 'Design Phase Complete', date: new Date('2024-02-28'), status: 'completed' },
-    { id: 'm3', name: 'Backend API Ready', date: new Date('2024-03-31'), status: 'completed' },
-    { id: 'm4', name: 'Frontend Implementation', date: new Date('2024-04-30'), status: 'in_progress' },
-    { id: 'm5', name: 'Testing & QA', date: new Date('2024-05-31'), status: 'upcoming' },
-    { id: 'm6', name: 'Production Launch', date: new Date('2024-06-30'), status: 'upcoming' }
-  ],
-  technologies: ['React', 'Node.js', 'PostgreSQL', 'AWS', 'Docker', 'Redis', 'ElasticSearch'],
-  repository: 'github.com/techcorp/ecommerce-platform',
-  documents: [
-    { id: 'd1', name: 'Project Proposal.pdf', type: 'pdf', size: '2.4 MB', date: new Date('2024-01-10') },
-    { id: 'd2', name: 'Technical Specifications.docx', type: 'doc', size: '1.8 MB', date: new Date('2024-01-20') },
-    { id: 'd3', name: 'UI Mockups.fig', type: 'design', size: '12.5 MB', date: new Date('2024-02-15') },
-    { id: 'd4', name: 'Database Schema.sql', type: 'code', size: '245 KB', date: new Date('2024-03-01') }
-  ]
-}
+type TabType = 'overview' | 'tasks' | 'timeline' | 'milestones' | 'team'
 
-// Task list
-const tasks = [
-  {
-    id: 't1',
-    title: 'Implement user authentication',
-    status: 'completed',
-    priority: 'high',
-    assignee: { name: 'Mike Johnson', avatar: 'MJ' },
-    dueDate: new Date('2024-02-15'),
-    tags: ['backend', 'security']
-  },
-  {
-    id: 't2',
-    title: 'Design product catalog UI',
-    status: 'completed',
-    priority: 'high',
-    assignee: { name: 'Alex Kim', avatar: 'AK' },
-    dueDate: new Date('2024-02-20'),
-    tags: ['design', 'frontend']
-  },
-  {
-    id: 't3',
-    title: 'Setup payment gateway integration',
-    status: 'in_progress',
-    priority: 'urgent',
-    assignee: { name: 'Mike Johnson', avatar: 'MJ' },
-    dueDate: new Date('2024-03-10'),
-    tags: ['backend', 'payment']
-  },
-  {
-    id: 't4',
-    title: 'Implement shopping cart functionality',
-    status: 'in_progress',
-    priority: 'high',
-    assignee: { name: 'Emma Davis', avatar: 'ED' },
-    dueDate: new Date('2024-03-15'),
-    tags: ['frontend', 'feature']
-  },
-  {
-    id: 't5',
-    title: 'Create admin dashboard',
-    status: 'todo',
-    priority: 'medium',
-    assignee: { name: 'Emma Davis', avatar: 'ED' },
-    dueDate: new Date('2024-03-20'),
-    tags: ['frontend', 'admin']
-  },
-  {
-    id: 't6',
-    title: 'Setup CI/CD pipeline',
-    status: 'todo',
-    priority: 'medium',
-    assignee: { name: 'James Wilson', avatar: 'JW' },
-    dueDate: new Date('2024-03-25'),
-    tags: ['devops', 'infrastructure']
-  }
-]
-
-// Activity feed
-const activities = [
-  {
-    id: 'a1',
-    user: { name: 'Mike Johnson', avatar: 'MJ' },
-    action: 'completed task',
-    target: 'Implement user authentication',
-    time: '2 hours ago',
-    type: 'task'
-  },
-  {
-    id: 'a2',
-    user: { name: 'Sarah Chen', avatar: 'SC' },
-    action: 'added comment on',
-    target: 'Payment gateway integration',
-    time: '4 hours ago',
-    type: 'comment'
-  },
-  {
-    id: 'a3',
-    user: { name: 'Emma Davis', avatar: 'ED' },
-    action: 'pushed code to',
-    target: 'feature/shopping-cart',
-    time: '6 hours ago',
-    type: 'code'
-  },
-  {
-    id: 'a4',
-    user: { name: 'Alex Kim', avatar: 'AK' },
-    action: 'uploaded',
-    target: 'Updated mockups.fig',
-    time: '1 day ago',
-    type: 'file'
-  },
-  {
-    id: 'a5',
-    user: { name: 'James Wilson', avatar: 'JW' },
-    action: 'deployed to',
-    target: 'staging environment',
-    time: '2 days ago',
-    type: 'deployment'
-  }
-]
-
-const statusConfig = {
-  planning: { icon: AlertCircle, color: 'text-blue-400', bg: 'bg-blue-400/10', label: 'Planning' },
-  in_progress: { icon: PlayCircle, color: 'text-purple-400', bg: 'bg-purple-400/10', label: 'In Progress' },
-  review: { icon: AlertCircle, color: 'text-yellow-400', bg: 'bg-yellow-400/10', label: 'Review' },
-  completed: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10', label: 'Completed' },
-  on_hold: { icon: PauseCircle, color: 'text-orange-400', bg: 'bg-orange-400/10', label: 'On Hold' }
-}
-
-const taskStatusConfig = {
-  todo: { color: 'text-gray-400', bg: 'bg-gray-400/10', label: 'To Do' },
-  in_progress: { color: 'text-purple-400', bg: 'bg-purple-400/10', label: 'In Progress' },
-  completed: { color: 'text-green-400', bg: 'bg-green-400/10', label: 'Completed' }
-}
-
-const priorityConfig = {
-  urgent: { color: 'text-red-400', bg: 'bg-red-400/10', label: 'Urgent' },
-  high: { color: 'text-orange-400', bg: 'bg-orange-400/10', label: 'High' },
-  medium: { color: 'text-yellow-400', bg: 'bg-yellow-400/10', label: 'Medium' },
-  low: { color: 'text-gray-400', bg: 'bg-gray-400/10', label: 'Low' }
-}
-
-export default function ProjectDetailsPage() {
+export default function ProjectDetailPage() {
   const params = useParams()
-  const [activeTab, setActiveTab] = useState('overview')
-  const [showAllTasks, setShowAllTasks] = useState(false)
-  const [showAllActivities, setShowAllActivities] = useState(false)
+  const router = useRouter()
+  const { user } = useAuth()
+  const projectId = params.id as string
 
-  const project = projectData // In real app, fetch based on params.id
-  const StatusIcon = statusConfig[project.status].icon
-  const budgetPercentage = (project.spent / project.budget) * 100
-  const daysLeft = Math.ceil((project.dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-  const isOverdue = daysLeft < 0
+  const [project, setProject] = useState<Project | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [timeline, setTimeline] = useState<ProjectTimeline[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'tasks', label: 'Tasks', icon: CheckCircle2, count: project.tasks.total },
-    { id: 'team', label: 'Team', icon: Users, count: project.team.length },
-    { id: 'files', label: 'Files', icon: Paperclip, count: project.documents.length },
-    { id: 'pricing', label: 'Pricing', icon: DollarSign },
-    { id: 'activity', label: 'Activity', icon: Activity }
-  ]
+  // Real-time subscription to project
+  useEffect(() => {
+    if (!projectId) return
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/projects">
-            <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-              <ArrowLeft className="h-5 w-5 text-gray-400" />
-            </button>
-          </Link>
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white">{project.name}</h1>
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
-                statusConfig[project.status].bg,
-                statusConfig[project.status].color
-              )}>
-                <StatusIcon className="h-4 w-4" />
-                {statusConfig[project.status].label}
-              </div>
-              {project.priority === 'urgent' && (
-                <div className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-sm font-medium flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4" />
-                  Urgent Priority
-                </div>
-              )}
+    const unsubscribe = projectsService.subscribeToProject(projectId, (updatedProject) => {
+      setProject(updatedProject)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [projectId])
+
+  // Real-time subscription to related data
+  useEffect(() => {
+    if (!projectId) return
+
+    const unsubTasks = projectsService.subscribeToTasks(projectId, setTasks)
+    const unsubMilestones = projectsService.subscribeToMilestones(projectId, setMilestones)
+    const unsubTimeline = projectsService.subscribeToTimeline(projectId, setTimeline)
+
+    return () => {
+      unsubTasks()
+      unsubMilestones()
+      unsubTimeline()
+    }
+  }, [projectId])
+
+  const handleDelete = async () => {
+    if (!project) return
+
+    try {
+      await projectsService.deleteProject(project.id)
+      toast.success('Project archived successfully')
+      router.push('/dashboard/projects')
+    } catch (error: any) {
+      console.error('Error archiving project:', error)
+      toast.error(error.message || 'Failed to archive project')
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(amount)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    const colors = {
+      draft: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+      planning: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      in_progress: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      on_hold: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      completed: 'bg-green-500/20 text-green-300 border-green-500/30',
+      cancelled: 'bg-red-500/20 text-red-300 border-red-500/30',
+      archived: 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+    }
+    return colors[status as keyof typeof colors] || colors.draft
+  }
+
+  const getPriorityColor = (priority: string) => {
+    const colors = {
+      low: 'bg-gray-500/20 text-gray-300',
+      medium: 'bg-blue-500/20 text-blue-300',
+      high: 'bg-orange-500/20 text-orange-300',
+      critical: 'bg-red-500/20 text-red-300'
+    }
+    return colors[priority as keyof typeof colors] || colors.low
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-gray-800" />
+            <div>
+              <div className="h-8 w-64 bg-gray-800 rounded mb-2" />
+              <div className="h-4 w-96 bg-gray-800 rounded" />
             </div>
-            <p className="text-gray-400">{project.description}</p>
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-20 bg-gray-800 rounded-lg" />
+            <div className="h-10 w-24 bg-gray-800 rounded-lg" />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-            <Share2 className="h-5 w-5 text-gray-400" />
-          </button>
-          <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-            <Edit className="h-5 w-5 text-gray-400" />
-          </button>
-          <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-            <MoreVertical className="h-5 w-5 text-gray-400" />
-          </button>
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <Calendar className="h-5 w-5 text-gray-400" />
-            <span className={cn(
-              "text-lg font-bold",
-              isOverdue ? "text-red-400" : "text-white"
-            )}>
-              {isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
-            </span>
-          </div>
-          <p className="text-sm text-gray-400">Due Date</p>
-          <p className="text-sm text-white">
-            {project.dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </p>
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-gray-800 rounded-xl h-32" />
+          ))}
         </div>
 
-        <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <TrendingUp className="h-5 w-5 text-gray-400" />
-            <span className="text-lg font-bold text-white">{project.progress}%</span>
-          </div>
-          <p className="text-sm text-gray-400">Progress</p>
-          <div className="h-2 bg-gray-800 rounded-full overflow-hidden mt-2">
-            <div className="h-full gradient-purple rounded-full" style={{ width: `${project.progress}%` }} />
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <DollarSign className="h-5 w-5 text-gray-400" />
-            <span className={cn(
-              "text-lg font-bold",
-              budgetPercentage > 90 ? "text-red-400" : "text-white"
-            )}>
-              {budgetPercentage.toFixed(0)}%
-            </span>
-          </div>
-          <p className="text-sm text-gray-400">Budget Used</p>
-          <p className="text-sm text-white">
-            ${(project.spent / 1000).toFixed(0)}k / ${(project.budget / 1000).toFixed(0)}k
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <CheckCircle2 className="h-5 w-5 text-gray-400" />
-            <span className="text-lg font-bold text-white">
-              {project.tasks.completed}/{project.tasks.total}
-            </span>
-          </div>
-          <p className="text-sm text-gray-400">Tasks Completed</p>
-          <p className="text-sm text-purple-400">{project.tasks.inProgress} in progress</p>
-        </div>
-
-        <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-2">
-            <Users className="h-5 w-5 text-gray-400" />
-            <span className="text-lg font-bold text-white">{project.team.length}</span>
-          </div>
-          <p className="text-sm text-gray-400">Team Members</p>
-          <div className="flex -space-x-2 mt-2">
-            {project.team.slice(0, 4).map((member) => (
-              <div
-                key={member.id}
-                className="w-6 h-6 rounded-full gradient-purple border-2 border-gray-900 flex items-center justify-center text-white text-xs font-medium"
-              >
-                {member.avatar}
-              </div>
+        {/* Tabs Skeleton */}
+        <div className="border-b border-gray-800">
+          <div className="flex space-x-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 w-24 bg-gray-800 rounded-t" />
             ))}
           </div>
         </div>
+
+        {/* Content Skeleton */}
+        <div className="bg-gray-800 rounded-xl h-96" />
       </div>
+    )
+  }
 
-      {/* Tabs */}
-      <div className="border-b border-gray-800">
-        <div className="flex items-center gap-6">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
+  if (!project) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Briefcase className="h-16 w-16 text-gray-600 mb-4" />
+        <h2 className="text-2xl font-bold text-white mb-2">Project Not Found</h2>
+        <p className="text-gray-400 mb-6">The project you're looking for doesn't exist</p>
+        <Link
+          href="/dashboard/projects"
+          className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+        >
+          Back to Projects
+        </Link>
+      </div>
+    )
+  }
 
-            // Use Link for pricing tab to navigate to pricing page
-            if (tab.id === 'pricing') {
-              return (
-                <Link key={tab.id} href={`/dashboard/projects/${project.id}/pricing`}>
-                  <button
-                    className={cn(
-                      "pb-3 px-1 border-b-2 transition-all flex items-center gap-2",
-                      "border-transparent text-gray-400 hover:text-white hover:border-purple-500"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {tab.label}
-                  </button>
-                </Link>
-              )
-            }
+  const tabs = [
+    { id: 'overview' as TabType, label: 'Overview', icon: Briefcase },
+    { id: 'tasks' as TabType, label: 'Tasks', icon: CheckCircle2 },
+    { id: 'milestones' as TabType, label: 'Milestones', icon: Target },
+    { id: 'timeline' as TabType, label: 'Timeline', icon: Activity },
+    { id: 'team' as TabType, label: 'Team', icon: Users }
+  ]
 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "pb-3 px-1 border-b-2 transition-all flex items-center gap-2",
-                  activeTab === tab.id
-                    ? "border-purple-500 text-white"
-                    : "border-transparent text-gray-400 hover:text-white"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-                {tab.count !== undefined && (
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-full text-xs font-medium",
-                    activeTab === tab.id
-                      ? "bg-purple-600 text-white"
-                      : "bg-gray-800 text-gray-400"
-                  )}>
-                    {tab.count}
+  return (
+    <PermissionGuard permission="read:projects">
+      <div className="p-4 sm:p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard/projects"
+              className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{project.name}</h1>
+              <p className="text-sm sm:text-base text-gray-400 line-clamp-2">{project.description}</p>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className={cn("px-3 py-1 rounded-lg text-xs font-medium border", getStatusColor(project.status))}>
+                  {project.status}
+                </span>
+                <span className={cn("px-3 py-1 rounded-lg text-xs font-medium", getPriorityColor(project.priority))}>
+                  {project.priority}
+                </span>
+                {project.tags.map(tag => (
+                  <span key={tag} className="px-3 py-1 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300">
+                    {tag}
                   </span>
-                )}
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Can permission="write:projects">
+              <Link
+                href={`/dashboard/projects/${project.id}/edit`}
+                className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors flex items-center space-x-2"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Edit</span>
+              </Link>
+
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Archive</span>
               </button>
-            )
-          })}
+            </Can>
+          </div>
         </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-400">Progress</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mt-2">{project.completionPercentage}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-purple-500" />
+            </div>
+          </div>
+
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-400">Budget</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mt-2">
+                  {formatCurrency(project.budgetSpent || 0)}
+                </p>
+                <p className="text-xs text-gray-500">of {formatCurrency(project.budgetAllocated || 0)}</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-500" />
+            </div>
+          </div>
+
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-400">Tasks</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mt-2">
+                  {project.tasksCompleted}/{project.tasksTotal}
+                </p>
+              </div>
+              <CheckCircle2 className="h-8 w-8 text-blue-500" />
+            </div>
+          </div>
+
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-400">Team Size</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mt-2">{project.teamSize || 0}</p>
+              </div>
+              <Users className="h-8 w-8 text-orange-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-gray-800 overflow-hidden">
+          <div className="flex space-x-4 sm:space-x-6 overflow-x-auto scrollbar-hide -mb-px">
+            {tabs.map(tab => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "flex items-center space-x-2 px-3 sm:px-4 py-3 border-b-2 transition-colors whitespace-nowrap text-sm sm:text-base",
+                    activeTab === tab.id
+                      ? 'border-purple-500 text-white'
+                      : 'border-transparent text-gray-400 hover:text-white'
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{tab.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="min-h-[400px]">
+          {activeTab === 'overview' && <OverviewTab project={project} />}
+          {activeTab === 'tasks' && <TasksTab tasks={tasks} projectId={project.id} />}
+          {activeTab === 'milestones' && <MilestonesTab milestones={milestones} projectId={project.id} />}
+          {activeTab === 'timeline' && <TimelineTab timeline={timeline} />}
+          {activeTab === 'team' && <TeamTab project={project} />}
+        </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
+            <div className="relative bg-gray-900 rounded-xl border border-gray-800 p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-white mb-2">Archive Project?</h3>
+              <p className="text-gray-400 mb-6">
+                Are you sure you want to archive this project? This will change its status to archived.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  Archive
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </PermissionGuard>
+  )
+}
+
+// Overview Tab Component
+function OverviewTab({ project }: { project: Project }) {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not set'
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(amount)
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left Column */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Project Details */}
+        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Project Details</h3>
+          <div className="space-y-3">
+            {project.clientName && (
+              <div>
+                <p className="text-sm text-gray-400">Client</p>
+                <p className="text-white mt-1">{project.clientName}</p>
+              </div>
+            )}
+            {project.managerName && (
+              <div>
+                <p className="text-sm text-gray-400">Project Manager</p>
+                <p className="text-white mt-1">{project.managerName}</p>
+              </div>
+            )}
+            {project.ownerName && (
+              <div>
+                <p className="text-sm text-gray-400">Owner</p>
+                <p className="text-white mt-1">{project.ownerName}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        {project.description && (
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Description</h3>
+            <p className="text-gray-300 whitespace-pre-wrap">{project.description}</p>
+          </div>
+        )}
       </div>
 
-      {/* Tab Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {activeTab === 'overview' && (
-            <>
-              {/* Client Information */}
-              <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Client Information</h3>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl gradient-purple flex items-center justify-center text-white text-xl font-bold">
-                    {project.client.logo}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium">{project.client.name}</h4>
-                    <p className="text-gray-400 text-sm">{project.client.contact}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
-                      <span>{project.client.email}</span>
-                      <span>{project.client.phone}</span>
-                    </div>
-                  </div>
-                  <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-                    <ExternalLink className="h-5 w-5 text-gray-400" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Milestones */}
-              <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Milestones</h3>
-                <div className="space-y-3">
-                  {project.milestones.map((milestone) => (
-                    <div key={milestone.id} className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-10 h-10 rounded-lg flex items-center justify-center",
-                        milestone.status === 'completed' ? "gradient-green" :
-                        milestone.status === 'in_progress' ? "gradient-purple" :
-                        "bg-gray-800"
-                      )}>
-                        {milestone.status === 'completed' ? (
-                          <CheckCircle2 className="h-5 w-5 text-white" />
-                        ) : milestone.status === 'in_progress' ? (
-                          <Clock className="h-5 w-5 text-white" />
-                        ) : (
-                          <Target className="h-5 w-5 text-gray-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={cn(
-                          "font-medium",
-                          milestone.status === 'completed' ? "text-gray-400 line-through" : "text-white"
-                        )}>
-                          {milestone.name}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          {milestone.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Tasks */}
-              <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Recent Tasks</h3>
-                  <button
-                    onClick={() => setActiveTab('tasks')}
-                    className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
-                  >
-                    View All →
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {tasks.slice(0, showAllTasks ? undefined : 4).map((task) => (
-                    <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        task.status === 'completed' ? "bg-green-400" :
-                        task.status === 'in_progress' ? "bg-purple-400" :
-                        "bg-gray-400"
-                      )} />
-                      <div className="flex-1">
-                        <p className={cn(
-                          "text-sm",
-                          task.status === 'completed' ? "text-gray-400 line-through" : "text-white"
-                        )}>
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <div className="flex items-center gap-1">
-                            <div className="w-5 h-5 rounded-full gradient-purple flex items-center justify-center text-white text-xs">
-                              {task.assignee.avatar}
-                            </div>
-                            <span className="text-xs text-gray-400">{task.assignee.name}</span>
-                          </div>
-                          <span className={cn(
-                            "text-xs px-2 py-0.5 rounded",
-                            priorityConfig[task.priority].bg,
-                            priorityConfig[task.priority].color
-                          )}>
-                            {priorityConfig[task.priority].label}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {task.dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'tasks' && (
-            <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">All Tasks</h3>
-                <button className="px-4 py-2 rounded-lg gradient-purple text-white text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Task
-                </button>
-              </div>
-              <div className="space-y-3">
-                {tasks.map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-all">
-                    <input type="checkbox" checked={task.status === 'completed'} className="rounded" />
-                    <div className="flex-1">
-                      <p className={cn(
-                        task.status === 'completed' ? "text-gray-400 line-through" : "text-white"
-                      )}>
-                        {task.title}
-                      </p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1">
-                          <div className="w-6 h-6 rounded-full gradient-purple flex items-center justify-center text-white text-xs">
-                            {task.assignee.avatar}
-                          </div>
-                          <span className="text-sm text-gray-400">{task.assignee.name}</span>
-                        </div>
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded",
-                          taskStatusConfig[task.status].bg,
-                          taskStatusConfig[task.status].color
-                        )}>
-                          {taskStatusConfig[task.status].label}
-                        </span>
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded",
-                          priorityConfig[task.priority].bg,
-                          priorityConfig[task.priority].color
-                        )}>
-                          {priorityConfig[task.priority].label}
-                        </span>
-                        {task.tags.map((tag) => (
-                          <span key={tag} className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-sm text-gray-400">
-                      {task.dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                ))}
-              </div>
+      {/* Right Column */}
+      <div className="space-y-6">
+        {/* Timeline */}
+        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Timeline</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-gray-400">Start Date</p>
+              <p className="text-white mt-1">{formatDate(project.startDate)}</p>
             </div>
-          )}
-
-          {activeTab === 'team' && (
-            <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">Team Members</h3>
-                <button className="px-4 py-2 rounded-lg gradient-purple text-white text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Member
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-800/30 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full gradient-purple flex items-center justify-center text-white font-medium">
-                      {project.manager.avatar}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{project.manager.name}</p>
-                      <p className="text-sm text-gray-400">Project Manager</p>
-                    </div>
-                    <span className="px-3 py-1 rounded-lg bg-purple-600/20 text-purple-400 text-sm">
-                      Manager
-                    </span>
-                  </div>
-                </div>
-                {project.team.map((member) => (
-                  <div key={member.id} className="p-4 bg-gray-800/30 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full gradient-purple flex items-center justify-center text-white font-medium">
-                        {member.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-medium">{member.name}</p>
-                        <p className="text-sm text-gray-400">{member.role}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-white">{member.allocation}%</p>
-                        <p className="text-xs text-gray-400">Allocation</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div>
+              <p className="text-sm text-gray-400">End Date</p>
+              <p className="text-white mt-1">{formatDate(project.endDate)}</p>
             </div>
-          )}
-
-          {activeTab === 'files' && (
-            <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">Project Files</h3>
-                <button className="px-4 py-2 rounded-lg gradient-purple text-white text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Upload File
-                </button>
-              </div>
-              <div className="space-y-3">
-                {project.documents.map((doc) => {
-                  const iconMap = {
-                    pdf: FileText,
-                    doc: FileText,
-                    design: Image,
-                    code: Code
-                  }
-                  const Icon = iconMap[doc.type] || FileText
-                  return (
-                    <div key={doc.id} className="flex items-center gap-3 p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-all">
-                      <div className="p-2 rounded-lg bg-gray-800">
-                        <Icon className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white">{doc.name}</p>
-                        <p className="text-sm text-gray-400">
-                          {doc.size} • {doc.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
-                      <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-                        <Download className="h-4 w-4 text-gray-400" />
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
+            <div>
+              <p className="text-sm text-gray-400">Created</p>
+              <p className="text-white mt-1">{formatDate(project.createdAt)}</p>
             </div>
-          )}
-
-          {activeTab === 'activity' && (
-            <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-              <h3 className="text-lg font-semibold text-white mb-6">Activity Feed</h3>
-              <div className="space-y-4">
-                {activities.map((activity) => {
-                  const iconMap = {
-                    task: CheckCircle2,
-                    comment: MessageSquare,
-                    code: GitBranch,
-                    file: Paperclip,
-                    deployment: Zap
-                  }
-                  const Icon = iconMap[activity.type] || Activity
-                  return (
-                    <div key={activity.id} className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full gradient-purple flex items-center justify-center text-white text-xs">
-                        {activity.user.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-300">
-                          <span className="text-white font-medium">{activity.user.name}</span>
-                          {' '}{activity.action}{' '}
-                          <span className="text-purple-400">{activity.target}</span>
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                      </div>
-                      <Icon className="h-4 w-4 text-gray-400" />
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Project Manager */}
-          <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-4">PROJECT MANAGER</h3>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full gradient-purple flex items-center justify-center text-white font-medium">
-                {project.manager.avatar}
-              </div>
-              <div>
-                <p className="text-white font-medium">{project.manager.name}</p>
-                <p className="text-sm text-gray-400">{project.manager.email}</p>
-              </div>
+        {/* Budget */}
+        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Budget</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <p className="text-gray-400">Allocated</p>
+              <p className="text-white font-semibold">{formatCurrency(project.budgetAllocated || 0)}</p>
+            </div>
+            <div className="flex justify-between">
+              <p className="text-gray-400">Spent</p>
+              <p className="text-white font-semibold">{formatCurrency(project.budgetSpent || 0)}</p>
+            </div>
+            <div className="flex justify-between">
+              <p className="text-gray-400">Remaining</p>
+              <p className="text-green-400 font-semibold">
+                {formatCurrency((project.budgetAllocated || 0) - (project.budgetSpent || 0))}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Technologies */}
-          <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-4">TECHNOLOGIES</h3>
-            <div className="flex flex-wrap gap-2">
-              {project.technologies.map((tech) => (
-                <span key={tech} className="px-3 py-1 rounded-lg bg-gray-800 text-gray-300 text-sm">
-                  {tech}
-                </span>
-              ))}
+        {/* Progress */}
+        <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Progress</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <p className="text-gray-400">Tasks</p>
+              <p className="text-white font-semibold">{project.tasksCompleted}/{project.tasksTotal}</p>
             </div>
-          </div>
-
-          {/* Repository */}
-          <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-4">REPOSITORY</h3>
-            <a href={`https://${project.repository}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors">
-              <GitBranch className="h-4 w-4" />
-              <span className="text-sm">{project.repository}</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-4">QUICK STATS</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Project Duration</span>
-                <span className="text-sm text-white">
-                  {Math.ceil((project.dueDate.getTime() - project.startDate.getTime()) / (1000 * 60 * 60 * 24 * 30))} months
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Hours Logged</span>
-                <span className="text-sm text-white">1,248 hrs</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Commits</span>
-                <span className="text-sm text-white">342</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Issues Closed</span>
-                <span className="text-sm text-white">87 / 92</span>
-              </div>
+            <div className="flex justify-between">
+              <p className="text-gray-400">Milestones</p>
+              <p className="text-white font-semibold">{project.milestonesCompleted}/{project.milestonesTotal}</p>
             </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-4">RECENT ACTIVITY</h3>
-            <div className="space-y-3">
-              {activities.slice(0, 3).map((activity) => (
-                <div key={activity.id} className="text-sm">
-                  <p className="text-gray-300">
-                    <span className="text-white font-medium">{activity.user.name}</span>
-                    {' '}{activity.action}
-                  </p>
-                  <p className="text-purple-400 text-xs mt-1">{activity.target}</p>
-                  <p className="text-gray-500 text-xs">{activity.time}</p>
-                </div>
-              ))}
+            <div className="flex justify-between">
+              <p className="text-gray-400">Completion</p>
+              <p className="text-purple-400 font-semibold">{project.completionPercentage}%</p>
             </div>
           </div>
         </div>
@@ -762,5 +462,197 @@ export default function ProjectDetailsPage() {
   )
 }
 
-// Add missing import
-import { LayoutDashboard } from 'lucide-react'
+// Tasks Tab Component
+function TasksTab({ tasks, projectId }: { tasks: Task[], projectId: string }) {
+  const getTaskStatusColor = (status: string) => {
+    const colors = {
+      backlog: 'bg-gray-500/20 text-gray-300',
+      todo: 'bg-blue-500/20 text-blue-300',
+      in_progress: 'bg-purple-500/20 text-purple-300',
+      in_review: 'bg-yellow-500/20 text-yellow-300',
+      done: 'bg-green-500/20 text-green-300',
+      blocked: 'bg-red-500/20 text-red-300'
+    }
+    return colors[status as keyof typeof colors] || colors.backlog
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">Tasks</h3>
+        <Can permission="write:projects">
+          <Link
+            href={`/dashboard/projects/${projectId}/board`}
+            className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Go to Kanban Board</span>
+          </Link>
+        </Can>
+      </div>
+
+      {tasks.length === 0 ? (
+        <div className="text-center py-12 bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl">
+          <CheckCircle2 className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400">No tasks yet</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tasks.slice(0, 10).map(task => (
+            <div key={task.id} className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <h4 className="text-white font-medium mb-1">{task.title}</h4>
+                  <p className="text-sm text-gray-400 line-clamp-2">{task.description}</p>
+                </div>
+                <span className={cn("px-2 py-1 rounded text-xs font-medium ml-4", getTaskStatusColor(task.status))}>
+                  {task.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                {task.assigneeName && <span>Assigned to: {task.assigneeName}</span>}
+                {task.dueDate && <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Milestones Tab Component
+function MilestonesTab({ milestones, projectId }: { milestones: Milestone[], projectId: string }) {
+  const getMilestoneStatusColor = (status: string) => {
+    const colors = {
+      upcoming: 'bg-blue-500/20 text-blue-300',
+      in_progress: 'bg-purple-500/20 text-purple-300',
+      completed: 'bg-green-500/20 text-green-300',
+      delayed: 'bg-red-500/20 text-red-300'
+    }
+    return colors[status as keyof typeof colors] || colors.upcoming
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">Milestones</h3>
+      </div>
+
+      {milestones.length === 0 ? (
+        <div className="text-center py-12 bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl">
+          <Target className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400">No milestones yet</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {milestones.map(milestone => (
+            <div key={milestone.id} className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <h4 className="text-white font-medium mb-1">{milestone.name}</h4>
+                  <p className="text-sm text-gray-400">{milestone.description}</p>
+                </div>
+                <span className={cn("px-2 py-1 rounded text-xs font-medium ml-4", getMilestoneStatusColor(milestone.status))}>
+                  {milestone.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                <span>Tasks: {milestone.tasksCompleted}/{milestone.tasksTotal}</span>
+                <span>Progress: {milestone.completionPercentage}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Timeline Tab Component
+function TimelineTab({ timeline }: { timeline: ProjectTimeline[] }) {
+  const getTimelineIcon = (type: string) => {
+    switch (type) {
+      case 'milestone': return Target
+      case 'task': return CheckCircle2
+      case 'sprint': return Activity
+      case 'document': return FileText
+      case 'team': return Users
+      default: return Activity
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-white">Activity Timeline</h3>
+
+      {timeline.length === 0 ? (
+        <div className="text-center py-12 bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl">
+          <Activity className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400">No activity yet</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {timeline.map(event => {
+            const Icon = getTimelineIcon(event.type)
+            return (
+              <div key={event.id} className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 rounded-lg bg-purple-500/20">
+                    <Icon className="h-4 w-4 text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-medium">{event.title}</h4>
+                    {event.description && (
+                      <p className="text-sm text-gray-400 mt-1">{event.description}</p>
+                    )}
+                    <div className="flex items-center space-x-2 mt-2">
+                      <span className="text-xs text-gray-500">{event.userName}</span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(event.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Team Tab Component
+function TeamTab({ project }: { project: Project }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">Team Members</h3>
+        <p className="text-gray-400">Total: {project.teamSize || 0}</p>
+      </div>
+
+      <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+        <div className="space-y-4">
+          {project.ownerName && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Owner</p>
+              <p className="text-white">{project.ownerName}</p>
+            </div>
+          )}
+          {project.managerName && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Manager</p>
+              <p className="text-white">{project.managerName}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-sm text-gray-400 mb-1">Team Size</p>
+            <p className="text-white">{project.teamSize || 0} members</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
