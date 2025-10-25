@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { Project } from '@/types/projects'
+import { Project, ProjectStatus, ProjectPriority } from '@/types/projects'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft, ArrowRight, FolderOpen, Users, Calendar,
@@ -168,7 +168,7 @@ export default function EditProjectPage() {
           requirements: [],
 
           projectManager: projectData.managerId || '',
-          teamMembers: (projectData.teamMemberIds || []).filter(id => id !== projectData.ownerId),
+          teamMembers: [], // Team members not stored as array in Project type
           requiredSkills: [],
           externalResources: [],
 
@@ -270,7 +270,7 @@ export default function EditProjectPage() {
       id: 'checklist-web-dev',
       name: 'Web Development Checklist',
       description: 'Complete checklist for web application projects',
-      appTypes: ['web'],
+      appTypes: ['website'],
       items: [
         { id: 'web-1', title: 'Setup development environment', description: 'Configure dev tools and environment', category: 'technical', required: true, order: 1, completed: false },
         { id: 'web-2', title: 'Configure version control', description: 'Set up Git repository and branching strategy', category: 'technical', required: true, order: 2, completed: false },
@@ -285,7 +285,7 @@ export default function EditProjectPage() {
       id: 'checklist-mobile-app',
       name: 'Mobile App Checklist',
       description: 'Checklist for iOS and Android app development',
-      appTypes: ['mobile'],
+      appTypes: ['mobile_app'],
       items: [
         { id: 'mobile-1', title: 'App store accounts setup', description: 'Configure Apple and Google developer accounts', category: 'deployment', required: true, order: 1, completed: false },
         { id: 'mobile-2', title: 'Push notification setup', description: 'Configure FCM and APNs', category: 'technical', required: true, order: 2, completed: false },
@@ -300,7 +300,7 @@ export default function EditProjectPage() {
       id: 'checklist-api',
       name: 'API Development Checklist',
       description: 'Best practices for RESTful API development',
-      appTypes: ['api'],
+      appTypes: ['custom'],
       items: [
         { id: 'api-1', title: 'API documentation', description: 'Create OpenAPI/Swagger documentation', category: 'documentation', required: true, order: 1, completed: false },
         { id: 'api-2', title: 'Authentication implementation', description: 'Implement JWT/OAuth authentication', category: 'technical', required: true, order: 2, completed: false },
@@ -315,7 +315,7 @@ export default function EditProjectPage() {
       id: 'checklist-security',
       name: 'Security Audit Checklist',
       description: 'Security review and compliance checklist',
-      appTypes: ['web', 'mobile', 'api'],
+      appTypes: ['website', 'mobile_app', 'custom'],
       items: [
         { id: 'sec-1', title: 'Authentication review', description: 'Review authentication mechanisms', category: 'technical', required: true, order: 1, completed: false },
         { id: 'sec-2', title: 'Authorization testing', description: 'Test role-based access controls', category: 'qa', required: true, order: 2, completed: false },
@@ -371,28 +371,28 @@ export default function EditProjectPage() {
       const selectedManager = users.find(u => u.id === formData.projectManager)
 
       // Map form data to Project update (keeping existing metrics)
-      const updateData = {
+      const updateData: Partial<Omit<Project, 'id' | 'createdAt'>> = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        status: formData.status as any,
-        priority: formData.priority as any,
+        status: formData.status as ProjectStatus,
+        priority: formData.priority as ProjectPriority,
         tags: formData.tags,
 
         // Client info
-        clientId: formData.clientId || null,
-        clientName: selectedClient?.name || null,
+        clientId: formData.clientId || undefined,
+        clientName: selectedClient?.name || undefined,
 
         // Manager info
-        managerId: formData.projectManager || null,
-        managerName: selectedManager?.name || null,
+        managerId: formData.projectManager || undefined,
+        managerName: selectedManager?.name || undefined,
 
         // Budget
         budgetAllocated: formData.budget || 0,
         currency: formData.currency || 'USD',
 
         // Dates
-        startDate: formData.startDate || null,
-        endDate: formData.endDate || null,
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined,
 
         // Keep existing metrics
         budgetSpent: project.budgetSpent,
@@ -401,12 +401,11 @@ export default function EditProjectPage() {
         milestonesTotal: project.milestonesTotal,
         milestonesCompleted: project.milestonesCompleted,
         completionPercentage: project.completionPercentage,
-        hoursLogged: project.hoursLogged,
+        actualHours: project.actualHours,
         estimatedHours: formData.estimatedHours || 0,
 
-        // Team (include owner)
-        teamMemberIds: [project.ownerId, ...formData.teamMembers],
-        teamSize: formData.teamMembers.length + 1
+        // Team
+        teamSize: project.teamSize
       }
 
       // Update project
