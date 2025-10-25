@@ -29,4 +29,25 @@ export const analytics = typeof window !== 'undefined'
   ? isSupported().then(yes => yes ? getAnalytics(app) : null)
   : null
 
+// Secondary Firebase app for creating users without affecting current session
+// This is used by SuperAdmin to create tenant users without being logged out
+let secondaryApp: any = null
+let secondaryAuth: any = null
+
+export const getSecondaryAuth = () => {
+  if (typeof window === 'undefined') return null
+
+  if (!secondaryApp) {
+    const existingApp = getApps().find(app => app.name === 'Secondary')
+    if (existingApp) {
+      secondaryApp = existingApp
+    } else {
+      secondaryApp = initializeApp(firebaseConfig, 'Secondary')
+    }
+    secondaryAuth = getAuth(secondaryApp)
+  }
+
+  return secondaryAuth
+}
+
 export default app

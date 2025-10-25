@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -12,7 +12,9 @@ import {
   BarChart3,
   LogOut,
   Activity,
-  Shield
+  Shield,
+  ChevronDown,
+  User
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -24,6 +26,7 @@ export default function SuperAdminLayout({
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   useEffect(() => {
     if (!loading && (!user || !user.isSuperAdmin)) {
@@ -75,19 +78,6 @@ export default function SuperAdminLayout({
           </div>
         </div>
 
-        {/* User Info */}
-        <div className="px-4 py-3 border-b border-gray-800">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-semibold">
-              {user.name?.charAt(0) || 'S'}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-white">{user.name}</p>
-              <p className="text-xs text-gray-400">{user.email}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map(item => {
@@ -111,21 +101,78 @@ export default function SuperAdminLayout({
             )
           })}
         </nav>
-
-        {/* Sign Out */}
-        <div className="p-4 border-t border-gray-800">
-          <button
-            onClick={signOut}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="font-medium">Sign Out</span>
-          </button>
-        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-gray-950">{children}</main>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header Bar */}
+        <header className="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-end px-6">
+          {/* User Profile Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-gray-800 transition-all"
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-semibold">
+                {user.name?.charAt(0) || 'S'}
+              </div>
+              <div className="text-left hidden sm:block">
+                <p className="text-sm font-medium text-white">{user.name}</p>
+                <p className="text-xs text-gray-400">SuperAdmin</p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showProfileMenu && (
+              <>
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowProfileMenu(false)}
+                />
+
+                {/* Menu */}
+                <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-gray-700">
+                    <p className="text-sm font-medium text-white">{user.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        router.push('/superadmin/settings')
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-all"
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="text-sm">Profile Settings</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        signOut()
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:bg-gray-700 hover:text-red-300 transition-all"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span className="text-sm">Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-950">{children}</main>
+      </div>
     </div>
   )
 }

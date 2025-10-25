@@ -153,18 +153,19 @@ export default function TenantsPage() {
               {filteredTenants.map(tenant => (
                 <tr
                   key={tenant.id}
-                  className="hover:bg-gray-800/50 transition-colors"
+                  className="hover:bg-gray-800/50 transition-colors cursor-pointer"
+                  onClick={() => window.location.href = `/superadmin/tenants/${tenant.id}`}
                 >
                   <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3">
+                    <Link href={`/superadmin/tenants/${tenant.id}`} className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold">
                         {tenant.name?.charAt(0) || 'T'}
                       </div>
                       <div>
-                        <p className="font-medium text-white">{tenant.name}</p>
+                        <p className="font-medium text-white hover:text-purple-400 transition-colors">{tenant.name}</p>
                         <p className="text-sm text-gray-400">{tenant.slug}</p>
                       </div>
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     <PlanBadge plan={tenant.subscription.plan} />
@@ -186,7 +187,10 @@ export default function TenantsPage() {
                     <div className="flex items-center justify-end space-x-2">
                       {tenant.status === 'active' && (
                         <button
-                          onClick={() => handleSuspend(tenant.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSuspend(tenant.id)
+                          }}
                           className="p-2 rounded-lg hover:bg-gray-800 text-yellow-400 hover:text-yellow-300"
                           title="Suspend"
                         >
@@ -195,7 +199,10 @@ export default function TenantsPage() {
                       )}
                       {tenant.status === 'suspended' && (
                         <button
-                          onClick={() => handleReactivate(tenant.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleReactivate(tenant.id)
+                          }}
                           className="p-2 rounded-lg hover:bg-gray-800 text-green-400 hover:text-green-300"
                           title="Reactivate"
                         >

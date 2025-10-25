@@ -97,6 +97,19 @@ service cloud.firestore {
     }
 
     // ============================================
+    // PRICING PLANS COLLECTION
+    // ============================================
+
+    match /pricing_plans/{planId} {
+      // SuperAdmin can manage all pricing plans
+      allow read, write: if isSuperAdmin();
+
+      // Regular authenticated users can view active plans only
+      // (for future tenant self-service plan selection)
+      allow read: if isAuthenticated() && resource.data.status == 'active';
+    }
+
+    // ============================================
     // CLIENTS COLLECTION (Tenant-scoped)
     // ============================================
 

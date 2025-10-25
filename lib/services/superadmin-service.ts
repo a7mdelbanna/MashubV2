@@ -14,7 +14,7 @@ import {
   setDoc,
   limit as firestoreLimit
 } from 'firebase/firestore'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth'
 import { Tenant, User } from '@/types'
 
 // ===========================================
@@ -74,9 +74,15 @@ export const superadminService = {
    */
   async getAllTenants(): Promise<Tenant[]> {
     try {
-      const q = query(collection(db, 'tenants'), orderBy('createdAt', 'desc'))
+      const q = query(collection(db, 'tenants'))
       const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tenant))
+      const tenants = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tenant))
+      // Sort in memory instead of using Firestore orderBy
+      return tenants.sort((a, b) => {
+        const aTime = a.createdAt?.seconds || 0
+        const bTime = b.createdAt?.seconds || 0
+        return bTime - aTime // descending order
+      })
     } catch (error) {
       console.error('Error getting tenants:', error)
       throw error
@@ -284,14 +290,21 @@ export const superadminService = {
       if (tenantId) {
         q = query(
           collection(db, 'users'),
-          where('tenantId', '==', tenantId),
-          orderBy('createdAt', 'desc')
+          where('tenantId', '==', tenantId)
         )
       } else {
-        q = query(collection(db, 'users'), orderBy('createdAt', 'desc'))
+        q = query(collection(db, 'users'))
       }
       const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User))
+      const users = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User))
+      // Sort in memory instead of using Firestore orderBy to avoid composite index requirement
+      return users.sort((a, b) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() :
+                      a.createdAt?.toMillis?.() || 0
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() :
+                      b.createdAt?.toMillis?.() || 0
+        return bTime - aTime // descending order
+      })
     } catch (error) {
       console.error('Error getting users:', error)
       throw error
@@ -323,12 +336,24 @@ export const superadminService = {
     createdBy: string
   }): Promise<string> {
     try {
-      // Create Firebase Auth user
+      // Dynamically import secondary auth function (client-side only)
+      const { getSecondaryAuth } = await import('@/lib/firebase')
+
+      // Get secondary auth instance to avoid logging out current user
+      const secondaryAuth = getSecondaryAuth()
+      if (!secondaryAuth) {
+        throw new Error('Secondary auth not available')
+      }
+
+      // Create Firebase Auth user using secondary auth
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
+        secondaryAuth,
         data.email,
         data.password
       )
+
+      // Sign out from secondary auth to clean up
+      await signOut(secondaryAuth)
 
       // Create Firestore user document
       const newUser = {

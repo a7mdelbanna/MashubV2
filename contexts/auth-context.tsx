@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await firebaseSignOut(auth)
       setUser(null)
       setTenant(null)
-      router.push('/')
+      router.push('/login')
       toast.success('Signed out successfully')
     } catch (error) {
       console.error('Sign out error:', error)
