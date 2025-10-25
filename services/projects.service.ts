@@ -22,6 +22,7 @@ import {
   getProject,
   getProjects,
   subscribeToProject,
+  subscribeToProjects,
   searchProjects,
   getProjectStats
 } from '@/lib/firebase-queries'
@@ -203,6 +204,29 @@ export function subscribeToProjectChanges(
   callback: (project: Project | null) => void
 ): Unsubscribe {
   return subscribeToProject(tenantId, projectId, callback)
+}
+
+/**
+ * Subscribe to all projects for a tenant in real-time
+ *
+ * @param tenantId - The tenant ID
+ * @param callback - Callback function called when projects change
+ * @param options - Optional filters and sorting
+ * @returns Unsubscribe function
+ */
+export function subscribeToAllProjects(
+  tenantId: string,
+  callback: (projects: Project[]) => void,
+  options?: {
+    status?: ProjectStatus | ProjectStatus[]
+    priority?: ProjectPriority
+    type?: ProjectType
+    limit?: number
+    orderByField?: 'createdAt' | 'updatedAt' | 'dueDate' | 'name'
+    orderDirection?: 'asc' | 'desc'
+  }
+): Unsubscribe {
+  return subscribeToProjects(tenantId, callback, options)
 }
 
 // ============================================================================
@@ -411,6 +435,7 @@ export const ProjectsService = {
   search: searchProjectsByTerm,
   getStats: getProjectStatistics,
   subscribe: subscribeToProjectChanges,
+  subscribeAll: subscribeToAllProjects,
 
   // Update
   update: updateProject,

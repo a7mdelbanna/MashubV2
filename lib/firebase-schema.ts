@@ -290,38 +290,95 @@ export interface FirestoreApp {
 export interface FirestoreClient {
   id: string
   tenantId: string
-  name: string
-  logo?: string
 
-  // Contact
+  // Basic Info
+  name: string
+  legalName?: string
+  type: 'individual' | 'company' | 'enterprise' | 'government'
+  taxId?: string
+
+  // Status & Classification
+  status: 'lead' | 'prospect' | 'active' | 'inactive' | 'churned'
+  priority: 'low' | 'medium' | 'high' | 'vip'
+  source: 'referral' | 'marketing' | 'sales' | 'website' | 'social' | 'event' | 'other'
+  tags: string[]
+  industry?: string
+  size?: string
+
+  // Contact Details
   email: string
-  phone: string
+  phone?: string
   website?: string
 
   // Address
-  address: {
-    street: string
-    city: string
-    state: string
-    country: string
-    zip: string
+  address?: {
+    street?: string
+    street2?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    formatted?: string
   }
 
-  // Business
-  industry: string
-  size: 'startup' | 'small' | 'medium' | 'enterprise'
-  status: 'active' | 'inactive' | 'potential'
+  // Primary Contact
+  primaryContactId?: string
+  primaryContact?: {
+    firstName: string
+    lastName: string
+    email: string
+    phone?: string
+    jobTitle?: string
+  }
 
-  // Financial (denormalized)
+  // Logo & Branding
+  logo?: string
+  color?: string
+
+  // Business Metrics
   totalRevenue: number
+  lifetimeValue: number
+  averageInvoiceValue: number
   outstandingBalance: number
+
+  // Project Metrics
+  totalProjects: number
+  activeProjects: number
+  completedProjects: number
+
+  // Billing
+  currency?: string
+  paymentTerms?: number
+  defaultBillingMethod?: string
+  creditLimit?: number
+
+  // Relationships
+  assignedToUserId?: string
+  assignedToUserName?: string
+  accountManagerId?: string
+  accountManagerName?: string
+
+  // Activity
+  lastContactDate?: string
+  lastProjectDate?: string
+  lastInvoiceDate?: string
+  lastPaymentDate?: string
+
+  // Custom Fields
+  customFields?: Record<string, any>
 
   // Timestamps
   createdAt: string
   updatedAt: string
-  lastContactDate?: string
+  onboardedAt?: string
+  churnedAt?: string
 
   // NOTE: Relationships fetched via queries:
+  // - contacts: ContactPerson[] (subcollection)
+  // - communications: Communication[] (subcollection)
+  // - activities: ClientActivity[] (subcollection)
+  // - notes: ClientNote[] (subcollection)
+  // - documents: ClientDocument[] (subcollection)
   // - apps: query apps where client.id == this.id
   // - projects: query apps where client.id == this.id, then get unique projectIds
 }

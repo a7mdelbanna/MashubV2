@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { projectsService } from '@/lib/services/projects-service'
+import { ProjectsService } from '@/services/projects.service'
+import { projectsService } from '@/lib/services/projects-service' // Keep for tasks, milestones, timeline
 import { Project } from '@/types'
 import { Task, Milestone, TimeEntry, ProjectTimeline } from '@/types/projects'
 import { PermissionGuard } from '@/components/auth/permission-guard'
@@ -22,7 +23,7 @@ type TabType = 'overview' | 'tasks' | 'timeline' | 'milestones' | 'team'
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, tenant } = useAuth()
   const projectId = params.id as string
 
   const [project, setProject] = useState<Project | null>(null)
@@ -35,15 +36,15 @@ export default function ProjectDetailPage() {
 
   // Real-time subscription to project
   useEffect(() => {
-    if (!projectId) return
+    if (!projectId || !tenant?.id) return
 
-    const unsubscribe = projectsService.subscribeToProject(projectId, (updatedProject) => {
+    const unsubscribe = ProjectsService.subscribe(tenant.id, projectId, (updatedProject) => {
       setProject(updatedProject)
       setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [projectId])
+  }, [projectId, tenant?.id])
 
   // Real-time subscription to related data
   useEffect(() => {
@@ -61,10 +62,10 @@ export default function ProjectDetailPage() {
   }, [projectId])
 
   const handleDelete = async () => {
-    if (!project) return
+    if (!project || !tenant?.id) return
 
     try {
-      await projectsService.deleteProject(project.id)
+      await ProjectsService.archive(tenant.id, project.id)
       toast.success('Project archived successfully')
       router.push('/dashboard/projects')
     } catch (error: any) {

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { clientsService } from '@/lib/services/clients-service'
+import { ClientsService } from '@/services/clients.service'
+import { clientsService } from '@/lib/services/clients-service' // Keep for activities/notes/communications
 import { PermissionGuard } from '@/components/auth/permission-guard'
 import { Can } from '@/components/auth/can'
 import {
@@ -22,7 +23,7 @@ type TabType = 'overview' | 'communications' | 'projects' | 'documents' | 'notes
 export default function ClientDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, tenant } = useAuth()
   const clientId = params.id as string
 
   // State
@@ -36,15 +37,15 @@ export default function ClientDetailPage() {
 
   // Real-time subscription to client
   useEffect(() => {
-    if (!clientId) return
+    if (!clientId || !tenant?.id) return
 
-    const unsubscribe = clientsService.subscribeToClient(clientId, (updatedClient) => {
+    const unsubscribe = ClientsService.subscribe(tenant.id, clientId, (updatedClient) => {
       setClient(updatedClient)
       setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [clientId])
+  }, [clientId, tenant?.id])
 
   // Real-time subscription to related data
   useEffect(() => {

@@ -19,9 +19,9 @@ import { ChecklistAssignmentModal } from '@/components/projects/checklist-assign
 import { ChecklistTemplate, ChecklistItem, TeamMember } from '@/types'
 import { Client } from '@/types/clients'
 import { User as UserType } from '@/types'
-import { ClientsService } from '@/lib/services/clients-service'
+import { ClientsService } from '@/services/clients.service'
 import { UserService } from '@/lib/services/user-service'
-import { projectsService } from '@/lib/services/projects-service'
+import { ProjectsService } from '@/services/projects.service'
 import toast from 'react-hot-toast'
 
 interface ProjectFormData {
@@ -136,8 +136,8 @@ export default function EditProjectPage() {
       try {
         setLoading(true)
         const [projectData, clientsData, usersData] = await Promise.all([
-          projectsService.getProject(projectId),
-          ClientsService.getClients(tenant.id),
+          ProjectsService.getById(tenant.id, projectId),
+          ClientsService.list(tenant.id),
           UserService.getUsers(tenant.id)
         ])
 
@@ -410,7 +410,7 @@ export default function EditProjectPage() {
       }
 
       // Update project
-      await projectsService.updateProject(projectId, updateData)
+      await ProjectsService.update(tenant.id, projectId, updateData)
 
       toast.success('Project updated successfully!')
       router.push(`/dashboard/projects/${projectId}`)

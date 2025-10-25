@@ -2,23 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import { PermissionGuard } from '@/components/auth/permission-guard'
 import ClientForm from '@/components/clients/client-form'
-import { clientsService } from '@/lib/services/clients-service'
+import { ClientsService } from '@/services/clients.service'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Client } from '@/types/clients'
 
 export default function EditClientPage() {
   const params = useParams()
+  const { tenant } = useAuth()
   const clientId = params.id as string
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadClient = async () => {
+      if (!tenant?.id) return
+
       try {
-        const clientData = await clientsService.getClient(clientId)
+        const clientData = await ClientsService.getById(tenant.id, clientId)
         setClient(clientData)
       } catch (error) {
         console.error('Error loading client:', error)
@@ -30,7 +34,7 @@ export default function EditClientPage() {
     if (clientId) {
       loadClient()
     }
-  }, [clientId])
+  }, [clientId, tenant?.id])
 
   if (loading) {
     return (

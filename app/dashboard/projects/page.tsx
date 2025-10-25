@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
-import { projectsService } from '@/lib/services/projects-service'
+import { ProjectsService } from '@/services/projects.service'
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
 import {
@@ -60,7 +60,7 @@ export default function ProjectsPage() {
     if (!tenant?.id) return
 
     setLoading(true)
-    const unsubscribe = projectsService.subscribeToProjects(
+    const unsubscribe = ProjectsService.subscribeAll(
       tenant.id,
       (updatedProjects) => {
         setProjects(updatedProjects)

@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { PricingService } from '@/services/pricing.service'
+import { ProjectsService } from '@/services/projects.service'
 import { cn } from '@/lib/utils'
 import {
   DollarSign, Plus, Search, Filter, Package,
@@ -9,15 +12,17 @@ import {
   ChevronDown, Star, Calendar, MoreVertical,
   ArrowLeft, X, Check, Puzzle, Zap, Tag
 } from 'lucide-react'
-import { MOCK_PRICING_CATALOG, MOCK_FEATURE_ADDONS, MOCK_PROJECTS } from '@/lib/mock-project-data'
-import { PricingCatalogItem, FeatureAddon } from '@/types'
+import { PricingCatalogItem, FeatureAddon, Project } from '@/types'
+import type { FirestorePricingCatalogItem, FirestoreFeatureAddon } from '@/lib/firebase-schema'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 type ViewTab = 'packages' | 'addons'
 
 export default function ProjectPricingPage() {
   const params = useParams()
   const router = useRouter()
+  const { tenant } = useAuth()
   const projectId = params.id as string
 
   const [activeTab, setActiveTab] = useState<ViewTab>('packages')
@@ -25,15 +30,41 @@ export default function ProjectPricingPage() {
   const [selectedModel, setSelectedModel] = useState('all')
   const [showNewPackageModal, setShowNewPackageModal] = useState(false)
   const [showNewAddonModal, setShowNewAddonModal] = useState(false)
-  const [editingPackage, setEditingPackage] = useState<PricingCatalogItem | null>(null)
-  const [editingAddon, setEditingAddon] = useState<FeatureAddon | null>(null)
+  const [editingPackage, setEditingPackage] = useState<FirestorePricingCatalogItem | null>(null)
+  const [editingAddon, setEditingAddon] = useState<FirestoreFeatureAddon | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Get project
-  const project = MOCK_PROJECTS.find(p => p.id === projectId)
+  // State for data
+  const [project, setProject] = useState<Project | null>(null)
+  const [projectCatalog, setProjectCatalog] = useState<FirestorePricingCatalogItem[]>([])
+  const [projectAddons, setProjectAddons] = useState<FirestoreFeatureAddon[]>([])
 
-  // Get pricing catalog and addons for this project
-  const projectCatalog = MOCK_PRICING_CATALOG.filter(item => item.projectId === projectId)
-  const projectAddons = MOCK_FEATURE_ADDONS.filter(addon => addon.projectId === projectId)
+  // Fetch project data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!tenant?.id || !projectId) return
+
+      try {
+        setLoading(true)
+        const [projectData, catalogData, addonsData] = await Promise.all([
+          ProjectsService.getById(tenant.id, projectId),
+          PricingService.listCatalogByProject(tenant.id, projectId),
+          PricingService.listAddonsByProject(tenant.id, projectId)
+        ])
+
+        setProject(projectData)
+        setProjectCatalog(catalogData)
+        setProjectAddons(addonsData)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Failed to load pricing data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [tenant?.id, projectId])
 
   // Filter based on active tab
   const filteredCatalog = projectCatalog.filter(item => {

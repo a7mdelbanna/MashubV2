@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
-import { clientsService } from '@/lib/services/clients-service'
+import { ClientsService } from '@/services/clients.service'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Can } from '@/components/auth/can'
 import {
@@ -15,7 +15,7 @@ import { Client, ClientStatus, ClientPriority } from '@/types/clients'
 import toast from 'react-hot-toast'
 
 export default function ClientsPage() {
-  const { user } = useAuth()
+  const { user, tenant } = useAuth()
   const { canWrite, canRead } = usePermissions()
 
   // State
@@ -35,10 +35,10 @@ export default function ClientsPage() {
 
   // Real-time subscription
   useEffect(() => {
-    if (!user?.tenantId) return
+    if (!tenant?.id) return
 
-    const unsubscribe = clientsService.subscribeToClients(
-      user.tenantId,
+    const unsubscribe = ClientsService.subscribeAll(
+      tenant.id,
       (updatedClients) => {
         setClients(updatedClients)
         calculateStats(updatedClients)
@@ -47,7 +47,7 @@ export default function ClientsPage() {
     )
 
     return () => unsubscribe()
-  }, [user?.tenantId])
+  }, [tenant?.id])
 
   // Apply filters
   useEffect(() => {

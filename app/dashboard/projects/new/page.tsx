@@ -19,9 +19,10 @@ import { ChecklistAssignmentModal } from '@/components/projects/checklist-assign
 import { ChecklistTemplate, ChecklistItem, TeamMember } from '@/types'
 import { Client } from '@/types/clients'
 import { User as UserType } from '@/types'
-import { ClientsService } from '@/lib/services/clients-service'
+import { ClientsService } from '@/services/clients.service'
 import { UserService } from '@/lib/services/user-service'
-import { projectsService } from '@/lib/services/projects-service'
+import { ProjectsService } from '@/services/projects.service'
+import { projectsService } from '@/lib/services/projects-service' // Keep for milestones
 import toast from 'react-hot-toast'
 
 interface ProjectFormData {
@@ -133,7 +134,7 @@ export default function NewProjectPage() {
       try {
         setLoading(true)
         const [clientsData, usersData] = await Promise.all([
-          ClientsService.getClients(tenant.id),
+          ClientsService.list(tenant.id),
           UserService.getUsers(tenant.id)
         ])
         setClients(clientsData)
@@ -366,14 +367,14 @@ export default function NewProjectPage() {
       }
 
       // Create project
-      const projectId = await projectsService.createProject(projectData)
+      const createdProject = await ProjectsService.create(tenant.id, projectData)
 
       // Create milestones if any
       for (const milestone of formData.milestones) {
         if (milestone.name.trim()) {
           await projectsService.createMilestone({
             tenantId: tenant.id,
-            projectId,
+            projectId: createdProject.id,
             name: milestone.name.trim(),
             description: milestone.description.trim(),
             dueDate: milestone.date,
@@ -387,7 +388,7 @@ export default function NewProjectPage() {
       }
 
       toast.success('Project created successfully!')
-      router.push(`/dashboard/projects/${projectId}`)
+      router.push(`/dashboard/projects/${createdProject.id}`)
     } catch (error: any) {
       console.error('Error creating project:', error)
       toast.error(error.message || 'Failed to create project')

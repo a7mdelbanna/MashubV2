@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { PricingService } from '@/services/pricing.service'
+import { ProjectsService } from '@/services/projects.service'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft, Save, Smartphone, Globe, Package, Palette, Key,
@@ -10,9 +13,10 @@ import {
   Calendar, User, Tag, Zap
 } from 'lucide-react'
 import Link from 'next/link'
-import { AppType } from '@/types'
+import { AppType, Project } from '@/types'
+import type { FirestorePricingCatalogItem, FirestoreFeatureAddon } from '@/lib/firebase-schema'
 import { APP_TYPE_CONFIG } from '@/components/apps/app-type-badge'
-import { MOCK_PRICING_CATALOG, MOCK_CHECKLIST_TEMPLATES, MOCK_PROJECTS, MOCK_FEATURE_ADDONS } from '@/lib/mock-project-data'
+import { MOCK_CHECKLIST_TEMPLATES } from '@/lib/mock-project-data'
 
 interface AppCredential {
   key: string
@@ -42,7 +46,12 @@ interface PaymentInstallment {
 
 export default function NewAppPage() {
   const router = useRouter()
+  const { tenant } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [pricingPackages, setPricingPackages] = useState<FirestorePricingCatalogItem[]>([])
+  const [featureAddons, setFeatureAddons] = useState<FirestoreFeatureAddon[]>([])
+  const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
     // Basic Info
     nameEn: '',
@@ -247,10 +256,32 @@ export default function NewAppPage() {
     }
   }
 
+  // Load pricing packages and addons when project is selected
+  useEffect(() => {
+    const loadPricingData = async () => {
+      if (!tenant?.id || !formData.projectId) {
+        setPricingPackages([])
+        setFeatureAddons([])
+        return
+      }
+
+      try {
+        const [packages, addons] = await Promise.all([
+          PricingService.listCatalogByProject(tenant.id, formData.projectId),
+          PricingService.listAddonsByProject(tenant.id, formData.projectId)
+        ])
+        setPricingPackages(packages)
+        setFeatureAddons(addons)
+      } catch (error) {
+        console.error('Error loading pricing data:', error)
+      }
+    }
+
+    loadPricingData()
+  }, [tenant?.id, formData.projectId])
+
   // Get pricing packages for selected project
-  const projectPricingPackages = formData.projectId
-    ? MOCK_PRICING_CATALOG.filter(pkg => pkg.projectId === formData.projectId)
-    : []
+  const projectPricingPackages = pricingPackages
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">

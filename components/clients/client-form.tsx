@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { clientsService } from '@/lib/services/clients-service'
+import { ClientsService } from '@/services/clients.service'
 import { Client, ClientStatus, ClientPriority, ClientType, ClientSource } from '@/types/clients'
 import { Building2, Save, X, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -14,7 +14,7 @@ interface ClientFormProps {
 }
 
 export default function ClientForm({ client, mode }: ClientFormProps) {
-  const { user } = useAuth()
+  const { user, tenant } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -132,7 +132,7 @@ export default function ClientForm({ client, mode }: ClientFormProps) {
       return
     }
 
-    if (!user?.tenantId) {
+    if (!tenant?.id) {
       toast.error('No tenant ID found')
       return
     }
@@ -141,7 +141,6 @@ export default function ClientForm({ client, mode }: ClientFormProps) {
       setLoading(true)
 
       const clientData: any = {
-        tenantId: user.tenantId,
         name: formData.name,
         legalName: formData.legalName || formData.name,
         type: formData.type,
@@ -175,11 +174,11 @@ export default function ClientForm({ client, mode }: ClientFormProps) {
       }
 
       if (mode === 'create') {
-        const clientId = await clientsService.createClient(clientData)
+        const createdClient = await ClientsService.create(tenant.id, clientData)
         toast.success('Client created successfully!')
-        router.push(`/dashboard/clients/${clientId}`)
+        router.push(`/dashboard/clients/${createdClient.id}`)
       } else if (mode === 'edit' && client) {
-        await clientsService.updateClient(client.id, clientData)
+        await ClientsService.update(tenant.id, client.id, clientData)
         toast.success('Client updated successfully!')
         router.push(`/dashboard/clients/${client.id}`)
       }

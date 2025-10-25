@@ -181,6 +181,77 @@ export function subscribeToProject(
   )
 }
 
+/**
+ * Subscribe to all projects for a tenant in real-time
+ */
+export function subscribeToProjects(
+  tenantId: string,
+  callback: (projects: Project[]) => void,
+  options?: {
+    status?: ProjectStatus | ProjectStatus[]
+    priority?: ProjectPriority
+    type?: ProjectType
+    limit?: number
+    orderByField?: 'createdAt' | 'updatedAt' | 'dueDate' | 'name'
+    orderDirection?: 'asc' | 'desc'
+  }
+): Unsubscribe {
+  const constraints: QueryConstraint[] = []
+
+  // Apply filters
+  if (options?.status) {
+    if (Array.isArray(options.status)) {
+      constraints.push(where('status', 'in', options.status))
+    } else {
+      constraints.push(where('status', '==', options.status))
+    }
+  }
+
+  if (options?.priority) {
+    constraints.push(where('priority', '==', options.priority))
+  }
+
+  if (options?.type) {
+    constraints.push(where('type', '==', options.type))
+  }
+
+  // Apply ordering
+  const orderByField = options?.orderByField || 'updatedAt'
+  const orderDirection = options?.orderDirection || 'desc'
+  constraints.push(orderBy(orderByField, orderDirection))
+
+  // Apply limit
+  if (options?.limit) {
+    constraints.push(limit(options.limit))
+  }
+
+  // Create query
+  const projectsRef = getProjectsCollection(tenantId)
+  const q = query(projectsRef, ...constraints)
+
+  return onSnapshot(
+    q.withConverter(projectConverter),
+    (snapshot) => {
+      const projects = snapshot.docs.map(doc => {
+        const data = doc.data() as any
+        return {
+          ...data,
+          apps: [], // Keep lightweight for list view
+          pricingCatalog: [],
+          checklistTemplates: [],
+          checklistInstances: [],
+          team: []
+        } as Project
+      })
+      callback(projects)
+    },
+    (error) => {
+      console.error('Error in projects subscription:', error)
+      callback([])
+    }
+  )
+}
+
 // ============================================================================
 // APP QUERIES
 // ============================================================================
@@ -325,6 +396,71 @@ export async function getClients(
     console.error('Error fetching clients:', error)
     return []
   }
+}
+
+/**
+ * Subscribe to client changes in real-time
+ */
+export function subscribeToClient(
+  tenantId: string,
+  clientId: string,
+  callback: (client: FirestoreClient | null) => void
+): Unsubscribe {
+  const clientRef = doc(db, `tenants/${tenantId}/clients/${clientId}`)
+
+  return onSnapshot(
+    clientRef.withConverter(clientConverter),
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        callback(null)
+        return
+      }
+      callback(snapshot.data())
+    },
+    (error) => {
+      console.error('Error in client subscription:', error)
+      callback(null)
+    }
+  )
+}
+
+/**
+ * Subscribe to all clients for a tenant in real-time
+ */
+export function subscribeToClients(
+  tenantId: string,
+  callback: (clients: FirestoreClient[]) => void,
+  options?: {
+    status?: 'active' | 'inactive' | 'potential'
+    limit?: number
+  }
+): Unsubscribe {
+  const constraints: QueryConstraint[] = []
+
+  if (options?.status) {
+    constraints.push(where('status', '==', options.status))
+  }
+
+  constraints.push(orderBy('name', 'asc'))
+
+  if (options?.limit) {
+    constraints.push(limit(options.limit))
+  }
+
+  const clientsRef = getClientsCollection(tenantId)
+  const q = query(clientsRef, ...constraints)
+
+  return onSnapshot(
+    q.withConverter(clientConverter),
+    (snapshot) => {
+      const clients = snapshot.docs.map(doc => doc.data())
+      callback(clients)
+    },
+    (error) => {
+      console.error('Error in clients subscription:', error)
+      callback([])
+    }
+  )
 }
 
 // ============================================================================
