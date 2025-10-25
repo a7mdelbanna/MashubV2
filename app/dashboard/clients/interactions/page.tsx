@@ -34,6 +34,7 @@ import { Communication, CommunicationType, CommunicationChannel } from '@/types/
 const mockInteractions: Communication[] = [
   {
     id: 'comm-1',
+    tenantId: 'mock-tenant-1',
     clientId: 'c1',
     contactPersonId: 'cp1',
     type: 'meeting',
@@ -58,6 +59,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-2',
+    tenantId: 'mock-tenant-1',
     clientId: 'c1',
     contactPersonId: 'cp1',
     type: 'email',
@@ -83,6 +85,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-3',
+    tenantId: 'mock-tenant-1',
     clientId: 'c2',
     type: 'call',
     channel: 'phone',
@@ -104,6 +107,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-4',
+    tenantId: 'mock-tenant-1',
     clientId: 'c3',
     type: 'meeting',
     channel: 'meeting',
@@ -127,6 +131,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-5',
+    tenantId: 'mock-tenant-1',
     clientId: 'c2',
     type: 'email',
     channel: 'email',
@@ -150,6 +155,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-6',
+    tenantId: 'mock-tenant-1',
     clientId: 'c4',
     type: 'note',
     channel: 'chat',
@@ -171,6 +177,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-7',
+    tenantId: 'mock-tenant-1',
     clientId: 'c1',
     type: 'call',
     channel: 'phone',
@@ -192,6 +199,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-8',
+    tenantId: 'mock-tenant-1',
     clientId: 'c5',
     type: 'meeting',
     channel: 'video_call',
@@ -215,6 +223,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-9',
+    tenantId: 'mock-tenant-1',
     clientId: 'c3',
     type: 'email',
     channel: 'email',
@@ -238,6 +247,7 @@ const mockInteractions: Communication[] = [
   },
   {
     id: 'comm-10',
+    tenantId: 'mock-tenant-1',
     clientId: 'c2',
     type: 'call',
     channel: 'phone',

@@ -108,13 +108,22 @@ const statusColors = {
   pending_renewal: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   expired: 'bg-red-500/20 text-red-400 border-red-500/30',
   draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-}
+} as const
 
 const typeColors = {
   'MSA': 'from-violet-600 to-purple-600',
   'Fixed Price': 'from-blue-600 to-cyan-600',
   'Time & Materials': 'from-green-600 to-emerald-600',
   'Retainer': 'from-orange-600 to-yellow-600'
+} as const
+
+// Type-safe helpers with fallbacks
+const getStatusColor = (status: string): string => {
+  return statusColors[status as keyof typeof statusColors] || statusColors.draft
+}
+
+const getTypeColor = (type: string): string => {
+  return typeColors[type as keyof typeof typeColors] || 'from-gray-600 to-gray-700'
 }
 
 export default function ClientContractsPage({ params }: { params: { id: string } }) {
@@ -235,7 +244,7 @@ export default function ClientContractsPage({ params }: { params: { id: string }
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${typeColors[contract.type]} flex items-center justify-center`}>
+                <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${getTypeColor(contract.type)} flex items-center justify-center`}>
                   <FileText className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -261,7 +270,7 @@ export default function ClientContractsPage({ params }: { params: { id: string }
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-400">Status</span>
-                <span className={`px-2 py-1 rounded-lg text-xs border ${statusColors[contract.status]}`}>
+                <span className={`px-2 py-1 rounded-lg text-xs border ${getStatusColor(contract.status)}`}>
                   {contract.status.replace('_', ' ').toUpperCase()}
                 </span>
               </div>
@@ -300,7 +309,7 @@ export default function ClientContractsPage({ params }: { params: { id: string }
             <div className="p-6 border-b border-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${typeColors[selectedContract.type]} flex items-center justify-center`}>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${getTypeColor(selectedContract.type)} flex items-center justify-center`}>
                     <FileText className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -325,7 +334,7 @@ export default function ClientContractsPage({ params }: { params: { id: string }
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400">Status</span>
-                      <span className={`px-2 py-1 rounded-lg text-xs border ${statusColors[selectedContract.status]}`}>
+                      <span className={`px-2 py-1 rounded-lg text-xs border ${getStatusColor(selectedContract.status)}`}>
                         {selectedContract.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
@@ -406,7 +415,7 @@ export default function ClientContractsPage({ params }: { params: { id: string }
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4">Documents</h3>
                 <div className="space-y-2">
-                  {selectedContract.documents.map((doc, index) => (
+                  {selectedContract.documents.map((doc: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50">
                       <div className="flex items-center space-x-3">
                         <FileText className="h-5 w-5 text-gray-400" />

@@ -83,6 +83,15 @@ const fileTypeIcons = {
   code: { icon: FileCode, color: 'text-cyan-400' },
   design: { icon: Image, color: 'text-pink-400' },
   archive: { icon: Archive, color: 'text-yellow-400' }
+} as const
+
+// Type-safe helpers with fallbacks
+const getFileTypeIcon = (type: string) => {
+  return fileTypeIcons[type as keyof typeof fileTypeIcons]?.icon || FileText
+}
+
+const getFileTypeColor = (type: string): string => {
+  return fileTypeIcons[type as keyof typeof fileTypeIcons]?.color || 'text-gray-400'
 }
 
 export default function ClientDocumentsPage({ params }: { params: { id: string } }) {
@@ -280,9 +289,9 @@ export default function ClientDocumentsPage({ params }: { params: { id: string }
           <span>Recent Files</span>
         </h3>
         <div className="grid grid-cols-3 gap-4">
-          {mockDocuments.recentFiles.map((file) => {
-            const FileIcon = fileTypeIcons[file.type]?.icon || FileText
-            const iconColor = fileTypeIcons[file.type]?.color || 'text-gray-400'
+          {mockDocuments.recentFiles.map((file: any) => {
+            const FileIcon = getFileTypeIcon(file.type)
+            const iconColor = getFileTypeColor(file.type)
 
             return (
               <div key={file.id} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-all cursor-pointer">
@@ -327,9 +336,9 @@ export default function ClientDocumentsPage({ params }: { params: { id: string }
             </div>
 
             <div className="space-y-2">
-              {folder.files.slice(0, 3).map((file) => {
-                const FileIcon = fileTypeIcons[file.type]?.icon || FileText
-                const iconColor = fileTypeIcons[file.type]?.color || 'text-gray-400'
+              {folder.files.slice(0, 3).map((file: any) => {
+                const FileIcon = getFileTypeIcon(file.type)
+                const iconColor = getFileTypeColor(file.type)
 
                 return (
                   <div key={file.id} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-800/50 transition-all">
@@ -421,9 +430,9 @@ export default function ClientDocumentsPage({ params }: { params: { id: string }
               </div>
 
               <div className="space-y-2">
-                {selectedFolder.files.map((file) => {
-                  const FileIcon = fileTypeIcons[file.type]?.icon || FileText
-                  const iconColor = fileTypeIcons[file.type]?.color || 'text-gray-400'
+                {selectedFolder.files.map((file: any) => {
+                  const FileIcon = getFileTypeIcon(file.type)
+                  const iconColor = getFileTypeColor(file.type)
 
                   return (
                     <div key={file.id} className="flex items-center space-x-4 p-4 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-all">
