@@ -18,14 +18,14 @@ const mockProject: Project = {
   priority: 'high',
   startDate: '2025-09-01',
   endDate: '2025-12-31',
-  budget: 150000,
-  spentAmount: 45000,
+  budgetAllocated: 150000,
+  budgetSpent: 45000,
   currency: 'USD',
   completionPercentage: 38,
-  healthScore: 82,
   tasksTotal: 156,
   tasksCompleted: 59,
-  teamMembers: [],
+  milestonesTotal: 5,
+  milestonesCompleted: 2,
   tags: ['saas', 'enterprise'],
   createdAt: '2025-08-15T10:00:00Z',
   updatedAt: '2025-10-13T14:00:00Z'
@@ -34,75 +34,80 @@ const mockProject: Project = {
 const mockMilestones: Milestone[] = [
   {
     id: 'ms-1',
+    tenantId: 'tenant-1',
     projectId: 'proj-1',
     name: 'Foundation & Setup',
     description: 'Project initialization, tech stack setup, and base architecture',
     dueDate: '2025-09-15',
     status: 'completed',
     completionPercentage: 100,
-    totalTasks: 12,
-    completedTasks: 12,
-    order: 1,
-    color: 'green',
+    tasksTotal: 12,
+    tasksCompleted: 12,
+    dependsOn: [],
     createdAt: '2025-08-15T10:00:00Z',
+    updatedAt: '2025-09-14T18:00:00Z',
     completedAt: '2025-09-14T18:00:00Z'
   },
   {
     id: 'ms-2',
+    tenantId: 'tenant-1',
     projectId: 'proj-1',
     name: 'Authentication & User Management',
     description: 'Complete user authentication system with roles and permissions',
     dueDate: '2025-10-15',
     status: 'completed',
     completionPercentage: 100,
-    totalTasks: 24,
-    completedTasks: 24,
-    order: 2,
-    color: 'green',
+    tasksTotal: 24,
+    tasksCompleted: 24,
+    dependsOn: ['ms-1'],
     createdAt: '2025-09-01T10:00:00Z',
+    updatedAt: '2025-10-12T16:00:00Z',
     completedAt: '2025-10-12T16:00:00Z'
   },
   {
     id: 'ms-3',
+    tenantId: 'tenant-1',
     projectId: 'proj-1',
     name: 'Core Modules Development',
     description: 'Finance, Projects, Clients, and Products modules',
     dueDate: '2025-11-15',
     status: 'in_progress',
     completionPercentage: 65,
-    totalTasks: 48,
-    completedTasks: 31,
-    order: 3,
-    color: 'blue',
-    createdAt: '2025-09-15T10:00:00Z'
+    tasksTotal: 48,
+    tasksCompleted: 31,
+    dependsOn: ['ms-2'],
+    createdAt: '2025-09-15T10:00:00Z',
+    updatedAt: '2025-10-13T14:00:00Z'
   },
   {
     id: 'ms-4',
+    tenantId: 'tenant-1',
     projectId: 'proj-1',
     name: 'Advanced Features',
     description: 'Services, Visits, Support, and Settings modules',
     dueDate: '2025-12-01',
-    status: 'pending',
+    status: 'upcoming',
     completionPercentage: 15,
-    totalTasks: 42,
-    completedTasks: 6,
-    order: 4,
-    color: 'yellow',
-    createdAt: '2025-10-01T10:00:00Z'
+    tasksTotal: 42,
+    tasksCompleted: 6,
+    dependsOn: ['ms-3'],
+    createdAt: '2025-10-01T10:00:00Z',
+    updatedAt: '2025-10-13T14:00:00Z'
   },
   {
     id: 'ms-5',
+    tenantId: 'tenant-1',
     projectId: 'proj-1',
     name: 'Testing & Optimization',
     description: 'Comprehensive testing, performance optimization, and bug fixes',
     dueDate: '2025-12-20',
-    status: 'pending',
+    status: 'upcoming',
     completionPercentage: 0,
-    totalTasks: 30,
-    completedTasks: 0,
-    order: 5,
-    color: 'purple',
-    createdAt: '2025-10-01T10:00:00Z'
+    tasksTotal: 30,
+    tasksCompleted: 0,
+    dependsOn: ['ms-4'],
+    createdAt: '2025-10-01T10:00:00Z',
+    updatedAt: '2025-10-13T14:00:00Z'
   }
 ]
 
@@ -193,16 +198,16 @@ export default function ProjectRoadmapPage() {
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
             <div className="text-gray-400 text-sm mb-1">Budget Used</div>
             <div className="text-2xl font-bold text-green-400">
-              ${(mockProject.spentAmount / 1000).toFixed(0)}k
+              ${(mockProject.budgetSpent! / 1000).toFixed(0)}k
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              of ${(mockProject.budget! / 1000).toFixed(0)}k total
+              of ${(mockProject.budgetAllocated! / 1000).toFixed(0)}k total
             </div>
           </div>
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
-            <div className="text-gray-400 text-sm mb-1">Health Score</div>
-            <div className="text-2xl font-bold text-blue-400">{mockProject.healthScore}/100</div>
-            <div className="text-xs text-green-400 mt-1">✓ On Track</div>
+            <div className="text-gray-400 text-sm mb-1">Tasks Completed</div>
+            <div className="text-2xl font-bold text-blue-400">{mockProject.tasksCompleted}/{mockProject.tasksTotal}</div>
+            <div className="text-xs text-green-400 mt-1">✓ {Math.round((mockProject.tasksCompleted / mockProject.tasksTotal) * 100)}% Done</div>
           </div>
         </div>
       </div>
@@ -257,7 +262,7 @@ export default function ProjectRoadmapPage() {
                           <span className="text-white font-medium text-sm">{milestone.name}</span>
                         </div>
                         <div className="text-xs text-gray-500 ml-6">
-                          {milestone.completedTasks}/{milestone.totalTasks} tasks • {progress}%
+                          {milestone.tasksCompleted}/{milestone.tasksTotal} tasks • {progress}%
                         </div>
                       </div>
                     </div>
@@ -295,7 +300,7 @@ export default function ProjectRoadmapPage() {
                     <div className="px-4 py-4 bg-gray-900/50 border-t border-gray-700">
                       <p className="text-sm text-gray-400 mb-3">{milestone.description}</p>
                       <div className="flex items-center gap-6 text-xs text-gray-500">
-                        <span>Order: #{milestone.order}</span>
+                        <span>Position: #{idx + 1}</span>
                         <span>Created: {new Date(milestone.createdAt).toLocaleDateString()}</span>
                         {milestone.completedAt && (
                           <span className="text-green-400">
@@ -392,7 +397,7 @@ export default function ProjectRoadmapPage() {
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-gray-400" />
                       <span className="text-gray-400">
-                        {milestone.completedTasks}/{milestone.totalTasks} tasks
+                        {milestone.tasksCompleted}/{milestone.tasksTotal} tasks
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
