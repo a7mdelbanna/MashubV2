@@ -1,165 +1,441 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { Project } from '@/types/projects'
 import { cn } from '@/lib/utils'
 import {
-  ArrowLeft, ArrowRight, Calendar, DollarSign, Users,
-  Briefcase, FileText, Plus, X, Search, Check,
-  Building2, Clock, Target, Upload, Link2, Save,
-  AlertCircle, CheckCircle, Edit, Archive, Copy
+  ArrowLeft, ArrowRight, FolderOpen, Users, Calendar,
+  DollarSign, FileText, Plus, X, Check, Building2,
+  User, Target, Briefcase, Clock, Settings, Star,
+  CheckCircle2, Upload, AlertCircle, Globe, Shield
 } from 'lucide-react'
 import Link from 'next/link'
 import Select from '@/components/ui/select'
-import { projectStatusOptions, priorityOptions } from '@/lib/select-options'
-
-// Mock data for dropdowns
-const clients = [
-  { id: 'c1', name: 'TechCorp Inc.', logo: 'TC' },
-  { id: 'c2', name: 'FinanceHub', logo: 'FH' },
-  { id: 'c3', name: 'GlobalHR Solutions', logo: 'GH' },
-  { id: 'c4', name: 'RetailChain Pro', logo: 'RC' },
-  { id: 'c5', name: 'InnovateTech', logo: 'IT' },
-  { id: 'c6', name: 'MediCare Plus', logo: 'MP' }
-]
-
-const clientOptions = clients.map(client => ({
-  value: client.id,
-  label: client.name
-}))
-
-const teamMembers = [
-  { id: 't1', name: 'Sarah Chen', role: 'Project Manager', avatar: 'SC' },
-  { id: 't2', name: 'Mike Johnson', role: 'Backend Developer', avatar: 'MJ' },
-  { id: 't3', name: 'Emma Davis', role: 'Frontend Developer', avatar: 'ED' },
-  { id: 't4', name: 'Alex Kim', role: 'UI/UX Designer', avatar: 'AK' },
-  { id: 't5', name: 'James Wilson', role: 'DevOps Engineer', avatar: 'JW' },
-  { id: 't6', name: 'Sophie Brown', role: 'iOS Developer', avatar: 'SB' },
-  { id: 't7', name: 'Ryan Martinez', role: 'Android Developer', avatar: 'RM' },
-  { id: 't8', name: 'Lisa Wang', role: 'QA Engineer', avatar: 'LW' }
-]
-
-const projectManagerOptions = teamMembers
-  .filter(m => m.role.includes('Manager'))
-  .map(member => ({
-    value: member.id,
-    label: `${member.name} - ${member.role}`
-  }))
-
-const projectTypeOptions = [
-  { value: 'web_app', label: 'Web Application' },
-  { value: 'mobile_app', label: 'Mobile Application' },
-  { value: 'pos', label: 'POS System' },
-  { value: 'hybrid', label: 'Hybrid Application' },
-  { value: 'custom', label: 'Custom Solution' }
-]
-
-const editPagePriorityOptions = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' }
-]
-
-const editPageStatusOptions = [
-  { value: 'planning', label: 'Planning' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' }
-]
-
-const technologies = [
-  'React', 'Vue.js', 'Angular', 'Next.js', 'Node.js', 'Python',
-  'Django', 'Ruby on Rails', 'PHP', 'Laravel', 'PostgreSQL',
-  'MySQL', 'MongoDB', 'Redis', 'AWS', 'Google Cloud', 'Azure',
-  'Docker', 'Kubernetes', 'GraphQL', 'REST API', 'TypeScript'
-]
-
-// Mock project data
-const mockProject = {
-  id: 'proj1',
-  name: 'E-commerce Platform Redesign',
-  description: 'Complete redesign and rebuild of the client\'s e-commerce platform with modern technologies and improved user experience.',
-  clientId: 'c1',
-  type: 'web_app',
-  priority: 'high',
-  status: 'in_progress',
-  budget: 75000,
-  startDate: '2024-02-15',
-  dueDate: '2024-06-30',
-  managerId: 't1',
-  teamMembers: ['t2', 't3', 't4', 't5'],
-  technologies: ['React', 'Node.js', 'PostgreSQL', 'AWS', 'Docker'],
-  repository: 'github.com/techcorp/ecommerce-redesign',
-  progress: 65,
-  milestones: [
-    { name: 'Requirements Analysis', date: '2024-03-01', completed: true },
-    { name: 'UI/UX Design', date: '2024-03-30', completed: true },
-    { name: 'Backend Development', date: '2024-05-15', completed: false },
-    { name: 'Frontend Implementation', date: '2024-06-15', completed: false },
-    { name: 'Testing & Launch', date: '2024-06-30', completed: false }
-  ],
-  createdAt: '2024-02-01',
-  updatedAt: '2024-03-25'
-}
+import { projectStatusOptions, priorityOptions, currencyOptions } from '@/lib/select-options'
+import { ChecklistAssignmentModal } from '@/components/projects/checklist-assignment-modal'
+import { ChecklistTemplate, ChecklistItem, TeamMember } from '@/types'
+import { Client } from '@/types/clients'
+import { User as UserType } from '@/types'
+import { ClientsService } from '@/lib/services/clients-service'
+import { UserService } from '@/lib/services/user-service'
+import { projectsService } from '@/lib/services/projects-service'
+import toast from 'react-hot-toast'
 
 interface ProjectFormData {
+  // Project Details
   name: string
   description: string
-  clientId: string
+  category: string
   type: string
   priority: string
   status: string
-  budget: number
-  startDate: string
-  dueDate: string
-  managerId: string
+  tags: string[]
+
+  // Client & Scope
+  clientId: string
+  clientContact: string
+  scope: string
+  objectives: string[]
+  deliverables: string[]
+  requirements: string[]
+
+  // Team & Resources
+  projectManager: string
   teamMembers: string[]
-  technologies: string[]
-  repository: string
-  milestones: { name: string; date: string; completed: boolean }[]
+  requiredSkills: string[]
+  externalResources: string[]
+
+  // Timeline & Budget
+  startDate: string
+  endDate: string
+  milestones: Array<{
+    name: string
+    date: string
+    description: string
+  }>
+  budget: number
+  currency: string
+  hourlyRate: number
+  estimatedHours: number
+
+  // Checklist Templates
+  selectedChecklistTemplates: string[]
+  checklistAssignments: Record<string, { assignedTo: string; assignedType: 'user' | 'team' }>
+
+  // Additional Settings
+  visibility: string
+  notifications: boolean
+  autoBackup: boolean
+  riskAssessment: string
 }
 
-export default function EditProjectPage({ params }: { params: { id: string } }) {
+export default function EditProjectPage() {
   const router = useRouter()
+  const params = useParams()
+  const projectId = params.id as string
+  const { user, tenant } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
-  const [showClientDropdown, setShowClientDropdown] = useState(false)
-  const [showManagerDropdown, setShowManagerDropdown] = useState(false)
-  const [showTeamDropdown, setShowTeamDropdown] = useState(false)
-  const [clientSearch, setClientSearch] = useState('')
-  const [managerSearch, setManagerSearch] = useState('')
-  const [teamSearch, setTeamSearch] = useState('')
-  const [hasChanges, setHasChanges] = useState(false)
-
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [project, setProject] = useState<Project | null>(null)
+  const [clients, setClients] = useState<Client[]>([])
+  const [users, setUsers] = useState<UserType[]>([])
   const [formData, setFormData] = useState<ProjectFormData>({
-    name: mockProject.name,
-    description: mockProject.description,
-    clientId: mockProject.clientId,
-    type: mockProject.type,
-    priority: mockProject.priority,
-    status: mockProject.status,
-    budget: mockProject.budget,
-    startDate: mockProject.startDate,
-    dueDate: mockProject.dueDate,
-    managerId: mockProject.managerId,
-    teamMembers: mockProject.teamMembers,
-    technologies: mockProject.technologies,
-    repository: mockProject.repository,
-    milestones: mockProject.milestones
+    // Project Details
+    name: '',
+    description: '',
+    category: '',
+    type: 'fixed-price',
+    priority: 'medium',
+    status: 'planning',
+    tags: [],
+
+    // Client & Scope
+    clientId: '',
+    clientContact: '',
+    scope: '',
+    objectives: [],
+    deliverables: [],
+    requirements: [],
+
+    // Team & Resources
+    projectManager: '',
+    teamMembers: [],
+    requiredSkills: [],
+    externalResources: [],
+
+    // Timeline & Budget
+    startDate: '',
+    endDate: '',
+    milestones: [],
+    budget: 0,
+    currency: 'USD',
+    hourlyRate: 150,
+    estimatedHours: 0,
+
+    // Checklist Templates
+    selectedChecklistTemplates: [],
+    checklistAssignments: {},
+
+    // Additional Settings
+    visibility: 'team',
+    notifications: true,
+    autoBackup: true,
+    riskAssessment: 'low'
   })
 
+  // Fetch project, clients and users on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!tenant?.id || !projectId) return
+
+      try {
+        setLoading(true)
+        const [projectData, clientsData, usersData] = await Promise.all([
+          projectsService.getProject(projectId),
+          ClientsService.getClients(tenant.id),
+          UserService.getUsers(tenant.id)
+        ])
+
+        if (!projectData) {
+          toast.error('Project not found')
+          router.push('/dashboard/projects')
+          return
+        }
+
+        setProject(projectData)
+        setClients(clientsData)
+        setUsers(usersData)
+
+        // Pre-populate form with project data
+        setFormData({
+          name: projectData.name || '',
+          description: projectData.description || '',
+          category: '', // Not in Project type, leave empty
+          type: 'fixed-price', // Not in Project type, default
+          priority: projectData.priority || 'medium',
+          status: projectData.status || 'planning',
+          tags: projectData.tags || [],
+
+          clientId: projectData.clientId || '',
+          clientContact: '', // Not in Project type
+          scope: '', // Not in Project type
+          objectives: [],
+          deliverables: [],
+          requirements: [],
+
+          projectManager: projectData.managerId || '',
+          teamMembers: (projectData.teamMemberIds || []).filter(id => id !== projectData.ownerId),
+          requiredSkills: [],
+          externalResources: [],
+
+          startDate: projectData.startDate || '',
+          endDate: projectData.endDate || '',
+          milestones: [], // Will be loaded separately
+          budget: projectData.budgetAllocated || 0,
+          currency: projectData.currency || 'USD',
+          hourlyRate: 150,
+          estimatedHours: projectData.estimatedHours || 0,
+
+          selectedChecklistTemplates: [],
+          checklistAssignments: {},
+
+          visibility: 'team',
+          notifications: true,
+          autoBackup: true,
+          riskAssessment: 'low'
+        })
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Failed to load project data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [tenant?.id, projectId, router])
+
   const steps = [
-    { id: 1, name: 'Basic Info', icon: FileText },
-    { id: 2, name: 'Team & Resources', icon: Users },
-    { id: 3, name: 'Timeline & Budget', icon: Calendar },
-    { id: 4, name: 'Status & Progress', icon: Target }
+    { id: 1, name: 'Project Details', icon: FolderOpen },
+    { id: 2, name: 'Client & Scope', icon: Target },
+    { id: 3, name: 'Team & Resources', icon: Users },
+    { id: 4, name: 'Timeline & Budget', icon: Calendar },
+    { id: 5, name: 'Checklist Templates', icon: FileText },
+    { id: 6, name: 'Review', icon: CheckCircle2 }
   ]
 
-  const handleNext = () => {
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1)
+  // Mock data
+  const categoryOptions = [
+    { value: 'Web Development', label: 'Web Development' },
+    { value: 'Mobile App', label: 'Mobile App' },
+    { value: 'E-commerce', label: 'E-commerce' },
+    { value: 'Custom Software', label: 'Custom Software' },
+    { value: 'API Development', label: 'API Development' },
+    { value: 'Database Design', label: 'Database Design' },
+    { value: 'UI/UX Design', label: 'UI/UX Design' },
+    { value: 'Consulting', label: 'Consulting' }
+  ]
+
+  const projectTypes = [
+    { value: 'fixed-price', label: 'Fixed Price', description: 'Set price for entire project' },
+    { value: 'hourly', label: 'Hourly Rate', description: 'Bill by hours worked' },
+    { value: 'retainer', label: 'Retainer', description: 'Monthly retainer agreement' }
+  ]
+
+  const priorities = [
+    { value: 'low', label: 'Low', color: 'gradient-blue' },
+    { value: 'medium', label: 'Medium', color: 'gradient-yellow' },
+    { value: 'high', label: 'High', color: 'gradient-orange' },
+    { value: 'critical', label: 'Critical', color: 'gradient-pink' }
+  ]
+
+  // Convert clients to select options
+  const clientOptions = clients.map(client => ({
+    value: client.id,
+    label: client.name
+  }))
+
+  // Convert users to team member options
+  const projectManagerOptions = users
+    .filter(u => u.role === 'admin' || u.role === 'manager')
+    .map(user => ({
+      value: user.id,
+      label: `${user.name} - ${user.role}`
+    }))
+
+  const availableSkills = [
+    'React', 'Node.js', 'Python', 'TypeScript', 'AWS', 'Docker',
+    'MongoDB', 'PostgreSQL', 'GraphQL', 'REST API', 'UI/UX Design',
+    'Mobile Development', 'DevOps', 'Testing', 'Security'
+  ]
+
+  const availableTags = [
+    'High Priority', 'MVP', 'Phase 1', 'Critical', 'Research',
+    'Prototype', 'Production', 'Maintenance', 'New Feature', 'Bug Fix'
+  ]
+
+  const riskLevels = [
+    { value: 'low', label: 'Low Risk', description: 'Standard project with known requirements' },
+    { value: 'medium', label: 'Medium Risk', description: 'Some unknowns or dependencies' },
+    { value: 'high', label: 'High Risk', description: 'Complex project with many variables' }
+  ]
+
+  // Mock Checklist Templates with full items
+  const mockChecklistTemplates: ChecklistTemplate[] = [
+    {
+      id: 'checklist-web-dev',
+      name: 'Web Development Checklist',
+      description: 'Complete checklist for web application projects',
+      appTypes: ['web'],
+      items: [
+        { id: 'web-1', title: 'Setup development environment', description: 'Configure dev tools and environment', category: 'technical', required: true, order: 1, completed: false },
+        { id: 'web-2', title: 'Configure version control', description: 'Set up Git repository and branching strategy', category: 'technical', required: true, order: 2, completed: false },
+        { id: 'web-3', title: 'Design system setup', description: 'Create design tokens and component library', category: 'branding', required: false, order: 3, completed: false },
+        { id: 'web-4', title: 'API integration testing', description: 'Test all API endpoints', category: 'qa', required: true, order: 4, completed: false },
+        { id: 'web-5', title: 'Deployment pipeline', description: 'Configure CI/CD pipeline', category: 'deployment', required: true, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'checklist-mobile-app',
+      name: 'Mobile App Checklist',
+      description: 'Checklist for iOS and Android app development',
+      appTypes: ['mobile'],
+      items: [
+        { id: 'mobile-1', title: 'App store accounts setup', description: 'Configure Apple and Google developer accounts', category: 'deployment', required: true, order: 1, completed: false },
+        { id: 'mobile-2', title: 'Push notification setup', description: 'Configure FCM and APNs', category: 'technical', required: true, order: 2, completed: false },
+        { id: 'mobile-3', title: 'App icons and splash screens', description: 'Create all required asset sizes', category: 'branding', required: true, order: 3, completed: false },
+        { id: 'mobile-4', title: 'Privacy policy compliance', description: 'Ensure GDPR and privacy requirements', category: 'legal', required: true, order: 4, completed: false },
+        { id: 'mobile-5', title: 'Beta testing', description: 'Conduct beta testing with TestFlight/Play Console', category: 'qa', required: true, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'checklist-api',
+      name: 'API Development Checklist',
+      description: 'Best practices for RESTful API development',
+      appTypes: ['api'],
+      items: [
+        { id: 'api-1', title: 'API documentation', description: 'Create OpenAPI/Swagger documentation', category: 'documentation', required: true, order: 1, completed: false },
+        { id: 'api-2', title: 'Authentication implementation', description: 'Implement JWT/OAuth authentication', category: 'technical', required: true, order: 2, completed: false },
+        { id: 'api-3', title: 'Rate limiting', description: 'Configure rate limiting and throttling', category: 'technical', required: true, order: 3, completed: false },
+        { id: 'api-4', title: 'API security audit', description: 'Review security best practices', category: 'qa', required: true, order: 4, completed: false },
+        { id: 'api-5', title: 'Load testing', description: 'Perform load and stress testing', category: 'qa', required: false, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'checklist-security',
+      name: 'Security Audit Checklist',
+      description: 'Security review and compliance checklist',
+      appTypes: ['web', 'mobile', 'api'],
+      items: [
+        { id: 'sec-1', title: 'Authentication review', description: 'Review authentication mechanisms', category: 'technical', required: true, order: 1, completed: false },
+        { id: 'sec-2', title: 'Authorization testing', description: 'Test role-based access controls', category: 'qa', required: true, order: 2, completed: false },
+        { id: 'sec-3', title: 'Data encryption', description: 'Verify encryption at rest and in transit', category: 'technical', required: true, order: 3, completed: false },
+        { id: 'sec-4', title: 'Compliance documentation', description: 'Document compliance with regulations', category: 'legal', required: true, order: 4, completed: false },
+        { id: 'sec-5', title: 'Penetration testing', description: 'Conduct security penetration testing', category: 'qa', required: false, order: 5, completed: false }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
+  ]
+
+  // Convert users to TeamMember type for modal
+  const teamMembersForModal: TeamMember[] = users.map(u => {
+    const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    return {
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      avatar: initials
+    }
+  })
+
+  const handleNext = async () => {
+    // If on step 5 (Checklist Templates) and templates are selected, show assignment modal
+    if (currentStep === 5 && formData.selectedChecklistTemplates.length > 0) {
+      setShowAssignmentModal(true)
+    } else if (currentStep < 6) {
+      setCurrentStep(currentStep + 1)
+    } else {
+      // Submit form - Create project
+      await handleSubmit()
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!user || !tenant || !project) {
+      toast.error('Missing required data')
+      return
+    }
+
+    // Validation
+    if (!formData.name.trim()) {
+      toast.error('Project name is required')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      // Get selected client and manager details
+      const selectedClient = clients.find(c => c.id === formData.clientId)
+      const selectedManager = users.find(u => u.id === formData.projectManager)
+
+      // Map form data to Project update (keeping existing metrics)
+      const updateData = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        status: formData.status as any,
+        priority: formData.priority as any,
+        tags: formData.tags,
+
+        // Client info
+        clientId: formData.clientId || null,
+        clientName: selectedClient?.name || null,
+
+        // Manager info
+        managerId: formData.projectManager || null,
+        managerName: selectedManager?.name || null,
+
+        // Budget
+        budgetAllocated: formData.budget || 0,
+        currency: formData.currency || 'USD',
+
+        // Dates
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
+
+        // Keep existing metrics
+        budgetSpent: project.budgetSpent,
+        tasksTotal: project.tasksTotal,
+        tasksCompleted: project.tasksCompleted,
+        milestonesTotal: project.milestonesTotal,
+        milestonesCompleted: project.milestonesCompleted,
+        completionPercentage: project.completionPercentage,
+        hoursLogged: project.hoursLogged,
+        estimatedHours: formData.estimatedHours || 0,
+
+        // Team (include owner)
+        teamMemberIds: [project.ownerId, ...formData.teamMembers],
+        teamSize: formData.teamMembers.length + 1
+      }
+
+      // Update project
+      await projectsService.updateProject(projectId, updateData)
+
+      toast.success('Project updated successfully!')
+      router.push(`/dashboard/projects/${projectId}`)
+    } catch (error: any) {
+      console.error('Error updating project:', error)
+      toast.error(error.message || 'Failed to update project')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleAssignmentSave = (assignments: Map<string, { assignedTo: string; assignedType: 'user' | 'team' }>) => {
+    // Convert Map to Record for formData
+    const assignmentRecord: Record<string, { assignedTo: string; assignedType: 'user' | 'team' }> = {}
+    assignments.forEach((value, key) => {
+      assignmentRecord[key] = value
+    })
+
+    setFormData(prev => ({
+      ...prev,
+      checklistAssignments: assignmentRecord
+    }))
+
+    setShowAssignmentModal(false)
+    setCurrentStep(6) // Proceed to Review step
   }
 
   const handleBack = () => {
@@ -168,149 +444,133 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const handleSave = () => {
-    console.log('Saving project:', formData)
-    setHasChanges(false)
-    // Simulate save success
-    router.push(`/dashboard/projects/${params.id}`)
-  }
-
-  const handleFormChange = (updates: Partial<ProjectFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }))
-    setHasChanges(true)
-  }
-
-  const toggleTechnology = (tech: string) => {
-    const updated = formData.technologies.includes(tech)
-      ? formData.technologies.filter(t => t !== tech)
-      : [...formData.technologies, tech]
-    handleFormChange({ technologies: updated })
+  const toggleTag = (tag: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }))
   }
 
   const toggleTeamMember = (memberId: string) => {
-    const updated = formData.teamMembers.includes(memberId)
-      ? formData.teamMembers.filter(m => m !== memberId)
-      : [...formData.teamMembers, memberId]
-    handleFormChange({ teamMembers: updated })
+    setFormData(prev => ({
+      ...prev,
+      teamMembers: prev.teamMembers.includes(memberId)
+        ? prev.teamMembers.filter(id => id !== memberId)
+        : [...prev.teamMembers, memberId]
+    }))
+  }
+
+  const toggleSkill = (skill: string) => {
+    setFormData(prev => ({
+      ...prev,
+      requiredSkills: prev.requiredSkills.includes(skill)
+        ? prev.requiredSkills.filter(s => s !== skill)
+        : [...prev.requiredSkills, skill]
+    }))
+  }
+
+  const addObjective = () => {
+    setFormData(prev => ({
+      ...prev,
+      objectives: [...prev.objectives, '']
+    }))
+  }
+
+  const updateObjective = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      objectives: prev.objectives.map((obj, i) => i === index ? value : obj)
+    }))
+  }
+
+  const removeObjective = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      objectives: prev.objectives.filter((_, i) => i !== index)
+    }))
+  }
+
+  const addDeliverable = () => {
+    setFormData(prev => ({
+      ...prev,
+      deliverables: [...prev.deliverables, '']
+    }))
+  }
+
+  const updateDeliverable = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      deliverables: prev.deliverables.map((del, i) => i === index ? value : del)
+    }))
+  }
+
+  const removeDeliverable = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      deliverables: prev.deliverables.filter((_, i) => i !== index)
+    }))
   }
 
   const addMilestone = () => {
-    handleFormChange({
-      milestones: [...formData.milestones, { name: '', date: '', completed: false }]
-    })
+    setFormData(prev => ({
+      ...prev,
+      milestones: [...prev.milestones, { name: '', date: '', description: '' }]
+    }))
+  }
+
+  const updateMilestone = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      milestones: prev.milestones.map((milestone, i) =>
+        i === index ? { ...milestone, [field]: value } : milestone
+      )
+    }))
   }
 
   const removeMilestone = (index: number) => {
-    handleFormChange({
-      milestones: formData.milestones.filter((_, i) => i !== index)
-    })
+    setFormData(prev => ({
+      ...prev,
+      milestones: prev.milestones.filter((_, i) => i !== index)
+    }))
   }
 
-  const updateMilestone = (index: number, field: string, value: any) => {
-    const updated = [...formData.milestones]
-    updated[index] = { ...updated[index], [field]: value }
-    handleFormChange({ milestones: updated })
-  }
-
-  const selectedClient = clients.find(c => c.id === formData.clientId)
-  const selectedManager = teamMembers.find(m => m.id === formData.managerId)
-  const selectedTeam = teamMembers.filter(m => formData.teamMembers.includes(m.id))
-
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'planning': return 'text-blue-400 bg-blue-400/10'
-      case 'in_progress': return 'text-yellow-400 bg-yellow-400/10'
-      case 'completed': return 'text-green-400 bg-green-400/10'
-      case 'on_hold': return 'text-gray-400 bg-gray-400/10'
-      case 'cancelled': return 'text-red-400 bg-red-400/10'
-      default: return 'text-gray-400 bg-gray-400/10'
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch(priority) {
-      case 'low': return 'text-gray-400 bg-gray-400/10'
-      case 'medium': return 'text-blue-400 bg-blue-400/10'
-      case 'high': return 'text-orange-400 bg-orange-400/10'
-      case 'urgent': return 'text-red-400 bg-red-400/10'
-      default: return 'text-gray-400 bg-gray-400/10'
-    }
-  }
-
-  return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Link href={`/dashboard/projects/${params.id}`}>
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <Link href={`/dashboard/projects/${projectId}`}>
             <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
               <ArrowLeft className="h-5 w-5 text-gray-400" />
             </button>
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-white">Edit Project</h1>
-            <p className="text-gray-400">Modify project details and settings</p>
+            <p className="text-gray-400">Loading project data...</p>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          {hasChanges && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-yellow-400/10 border border-yellow-400/30">
-              <AlertCircle className="h-4 w-4 text-yellow-400" />
-              <span className="text-yellow-400 text-sm">Unsaved changes</span>
-            </div>
-          )}
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 rounded-lg gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            Save Changes
-          </button>
+        <div className="animate-pulse space-y-6">
+          <div className="h-20 bg-gray-800 rounded-xl" />
+          <div className="h-96 bg-gray-800 rounded-xl" />
         </div>
       </div>
+    )
+  }
 
-      {/* Project Overview Card */}
-      <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6 mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-white">Project Overview</h2>
-          <div className="flex items-center gap-3">
-            <span className={cn('px-3 py-1 rounded-lg text-sm font-medium', getPriorityColor(formData.priority))}>
-              {formData.priority.charAt(0).toUpperCase() + formData.priority.slice(1)} Priority
-            </span>
-            <span className={cn('px-3 py-1 rounded-lg text-sm font-medium', getStatusColor(formData.status))}>
-              {formData.status.replace('_', ' ').charAt(0).toUpperCase() + formData.status.replace('_', ' ').slice(1)}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-4 gap-6">
-          <div>
-            <p className="text-sm text-gray-400 mb-1">Budget</p>
-            <p className="text-xl font-bold text-white">${formData.budget.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 mb-1">Progress</p>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300"
-                  style={{ width: `${mockProject.progress}%` }}
-                />
-              </div>
-              <span className="text-sm font-medium text-white">{mockProject.progress}%</span>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 mb-1">Team Size</p>
-            <p className="text-xl font-bold text-white">{formData.teamMembers.length + 1}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 mb-1">Days Remaining</p>
-            <p className="text-xl font-bold text-white">
-              {Math.ceil((new Date(formData.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
-            </p>
-          </div>
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <Link href={`/dashboard/projects/${projectId}`}>
+          <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+            <ArrowLeft className="h-5 w-5 text-gray-400" />
+          </button>
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Edit Project</h1>
+          <p className="text-gray-400">Update your project details</p>
         </div>
       </div>
 
@@ -340,7 +600,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
                       )} />
                     )}
                   </div>
-                  <div className="ml-3">
+                  <div className="ml-3 hidden md:block">
                     <p className={cn(
                       "text-sm font-medium",
                       isActive ? "text-white" : "text-gray-400"
@@ -369,281 +629,119 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
 
       {/* Form Content */}
       <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-8">
-        {/* Step 1: Basic Information */}
+        {/* Step 1: Project Details */}
         {currentStep === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white mb-6">Basic Information</h2>
+            <h2 className="text-xl font-semibold text-white mb-6">Project Details</h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                  placeholder="Enter project name"
+                />
+              </div>
+
+              <div>
+                <Select
+                  label="Category"
+                  required
+                  options={categoryOptions}
+                  value={formData.category}
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  placeholder="Select category"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-4">
+                  Priority Level *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {priorities.map(priority => (
+                    <button
+                      key={priority.value}
+                      onClick={() => setFormData({ ...formData, priority: priority.value })}
+                      className={cn(
+                        "p-3 rounded-xl border transition-all text-left",
+                        formData.priority === priority.value
+                          ? "border-purple-500 bg-purple-500/10"
+                          : "border-gray-700 bg-gray-800/30 hover:border-gray-600"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn("w-3 h-3 rounded-full", priority.color)} />
+                        <span className={cn(
+                          "font-medium",
+                          formData.priority === priority.value ? "text-purple-400" : "text-white"
+                        )}>
+                          {priority.label}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Project Name *
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Project Type *
               </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleFormChange({ name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                placeholder="Enter project name"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {projectTypes.map(type => (
+                  <button
+                    key={type.value}
+                    onClick={() => setFormData({ ...formData, type: type.value })}
+                    className={cn(
+                      "p-4 rounded-xl border-2 transition-all text-left",
+                      formData.type === type.value
+                        ? "border-purple-500 bg-purple-500/10"
+                        : "border-gray-700 bg-gray-800/30 hover:border-gray-600"
+                    )}
+                  >
+                    <p className={cn(
+                      "font-medium mb-1",
+                      formData.type === type.value ? "text-purple-400" : "text-white"
+                    )}>
+                      {type.label}
+                    </p>
+                    <p className="text-sm text-gray-400">{type.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Description
+                Project Description
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => handleFormChange({ description: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all resize-none"
-                placeholder="Describe the project objectives and scope"
+                placeholder="Describe the project goals, scope, and key requirements"
                 rows={4}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Client *
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => setShowClientDropdown(!showClientDropdown)}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-left flex items-center justify-between hover:bg-gray-800 transition-all"
-                >
-                  {selectedClient ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg gradient-purple flex items-center justify-center text-white text-sm font-medium">
-                        {selectedClient.logo}
-                      </div>
-                      <span>{selectedClient.name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">Select a client</span>
-                  )}
-                  <Building2 className="h-5 w-5 text-gray-400" />
-                </button>
-
-                {showClientDropdown && (
-                  <div className="absolute z-10 w-full mt-2 rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
-                    <div className="p-3 border-b border-gray-800">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                          type="text"
-                          value={clientSearch}
-                          onChange={(e) => setClientSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm placeholder:text-gray-500 focus:outline-none"
-                          placeholder="Search clients..."
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto p-2">
-                      {clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())).map(client => (
-                        <button
-                          key={client.id}
-                          onClick={() => {
-                            handleFormChange({ clientId: client.id })
-                            setShowClientDropdown(false)
-                            setClientSearch('')
-                          }}
-                          className="w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-800 transition-colors"
-                        >
-                          <div className="w-8 h-8 rounded-lg gradient-purple flex items-center justify-center text-white text-sm font-medium">
-                            {client.logo}
-                          </div>
-                          <span className="text-white">{client.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Select
-                  label="Project Type"
-                  required
-                  options={projectTypeOptions}
-                  value={formData.type}
-                  onChange={(value) => handleFormChange({ type: value })}
-                  placeholder="Select project type"
-                />
-              </div>
-
-              <div>
-                <Select
-                  label="Priority"
-                  required
-                  options={editPagePriorityOptions}
-                  value={formData.priority}
-                  onChange={(value) => handleFormChange({ priority: value })}
-                  placeholder="Select priority"
-                />
-              </div>
-
-              <div>
-                <Select
-                  label="Status"
-                  required
-                  options={editPageStatusOptions}
-                  value={formData.status}
-                  onChange={(value) => handleFormChange({ status: value })}
-                  placeholder="Select status"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Team & Resources */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white mb-6">Team & Resources</h2>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Project Manager *
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => setShowManagerDropdown(!showManagerDropdown)}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-left flex items-center justify-between hover:bg-gray-800 transition-all"
-                >
-                  {selectedManager ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full gradient-purple flex items-center justify-center text-white text-sm font-medium">
-                        {selectedManager.avatar}
-                      </div>
-                      <div>
-                        <span>{selectedManager.name}</span>
-                        <span className="text-gray-400 text-sm ml-2">{selectedManager.role}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">Select project manager</span>
-                  )}
-                  <Users className="h-5 w-5 text-gray-400" />
-                </button>
-
-                {showManagerDropdown && (
-                  <div className="absolute z-10 w-full mt-2 rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
-                    <div className="p-3 border-b border-gray-800">
-                      <input
-                        type="text"
-                        value={managerSearch}
-                        onChange={(e) => setManagerSearch(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm placeholder:text-gray-500 focus:outline-none"
-                        placeholder="Search team members..."
-                      />
-                    </div>
-                    <div className="max-h-60 overflow-y-auto p-2">
-                      {teamMembers
-                        .filter(m => m.role.includes('Manager') && m.name.toLowerCase().includes(managerSearch.toLowerCase()))
-                        .map(member => (
-                        <button
-                          key={member.id}
-                          onClick={() => {
-                            handleFormChange({ managerId: member.id })
-                            setShowManagerDropdown(false)
-                            setManagerSearch('')
-                          }}
-                          className="w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-800 transition-colors"
-                        >
-                          <div className="w-8 h-8 rounded-full gradient-purple flex items-center justify-center text-white text-sm font-medium">
-                            {member.avatar}
-                          </div>
-                          <div className="text-left">
-                            <p className="text-white">{member.name}</p>
-                            <p className="text-gray-400 text-xs">{member.role}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Team Members
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => setShowTeamDropdown(!showTeamDropdown)}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-left hover:bg-gray-800 transition-all"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500">
-                      {selectedTeam.length > 0 ? `${selectedTeam.length} members selected` : 'Select team members'}
-                    </span>
-                    <Users className="h-5 w-5 text-gray-400" />
-                  </div>
-                  {selectedTeam.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedTeam.map(member => (
-                        <span key={member.id} className="px-3 py-1 rounded-lg bg-purple-600/20 text-purple-400 text-sm">
-                          {member.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </button>
-
-                {showTeamDropdown && (
-                  <div className="absolute z-10 w-full mt-2 rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
-                    <div className="p-3 border-b border-gray-800">
-                      <input
-                        type="text"
-                        value={teamSearch}
-                        onChange={(e) => setTeamSearch(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm placeholder:text-gray-500 focus:outline-none"
-                        placeholder="Search team members..."
-                      />
-                    </div>
-                    <div className="max-h-60 overflow-y-auto p-2">
-                      {teamMembers
-                        .filter(m => m.name.toLowerCase().includes(teamSearch.toLowerCase()))
-                        .map(member => {
-                          const isSelected = formData.teamMembers.includes(member.id)
-                          return (
-                            <button
-                              key={member.id}
-                              onClick={() => toggleTeamMember(member.id)}
-                              className={cn(
-                                "w-full px-3 py-2 rounded-lg flex items-center gap-3 transition-colors",
-                                isSelected ? "bg-purple-600/20" : "hover:bg-gray-800"
-                              )}
-                            >
-                              <div className="w-8 h-8 rounded-full gradient-purple flex items-center justify-center text-white text-sm font-medium">
-                                {member.avatar}
-                              </div>
-                              <div className="flex-1 text-left">
-                                <p className="text-white">{member.name}</p>
-                                <p className="text-gray-400 text-xs">{member.role}</p>
-                              </div>
-                              {isSelected && <Check className="h-4 w-4 text-purple-400" />}
-                            </button>
-                          )
-                        })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Technologies
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Tags
               </label>
               <div className="flex flex-wrap gap-2">
-                {technologies.map(tech => {
-                  const isSelected = formData.technologies.includes(tech)
+                {availableTags.map(tag => {
+                  const isSelected = formData.tags.includes(tag)
                   return (
                     <button
-                      key={tech}
-                      onClick={() => toggleTechnology(tech)}
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-sm transition-all",
                         isSelected
@@ -651,37 +749,230 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
                           : "bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700"
                       )}
                     >
-                      {tech}
+                      {tag}
                     </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Client & Scope */}
+        {currentStep === 2 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Client & Scope</h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <Select
+                  label="Client"
+                  required
+                  options={clientOptions}
+                  value={formData.clientId}
+                  onChange={(value) => setFormData({ ...formData, clientId: value })}
+                  placeholder="Select client"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Primary Contact (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.clientContact}
+                  onChange={(e) => setFormData({ ...formData, clientContact: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                  placeholder="Enter primary contact name"
+                  disabled={!formData.clientId}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Project Scope
+              </label>
+              <textarea
+                value={formData.scope}
+                onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all resize-none"
+                placeholder="Define the project scope and boundaries"
+                rows={4}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium text-gray-300">
+                  Project Objectives
+                </label>
+                <button
+                  onClick={addObjective}
+                  className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </button>
+              </div>
+              <div className="space-y-3">
+                {formData.objectives.map((objective, index) => (
+                  <div key={index} className="flex gap-3">
+                    <input
+                      type="text"
+                      value={objective}
+                      onChange={(e) => updateObjective(index, e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                      placeholder="Enter project objective"
+                    />
+                    <button
+                      onClick={() => removeObjective(index)}
+                      className="p-3 text-gray-400 hover:text-red-400 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                {formData.objectives.length === 0 && (
+                  <p className="text-gray-500 text-sm italic">No objectives added yet</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium text-gray-300">
+                  Key Deliverables
+                </label>
+                <button
+                  onClick={addDeliverable}
+                  className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </button>
+              </div>
+              <div className="space-y-3">
+                {formData.deliverables.map((deliverable, index) => (
+                  <div key={index} className="flex gap-3">
+                    <input
+                      type="text"
+                      value={deliverable}
+                      onChange={(e) => updateDeliverable(index, e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                      placeholder="Enter deliverable"
+                    />
+                    <button
+                      onClick={() => removeDeliverable(index)}
+                      className="p-3 text-gray-400 hover:text-red-400 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                {formData.deliverables.length === 0 && (
+                  <p className="text-gray-500 text-sm italic">No deliverables added yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Team & Resources */}
+        {currentStep === 3 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Team & Resources</h2>
+
+            <div>
+              <Select
+                label="Project Manager"
+                required
+                options={projectManagerOptions}
+                value={formData.projectManager}
+                onChange={(value) => setFormData({ ...formData, projectManager: value })}
+                placeholder="Select project manager"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Team Members
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {users.map(member => {
+                  const isSelected = formData.teamMembers.includes(member.id)
+                  const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                  return (
+                    <div
+                      key={member.id}
+                      onClick={() => toggleTeamMember(member.id)}
+                      className={cn(
+                        "p-4 rounded-xl border cursor-pointer transition-all",
+                        isSelected
+                          ? "border-purple-500 bg-purple-500/10"
+                          : "border-gray-700 bg-gray-800/30 hover:border-gray-600"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
+                          isSelected ? "gradient-purple text-white" : "bg-gray-700 text-gray-300"
+                        )}>
+                          {initials}
+                        </div>
+                        <div>
+                          <p className={cn(
+                            "font-medium",
+                            isSelected ? "text-purple-400" : "text-white"
+                          )}>
+                            {member.name}
+                          </p>
+                          <p className="text-sm text-gray-400">{member.role}</p>
+                        </div>
+                        {isSelected && (
+                          <Check className="h-5 w-5 text-purple-400 ml-auto" />
+                        )}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Repository URL
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Required Skills
               </label>
-              <div className="relative">
-                <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.repository}
-                  onChange={(e) => handleFormChange({ repository: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  placeholder="github.com/organization/repository"
-                />
+              <div className="flex flex-wrap gap-2">
+                {availableSkills.map(skill => {
+                  const isSelected = formData.requiredSkills.includes(skill)
+                  return (
+                    <button
+                      key={skill}
+                      onClick={() => toggleSkill(skill)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-sm transition-all",
+                        isSelected
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700"
+                      )}
+                    >
+                      {skill}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 3: Timeline & Budget */}
-        {currentStep === 3 && (
+        {/* Step 4: Timeline & Budget */}
+        {currentStep === 4 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-white mb-6">Timeline & Budget</h2>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Start Date *
@@ -689,213 +980,471 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
                 <input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => handleFormChange({ startDate: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Due Date *
+                  End Date *
                 </label>
                 <input
                   type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => handleFormChange({ dueDate: e.target.value })}
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Budget *
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="number"
-                  value={formData.budget}
-                  onChange={(e) => handleFormChange({ budget: parseInt(e.target.value) || 0 })}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                  placeholder="Enter project budget"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-4">
                 <label className="text-sm font-medium text-gray-300">
-                  Milestones
+                  Project Milestones
                 </label>
                 <button
                   onClick={addMilestone}
-                  className="px-3 py-1 rounded-lg gradient-purple text-white text-sm font-medium hover:opacity-90 transition-all flex items-center gap-1"
+                  className="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors flex items-center gap-1"
                 >
                   <Plus className="h-4 w-4" />
                   Add Milestone
                 </button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {formData.milestones.map((milestone, index) => (
-                  <div key={index} className="flex gap-3 items-center">
-                    <input
-                      type="text"
-                      value={milestone.name}
-                      onChange={(e) => updateMilestone(index, 'name', e.target.value)}
-                      className="flex-1 px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                      placeholder="Milestone name"
-                    />
-                    <input
-                      type="date"
-                      value={milestone.date}
-                      onChange={(e) => updateMilestone(index, 'date', e.target.value)}
-                      className="w-40 px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
-                    />
-                    <button
-                      onClick={() => updateMilestone(index, 'completed', !milestone.completed)}
-                      className={cn(
-                        "p-3 rounded-xl transition-all",
-                        milestone.completed
-                          ? "bg-green-500/10 text-green-400"
-                          : "bg-gray-800/50 text-gray-400 hover:bg-gray-800"
-                      )}
-                    >
-                      <CheckCircle className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => removeMilestone(index)}
-                      className="p-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
+                  <div key={index} className="p-4 rounded-xl bg-gray-800/30 border border-gray-700">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            value={milestone.name}
+                            onChange={(e) => updateMilestone(index, 'name', e.target.value)}
+                            className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                            placeholder="Milestone name"
+                          />
+                          <input
+                            type="date"
+                            value={milestone.date}
+                            onChange={(e) => updateMilestone(index, 'date', e.target.value)}
+                            className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-sm"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          value={milestone.description}
+                          onChange={(e) => updateMilestone(index, 'description', e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                          placeholder="Description"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeMilestone(index)}
+                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
+                ))}
+                {formData.milestones.length === 0 && (
+                  <p className="text-gray-500 text-sm italic">No milestones added yet</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Total Budget
+                </label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Select
+                  label="Currency"
+                  options={currencyOptions}
+                  value={formData.currency}
+                  onChange={(value) => setFormData({ ...formData, currency: value })}
+                  placeholder="Select currency"
+                />
+              </div>
+
+              {formData.type === 'hourly' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Hourly Rate
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="number"
+                        value={formData.hourlyRate}
+                        onChange={(e) => setFormData({ ...formData, hourlyRate: parseFloat(e.target.value) || 0 })}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                        placeholder="150"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Estimated Hours
+                    </label>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="number"
+                        value={formData.estimatedHours}
+                        onChange={(e) => setFormData({ ...formData, estimatedHours: parseFloat(e.target.value) || 0 })}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Risk Assessment
+              </label>
+              <div className="space-y-3">
+                {riskLevels.map(risk => (
+                  <label key={risk.value} className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="riskAssessment"
+                      value={risk.value}
+                      checked={formData.riskAssessment === risk.value}
+                      onChange={(e) => setFormData({ ...formData, riskAssessment: e.target.value })}
+                      className="mt-1"
+                    />
+                    <div>
+                      <p className="text-white font-medium">{risk.label}</p>
+                      <p className="text-sm text-gray-400">{risk.description}</p>
+                    </div>
+                  </label>
                 ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 4: Status & Progress */}
-        {currentStep === 4 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white mb-6">Project Summary</h2>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Project Name</p>
-                <p className="text-white font-medium">{formData.name || 'Not specified'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Client</p>
-                <p className="text-white font-medium">{selectedClient?.name || 'Not selected'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Type</p>
-                <p className="text-white font-medium capitalize">{formData.type.replace('_', ' ')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Priority</p>
-                <p className="text-white font-medium capitalize">{formData.priority}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Status</p>
-                <p className="text-white font-medium capitalize">{formData.status.replace('_', ' ')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Budget</p>
-                <p className="text-white font-medium">${formData.budget.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Timeline</p>
-                <p className="text-white font-medium">
-                  {formData.startDate && formData.dueDate
-                    ? `${new Date(formData.startDate).toLocaleDateString()} - ${new Date(formData.dueDate).toLocaleDateString()}`
-                    : 'Not specified'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Current Progress</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-purple-600 to-pink-600"
-                      style={{ width: `${mockProject.progress}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-white">{mockProject.progress}%</span>
-                </div>
-              </div>
+        {/* Step 5: Review */}
+        {/* Step 5: Checklist Templates */}
+        {currentStep === 5 && (
+          <div className="space-y-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white mb-2">Checklist Templates</h2>
+              <p className="text-gray-400">Select pre-production checklists for your project and assign them to team members</p>
             </div>
 
-            {formData.description && (
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Description</p>
-                <p className="text-white">{formData.description}</p>
-              </div>
-            )}
-
-            <div>
-              <p className="text-sm text-gray-400 mb-2">Team</p>
-              <div className="flex items-center gap-4">
-                {selectedManager && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full gradient-purple flex items-center justify-center text-white text-sm">
-                      {selectedManager.avatar}
-                    </div>
-                    <div>
-                      <p className="text-white text-sm">{selectedManager.name}</p>
-                      <p className="text-gray-400 text-xs">Project Manager</p>
-                    </div>
-                  </div>
-                )}
-                {selectedTeam.length > 0 && (
-                  <div className="flex -space-x-2">
-                    {selectedTeam.slice(0, 5).map(member => (
-                      <div
-                        key={member.id}
-                        className="w-8 h-8 rounded-full gradient-purple border-2 border-gray-900 flex items-center justify-center text-white text-xs"
-                        title={member.name}
-                      >
-                        {member.avatar}
-                      </div>
-                    ))}
-                    {selectedTeam.length > 5 && (
-                      <div className="w-8 h-8 rounded-full bg-gray-800 border-2 border-gray-900 flex items-center justify-center text-gray-400 text-xs">
-                        +{selectedTeam.length - 5}
-                      </div>
+            {/* Mock Checklist Templates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  id: 'checklist-web-dev',
+                  name: 'Web Development Checklist',
+                  description: 'Complete checklist for web application projects',
+                  itemsCount: 25,
+                  categories: ['Setup', 'Development', 'Testing', 'Deployment']
+                },
+                {
+                  id: 'checklist-mobile-app',
+                  name: 'Mobile App Checklist',
+                  description: 'Checklist for iOS and Android app development',
+                  itemsCount: 30,
+                  categories: ['Planning', 'Design', 'Development', 'Testing', 'Release']
+                },
+                {
+                  id: 'checklist-api',
+                  name: 'API Development Checklist',
+                  description: 'Best practices for RESTful API development',
+                  itemsCount: 18,
+                  categories: ['Design', 'Implementation', 'Documentation', 'Security']
+                },
+                {
+                  id: 'checklist-security',
+                  name: 'Security Audit Checklist',
+                  description: 'Security review and compliance checklist',
+                  itemsCount: 22,
+                  categories: ['Authentication', 'Authorization', 'Data Protection', 'Testing']
+                }
+              ].map((template) => {
+                const isSelected = formData.selectedChecklistTemplates.includes(template.id)
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        selectedChecklistTemplates: isSelected
+                          ? prev.selectedChecklistTemplates.filter(id => id !== template.id)
+                          : [...prev.selectedChecklistTemplates, template.id]
+                      }))
+                    }}
+                    className={cn(
+                      'p-6 rounded-xl border-2 text-left transition-all',
+                      isSelected
+                        ? 'bg-purple-500/10 border-purple-500'
+                        : 'bg-gray-800/30 border-gray-700 hover:border-gray-600'
                     )}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          'w-10 h-10 rounded-lg flex items-center justify-center',
+                          isSelected ? 'bg-purple-500/20' : 'bg-gray-700'
+                        )}>
+                          <FileText className={cn(
+                            'w-5 h-5',
+                            isSelected ? 'text-purple-400' : 'text-gray-400'
+                          )} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-white">{template.name}</h3>
+                          <p className="text-sm text-gray-400 mt-1">{template.itemsCount} items</p>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3">{template.description}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {template.categories.map((category) => (
+                        <span
+                          key={category}
+                          className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs"
+                        >
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {formData.selectedChecklistTemplates.length > 0 && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-400 mb-1">Assignment Step Next</h4>
+                    <p className="text-sm text-gray-300">
+                      After completing this step, you'll be able to assign checklist items to team members or teams.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 6: Review & Confirm */}
+        {currentStep === 6 && (
+          <div className="space-y-8">
+            <h2 className="text-xl font-semibold text-white mb-6">Review & Confirm</h2>
+
+            {/* Project Details Summary */}
+            <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6">
+              <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                <FolderOpen className="h-5 w-5" />
+                Project Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Name:</span>
+                  <span className="text-white ml-2">{formData.name || 'Not specified'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Category:</span>
+                  <span className="text-white ml-2">{formData.category || 'Not specified'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Type:</span>
+                  <span className="text-white ml-2">{projectTypes.find(t => t.value === formData.type)?.label}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Priority:</span>
+                  <span className="text-white ml-2 capitalize">{formData.priority}</span>
+                </div>
+                {formData.tags.length > 0 && (
+                  <div className="md:col-span-2">
+                    <span className="text-gray-400">Tags:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {formData.tags.map(tag => (
+                        <span key={tag} className="px-2 py-1 rounded bg-purple-600/20 text-purple-400 text-xs">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {formData.technologies.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-400 mb-2">Technologies</p>
-                <div className="flex flex-wrap gap-2">
-                  {formData.technologies.map(tech => (
-                    <span key={tech} className="px-3 py-1 rounded-lg bg-gray-800 text-gray-300 text-sm">
-                      {tech}
-                    </span>
-                  ))}
+            {/* Client & Scope Summary */}
+            <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6">
+              <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Client & Scope
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <span className="text-gray-400">Client:</span>
+                  <span className="text-white ml-2">
+                    {clients.find(c => c.id === formData.clientId)?.name || 'Not selected'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Contact:</span>
+                  <span className="text-white ml-2">{formData.clientContact || 'Not specified'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Objectives:</span>
+                  <span className="text-white ml-2">{formData.objectives.length} defined</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Deliverables:</span>
+                  <span className="text-white ml-2">{formData.deliverables.length} specified</span>
                 </div>
               </div>
-            )}
+            </div>
 
-            {hasChanges ? (
-              <div className="p-4 rounded-xl bg-yellow-600/10 border border-yellow-500/30">
-                <p className="text-yellow-400 text-sm">
-                  <AlertCircle className="h-4 w-4 inline mr-2" />
-                  You have unsaved changes. Please save your changes before leaving this page.
-                </p>
+            {/* Team Summary */}
+            <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6">
+              <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Team & Resources
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <span className="text-gray-400">Project Manager:</span>
+                  <span className="text-white ml-2">
+                    {users.find(u => u.id === formData.projectManager)?.name || 'Not assigned'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Team Members:</span>
+                  <span className="text-white ml-2">{formData.teamMembers.length} selected</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Required Skills:</span>
+                  <span className="text-white ml-2">{formData.requiredSkills.length} skills</span>
+                </div>
               </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-green-600/10 border border-green-500/30">
-                <p className="text-green-400 text-sm">
-                  <CheckCircle className="h-4 w-4 inline mr-2" />
-                  All changes have been saved successfully.
-                </p>
+            </div>
+
+            {/* Timeline & Budget Summary */}
+            <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6">
+              <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Timeline & Budget
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Start Date:</span>
+                  <span className="text-white ml-2">{formData.startDate || 'Not set'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">End Date:</span>
+                  <span className="text-white ml-2">{formData.endDate || 'Not set'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Budget:</span>
+                  <span className="text-white ml-2">
+                    {formData.budget > 0 ? `${formData.currency} ${formData.budget.toLocaleString()}` : 'Not set'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Milestones:</span>
+                  <span className="text-white ml-2">{formData.milestones.length} defined</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Risk Level:</span>
+                  <span className="text-white ml-2 capitalize">{formData.riskAssessment}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Checklist Templates Summary */}
+            {formData.selectedChecklistTemplates.length > 0 && (
+              <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6">
+                <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Checklist Templates
+                </h3>
+                <div className="space-y-4">
+                  {mockChecklistTemplates
+                    .filter(t => formData.selectedChecklistTemplates.includes(t.id))
+                    .map(template => {
+                      const assignedItems = template.items.filter(item =>
+                        formData.checklistAssignments[item.id]
+                      ).length
+
+                      return (
+                        <div key={template.id} className="border-l-2 border-purple-500 pl-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="text-white font-medium">{template.name}</h4>
+                              <p className="text-sm text-gray-400">{template.description}</p>
+                            </div>
+                            <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded">
+                              {assignedItems}/{template.items.length} assigned
+                            </span>
+                          </div>
+
+                          {assignedItems > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {template.items
+                                .filter(item => formData.checklistAssignments[item.id])
+                                .slice(0, 3)
+                                .map(item => {
+                                  const assignment = formData.checklistAssignments[item.id]
+                                  const assignedMember = assignment.assignedType === 'user'
+                                    ? users.find(u => u.id === assignment.assignedTo)
+                                    : null
+
+                                  return (
+                                    <div key={item.id} className="flex items-center gap-2 text-sm">
+                                      <CheckCircle2 className="w-3 h-3 text-green-400" />
+                                      <span className="text-gray-300">{item.title}</span>
+                                      <span className="text-gray-500">→</span>
+                                      <span className="text-purple-400">
+                                        {assignedMember ? assignedMember.name : assignment.assignedTo}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              {assignedItems > 3 && (
+                                <p className="text-xs text-gray-500 italic">
+                                  +{assignedItems - 3} more assignments
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                </div>
               </div>
             )}
           </div>
@@ -917,27 +1466,28 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
             Back
           </button>
 
-          <div className="flex items-center gap-3">
-            {currentStep < 4 ? (
-              <button
-                onClick={handleNext}
-                className="px-6 py-3 rounded-xl gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2"
-              >
-                Next
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSave}
-                className="px-6 py-3 rounded-xl gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2"
-              >
-                <Save className="h-4 w-4" />
-                Save All Changes
-              </button>
+          <button
+            onClick={handleNext}
+            disabled={submitting}
+            className={cn(
+              "px-6 py-3 rounded-xl gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2",
+              submitting && "opacity-50 cursor-not-allowed"
             )}
-          </div>
+          >
+            {submitting ? 'Updating...' : currentStep === 6 ? 'Update Project' : 'Next'}
+            {!submitting && <ArrowRight className="h-4 w-4" />}
+          </button>
         </div>
       </div>
+
+      {/* Checklist Assignment Modal */}
+      <ChecklistAssignmentModal
+        isOpen={showAssignmentModal}
+        onClose={() => setShowAssignmentModal(false)}
+        templates={mockChecklistTemplates.filter(t => formData.selectedChecklistTemplates.includes(t.id))}
+        teamMembers={teamMembersForModal}
+        onAssign={handleAssignmentSave}
+      />
     </div>
   )
 }
