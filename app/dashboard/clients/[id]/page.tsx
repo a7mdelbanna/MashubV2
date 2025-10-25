@@ -46,28 +46,40 @@ export default function ClientDetailPage() {
     return () => unsubscribe()
   }, [clientId])
 
-  // Load related data
+  // Real-time subscription to related data
   useEffect(() => {
     if (!clientId) return
 
-    const loadData = async () => {
-      try {
-        const [activitiesData, notesData, communicationsData] = await Promise.all([
-          clientsService.getClientActivities(clientId),
-          clientsService.getClientNotes(clientId),
-          clientsService.getClientCommunications(clientId)
-        ])
-
-        setActivities(activitiesData)
-        setNotes(notesData)
-        setCommunications(communicationsData)
-      } catch (error) {
-        console.error('Error loading client data:', error)
-        toast.error('Failed to load client data')
+    // Subscribe to activities
+    const unsubActivities = clientsService.subscribeToClientActivities(
+      clientId,
+      (updatedActivities) => {
+        setActivities(updatedActivities)
       }
-    }
+    )
 
-    loadData()
+    // Subscribe to notes
+    const unsubNotes = clientsService.subscribeToClientNotes(
+      clientId,
+      (updatedNotes) => {
+        setNotes(updatedNotes)
+      }
+    )
+
+    // Subscribe to communications
+    const unsubCommunications = clientsService.subscribeToClientCommunications(
+      clientId,
+      (updatedCommunications) => {
+        setCommunications(updatedCommunications)
+      }
+    )
+
+    // Cleanup all subscriptions
+    return () => {
+      unsubActivities()
+      unsubNotes()
+      unsubCommunications()
+    }
   }, [clientId])
 
   const handleDelete = async () => {
@@ -122,8 +134,55 @@ export default function ClientDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-gray-800" />
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-gray-800" />
+              <div>
+                <div className="h-8 w-48 bg-gray-800 rounded mb-2" />
+                <div className="flex gap-2">
+                  <div className="h-6 w-16 bg-gray-800 rounded" />
+                  <div className="h-6 w-16 bg-gray-800 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 w-20 bg-gray-800 rounded-lg" />
+            <div className="h-10 w-24 bg-gray-800 rounded-lg" />
+          </div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="border-b border-gray-800">
+          <div className="flex space-x-6">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-10 w-28 bg-gray-800 rounded-t" />
+            ))}
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-gray-800 rounded-xl h-32" />
+              ))}
+            </div>
+            {/* Large Card Skeleton */}
+            <div className="bg-gray-800 rounded-xl h-64" />
+          </div>
+          <div className="space-y-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-gray-800 rounded-xl h-48" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -220,15 +279,15 @@ export default function ClientDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-800">
-          <div className="flex space-x-6 overflow-x-auto">
+        <div className="border-b border-gray-800 overflow-hidden">
+          <div className="flex space-x-4 sm:space-x-6 overflow-x-auto scrollbar-hide -mb-px">
             {tabs.map(tab => {
               const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                  className={`flex items-center space-x-2 px-3 sm:px-4 py-3 border-b-2 transition-colors whitespace-nowrap text-sm sm:text-base ${
                     activeTab === tab.id
                       ? 'border-purple-500 text-white'
                       : 'border-transparent text-gray-400 hover:text-white'
@@ -306,8 +365,8 @@ function OverviewTab({ client }: { client: Client }) {
       {/* Left Column - Stats */}
       <div className="lg:col-span-2 space-y-6">
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm">Total Revenue</p>
@@ -317,7 +376,7 @@ function OverviewTab({ client }: { client: Client }) {
             </div>
           </div>
 
-          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm">Lifetime Value</p>
@@ -327,7 +386,7 @@ function OverviewTab({ client }: { client: Client }) {
             </div>
           </div>
 
-          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm">Active Projects</p>

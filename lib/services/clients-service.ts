@@ -747,6 +747,90 @@ export class ClientsService {
       callback(clients)
     })
   }
+
+  /**
+   * Subscribe to client notes (real-time)
+   */
+  static subscribeToClientNotes(
+    clientId: string,
+    callback: (notes: ClientNote[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, this.NOTES_COLLECTION),
+      where('clientId', '==', clientId)
+    )
+
+    return onSnapshot(q, (snapshot) => {
+      const notes = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      } as ClientNote))
+
+      // Sort: pinned first, then by date
+      const sortedNotes = notes.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1
+        if (!a.isPinned && b.isPinned) return 1
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
+
+      callback(sortedNotes)
+    })
+  }
+
+  /**
+   * Subscribe to client communications (real-time)
+   */
+  static subscribeToClientCommunications(
+    clientId: string,
+    callback: (communications: Communication[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, this.COMMUNICATIONS_COLLECTION),
+      where('clientId', '==', clientId)
+    )
+
+    return onSnapshot(q, (snapshot) => {
+      const communications = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      } as Communication))
+
+      // Sort by date (newest first)
+      const sortedComms = communications.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+
+      callback(sortedComms)
+    })
+  }
+
+  /**
+   * Subscribe to client activities (real-time)
+   */
+  static subscribeToClientActivities(
+    clientId: string,
+    callback: (activities: ClientActivity[]) => void,
+    limit: number = 50
+  ): () => void {
+    const q = query(
+      collection(db, this.ACTIVITIES_COLLECTION),
+      where('clientId', '==', clientId)
+    )
+
+    return onSnapshot(q, (snapshot) => {
+      const activities = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      } as ClientActivity))
+
+      // Sort by date (newest first) and limit
+      const sortedActivities = activities
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit)
+
+      callback(sortedActivities)
+    })
+  }
 }
 
 // Export convenience instance

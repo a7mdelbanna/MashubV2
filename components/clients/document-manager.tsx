@@ -165,8 +165,28 @@ export default function DocumentManager({ clientId, tenantId }: DocumentManagerP
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-7 w-32 bg-gray-800 rounded mb-2" />
+            <div className="h-4 w-48 bg-gray-800 rounded" />
+          </div>
+          <div className="h-10 w-40 bg-gray-800 rounded-lg" />
+        </div>
+
+        {/* Search and Filter Skeleton */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 h-10 bg-gray-800 rounded-lg" />
+          <div className="h-10 w-40 bg-gray-800 rounded-lg" />
+        </div>
+
+        {/* Documents Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-gray-800 rounded-xl h-32" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -255,12 +275,12 @@ export default function DocumentManager({ clientId, tenantId }: DocumentManagerP
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => !uploading && setShowUploadModal(false)}
           />
-          <div className="relative bg-gray-900 rounded-xl border border-gray-800 p-6 max-w-md w-full mx-4">
+          <div className="relative bg-gray-900 rounded-xl border border-gray-800 p-4 sm:p-6 max-w-md w-full my-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">Upload Document</h3>
               {!uploading && (
@@ -281,7 +301,7 @@ export default function DocumentManager({ clientId, tenantId }: DocumentManagerP
                   onDragOver={handleDrag}
                   onDragLeave={handleDrag}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
                     dragActive ? 'border-purple-500 bg-purple-500/10' : 'border-gray-800'
                   }`}
                 >
