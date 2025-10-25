@@ -1,177 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar, Smartphone, X } from 'lucide-react'
-import { Task, TaskStatus, TaskPriority } from '@/types/projects'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar, X } from 'lucide-react'
+import { Task, TaskStatus, TaskPriority, TaskType } from '@/types/projects'
 import {
   getTaskStatusColor,
   getPriorityColor,
   formatTimeEstimate,
   sortTasksByPriority
 } from '@/lib/projects-utils'
-import { MOCK_APPS } from '@/lib/mock-project-data'
-import { AppTypeBadge } from '@/components/apps/app-type-badge'
-
-// Mock data - In production, this would come from API
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    projectId: 'proj-1',
-    title: 'Design authentication flow',
-    description: 'Create mockups for login, signup, and password reset',
-    type: 'design',
-    status: 'in_progress',
-    priority: 'high',
-    assigneeId: 'user-1',
-    assigneeName: 'Sarah Chen',
-    assigneeAvatar: undefined,
-    storyPoints: 5,
-    estimatedHours: 8,
-    timeSpent: 3,
-    tags: ['ui', 'auth'],
-    dueDate: '2025-10-20',
-    dependencies: [],
-    blockedBy: [],
-    subtasks: [],
-    attachments: [],
-    commentsCount: 3,
-    createdAt: '2025-10-10T10:00:00Z',
-    updatedAt: '2025-10-13T14:30:00Z',
-    startedAt: '2025-10-12T09:00:00Z',
-    scope: 'app',
-    appId: 'app_shopleez_techcorp',
-    appName: 'TechCorp POS'
-  },
-  {
-    id: '2',
-    projectId: 'proj-1',
-    title: 'Implement user registration API',
-    description: 'Build backend endpoints for user registration with email verification',
-    type: 'backend',
-    status: 'todo',
-    priority: 'urgent',
-    assigneeId: 'user-2',
-    assigneeName: 'Mike Johnson',
-    assigneeAvatar: undefined,
-    storyPoints: 8,
-    estimatedHours: 12,
-    timeSpent: 0,
-    tags: ['api', 'auth', 'backend'],
-    dueDate: '2025-10-18',
-    dependencies: [],
-    blockedBy: [],
-    subtasks: [],
-    attachments: [],
-    commentsCount: 1,
-    createdAt: '2025-10-10T10:00:00Z',
-    updatedAt: '2025-10-10T10:00:00Z',
-    scope: 'app',
-    appId: 'app_financehub_mobile',
-    appName: 'FinanceHub Mobile'
-  },
-  {
-    id: '3',
-    projectId: 'proj-1',
-    title: 'Setup CI/CD pipeline',
-    description: 'Configure GitHub Actions for automated testing and deployment',
-    type: 'devops',
-    status: 'in_review',
-    priority: 'medium',
-    assigneeId: 'user-3',
-    assigneeName: 'Alex Rivera',
-    assigneeAvatar: undefined,
-    storyPoints: 5,
-    estimatedHours: 6,
-    timeSpent: 6,
-    tags: ['devops', 'ci-cd'],
-    dueDate: '2025-10-15',
-    dependencies: [],
-    blockedBy: [],
-    subtasks: [],
-    attachments: [],
-    commentsCount: 5,
-    createdAt: '2025-10-08T10:00:00Z',
-    updatedAt: '2025-10-13T16:00:00Z',
-    startedAt: '2025-10-09T10:00:00Z',
-    scope: 'project'
-  },
-  {
-    id: '4',
-    projectId: 'proj-1',
-    title: 'Database schema design',
-    description: 'Design database schema for user management and authentication',
-    type: 'backend',
-    status: 'done',
-    priority: 'high',
-    assigneeId: 'user-2',
-    assigneeName: 'Mike Johnson',
-    assigneeAvatar: undefined,
-    storyPoints: 3,
-    estimatedHours: 4,
-    timeSpent: 5,
-    tags: ['database', 'backend'],
-    dueDate: '2025-10-12',
-    dependencies: [],
-    blockedBy: [],
-    subtasks: [],
-    attachments: [],
-    commentsCount: 2,
-    createdAt: '2025-10-08T10:00:00Z',
-    updatedAt: '2025-10-12T15:00:00Z',
-    startedAt: '2025-10-08T14:00:00Z',
-    completedAt: '2025-10-12T15:00:00Z',
-    scope: 'project'
-  },
-  {
-    id: '5',
-    projectId: 'proj-1',
-    title: 'Fix login redirect bug',
-    description: 'Users are redirected to wrong page after successful login',
-    type: 'bug',
-    status: 'blocked',
-    priority: 'critical',
-    assigneeId: 'user-1',
-    assigneeName: 'Sarah Chen',
-    assigneeAvatar: undefined,
-    storyPoints: 2,
-    estimatedHours: 3,
-    timeSpent: 1,
-    tags: ['bug', 'auth', 'urgent'],
-    dueDate: '2025-10-14',
-    dependencies: [],
-    blockedBy: ['6'],
-    subtasks: [],
-    attachments: [],
-    commentsCount: 7,
-    createdAt: '2025-10-11T10:00:00Z',
-    updatedAt: '2025-10-13T11:00:00Z',
-    startedAt: '2025-10-11T14:00:00Z',
-    scope: 'app',
-    appId: 'app_retailchain_website',
-    appName: 'RetailChain Website'
-  },
-  {
-    id: '6',
-    projectId: 'proj-1',
-    title: 'Write integration tests',
-    description: 'Create comprehensive integration tests for authentication flow',
-    type: 'testing',
-    status: 'backlog',
-    priority: 'medium',
-    storyPoints: 5,
-    estimatedHours: 10,
-    timeSpent: 0,
-    tags: ['testing', 'qa'],
-    dependencies: [],
-    blockedBy: [],
-    subtasks: [],
-    attachments: [],
-    commentsCount: 0,
-    createdAt: '2025-10-10T10:00:00Z',
-    updatedAt: '2025-10-10T10:00:00Z',
-    scope: 'project'
-  }
-]
+import { projectsService } from '@/lib/services/projects-service'
+import { useAuth } from '@/contexts/auth-context'
+import toast from 'react-hot-toast'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const columns: { status: TaskStatus; label: string; color: string }[] = [
   { status: 'backlog', label: 'Backlog', color: 'gray' },
@@ -183,17 +24,59 @@ const columns: { status: TaskStatus; label: string; color: string }[] = [
 ]
 
 export default function ProjectBoardPage() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { user, tenant } = useAuth()
+
+  // Get projectId from URL params (optional - show all projects if not specified)
+  const projectId = searchParams.get('projectId')
+
+  // State
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPriorities, setSelectedPriorities] = useState<TaskPriority[]>([])
-  const [selectedScope, setSelectedScope] = useState<'all' | 'project' | 'app'>('all')
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
+  const [selectedTypes, setSelectedTypes] = useState<TaskType[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [viewDensity, setViewDensity] = useState<'compact' | 'comfortable'>('comfortable')
 
   // Modal states
   const [showTaskDetail, setShowTaskDetail] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [showCreateTask, setShowCreateTask] = useState(false)
+
+  // Subscribe to tasks from Firebase
+  useEffect(() => {
+    if (!tenant?.id) {
+      setLoading(false)
+      return
+    }
+
+    // If projectId is specified, subscribe to that project's tasks
+    // Otherwise, we'd need a different query (for now, require projectId)
+    if (!projectId) {
+      setLoading(false)
+      toast.error('Please select a project to view its board')
+      return
+    }
+
+    setLoading(true)
+
+    const unsubscribe = projectsService.subscribeToTasksByStatus(
+      projectId,
+      (tasksByStatus) => {
+        // Flatten tasks from all statuses
+        const allTasks: Task[] = []
+        Object.values(tasksByStatus).forEach(statusTasks => {
+          allTasks.push(...statusTasks)
+        })
+        setTasks(allTasks)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [tenant?.id, projectId])
 
   // Handlers
   const handleTaskClick = (task: Task) => {
@@ -201,20 +84,40 @@ export default function ProjectBoardPage() {
     setShowTaskDetail(true)
   }
 
-  // Get unique apps from tasks
-  const appsInTasks = MOCK_APPS.filter(app =>
-    tasks.some(task => task.appId === app.id)
-  )
+  const handleDragStart = (e: React.DragEvent, task: Task) => {
+    e.dataTransfer.setData('taskId', task.id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e: React.DragEvent, newStatus: TaskStatus) => {
+    e.preventDefault()
+    const taskId = e.dataTransfer.getData('taskId')
+    const task = tasks.find(t => t.id === taskId)
+
+    if (!task || task.status === newStatus) return
+
+    try {
+      await projectsService.updateTask(taskId, { status: newStatus })
+      toast.success(`Task moved to ${newStatus.replace('_', ' ')}`)
+    } catch (error) {
+      console.error('Error updating task status:', error)
+      toast.error('Failed to update task status')
+    }
+  }
 
   // Filter tasks
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          task.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority)
-    const matchesScope = selectedScope === 'all' || task.scope === selectedScope
-    const matchesApp = !selectedAppId || task.appId === selectedAppId
+    const matchesType = selectedTypes.length === 0 || selectedTypes.includes(task.type)
 
-    return matchesSearch && matchesPriority && matchesScope && matchesApp
+    return matchesSearch && matchesPriority && matchesType
   })
 
   // Group tasks by status
@@ -222,6 +125,36 @@ export default function ProjectBoardPage() {
     ...column,
     tasks: sortTasksByPriority(filteredTasks.filter(task => task.status === column.status))
   }))
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading board...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // No project selected state
+  if (!projectId) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">No Project Selected</h2>
+          <p className="text-gray-400 mb-4">Please select a project to view its task board</p>
+          <button
+            onClick={() => router.push('/dashboard/projects')}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+          >
+            Go to Projects
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col" style={{ zoom: 0.8 }}>
@@ -259,7 +192,10 @@ export default function ProjectBoardPage() {
                 Compact
               </button>
             </div>
-            <button className="px-4 sm:px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 text-sm sm:text-base">
+            <button
+              onClick={() => setShowCreateTask(true)}
+              className="px-4 sm:px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 text-sm sm:text-base"
+            >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">New Task</span>
               <span className="sm:hidden">New</span>
@@ -330,65 +266,41 @@ export default function ProjectBoardPage() {
               </div>
             </div>
 
-            {/* Scope Filter */}
+            {/* Task Type Filter */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm text-gray-400">Scope:</span>
+                <span className="text-sm text-gray-400">Task Type:</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(['all', 'project', 'app'] as const).map(scope => (
+                {(['task', 'bug', 'feature', 'epic', 'story'] as TaskType[]).map(type => (
                   <button
-                    key={scope}
+                    key={type}
                     onClick={() => {
-                      setSelectedScope(scope)
-                      if (scope !== 'app') setSelectedAppId(null)
+                      setSelectedTypes(prev =>
+                        prev.includes(type)
+                          ? prev.filter(t => t !== type)
+                          : [...prev, type]
+                      )
                     }}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      selectedScope === scope
+                      selectedTypes.includes(type)
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >
-                    {scope === 'all' ? 'All Tasks' : scope === 'project' ? 'Project-Level' : 'App-Level'}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
                 ))}
+                {selectedTypes.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTypes([])}
+                    className="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
-
-            {/* App Filter (only show when scope is 'app' or 'all') */}
-            {(selectedScope === 'app' || selectedScope === 'all') && appsInTasks.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Smartphone className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-400">Filter by App:</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSelectedAppId(null)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      !selectedAppId
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    All Apps
-                  </button>
-                  {appsInTasks.map(app => (
-                    <button
-                      key={app.id}
-                      onClick={() => setSelectedAppId(app.id)}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
-                        selectedAppId === app.id
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      {app.nameEn}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -398,7 +310,12 @@ export default function ProjectBoardPage() {
         <div className="h-full overflow-x-auto overflow-y-hidden scroll-smooth">
           <div className={`h-full flex p-3 sm:p-4 md:p-6 min-w-max ${viewDensity === 'compact' ? 'gap-2 sm:gap-3' : 'gap-3 sm:gap-4'}`}>
           {tasksByStatus.map(column => (
-            <div key={column.status} className={`flex flex-col ${viewDensity === 'compact' ? 'w-56 sm:w-64' : 'w-64 sm:w-72'}`}>
+            <div
+              key={column.status}
+              className={`flex flex-col ${viewDensity === 'compact' ? 'w-56 sm:w-64' : 'w-64 sm:w-72'}`}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, column.status)}
+            >
               {/* Column Header */}
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center gap-1.5 sm:gap-2">
@@ -423,8 +340,10 @@ export default function ProjectBoardPage() {
                   column.tasks.map(task => (
                     <div
                       key={task.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task)}
                       onClick={() => handleTaskClick(task)}
-                      className={`bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:border-purple-500 transition-colors ${viewDensity === 'compact' ? 'p-2.5 sm:p-3' : 'p-3 sm:p-4'}`}
+                      className={`bg-gray-800 rounded-lg border border-gray-700 cursor-move hover:border-purple-500 transition-colors ${viewDensity === 'compact' ? 'p-2.5 sm:p-3' : 'p-3 sm:p-4'}`}
                     >
                       {/* Task Header */}
                       <div className="flex items-start justify-between mb-1.5 sm:mb-2">
