@@ -604,6 +604,106 @@ export class ClientsService {
     }
   }
 
+  /**
+   * Update note
+   */
+  static async updateNote(
+    noteId: string,
+    updates: Partial<Omit<ClientNote, 'id' | 'clientId' | 'createdAt' | 'createdBy' | 'createdByName'>>
+  ): Promise<void> {
+    try {
+      const docRef = doc(db, this.NOTES_COLLECTION, noteId)
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error updating note:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete note
+   */
+  static async deleteNote(noteId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.NOTES_COLLECTION, noteId))
+    } catch (error) {
+      console.error('Error deleting note:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Add communication
+   */
+  static async addCommunication(
+    communication: Omit<Communication, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      const now = new Date().toISOString()
+
+      const newCommunication = {
+        ...communication,
+        createdAt: now,
+        updatedAt: now
+      }
+
+      const docRef = await addDoc(
+        collection(db, this.COMMUNICATIONS_COLLECTION),
+        newCommunication
+      )
+
+      // Log activity
+      await this.logActivity({
+        clientId: communication.clientId,
+        type: 'communication',
+        title: `${communication.type} - ${communication.subject}`,
+        description: communication.content.substring(0, 100),
+        userId: communication.userId,
+        userName: communication.userName,
+        createdAt: now
+      })
+
+      return docRef.id
+    } catch (error) {
+      console.error('Error adding communication:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update communication
+   */
+  static async updateCommunication(
+    communicationId: string,
+    updates: Partial<Omit<Communication, 'id' | 'clientId' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    try {
+      const docRef = doc(db, this.COMMUNICATIONS_COLLECTION, communicationId)
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error updating communication:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete communication
+   */
+  static async deleteCommunication(communicationId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.COMMUNICATIONS_COLLECTION, communicationId))
+    } catch (error) {
+      console.error('Error deleting communication:', error)
+      throw error
+    }
+  }
+
   // ===========================================
   // REAL-TIME LISTENERS
   // ===========================================

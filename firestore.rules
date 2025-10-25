@@ -136,6 +136,21 @@ service cloud.firestore {
       allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
     }
 
+    match /client_activities/{activityId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /client_notes/{noteId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /client_communications/{communicationId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
     // ============================================
     // PROJECTS COLLECTION (Tenant-scoped)
     // ============================================

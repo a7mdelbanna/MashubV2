@@ -18,25 +18,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import { storage, db } from '@/lib/firebase'
-
-export interface ClientDocument {
-  id: string
-  clientId: string
-  tenantId: string
-  name: string
-  originalName: string
-  size: number
-  type: string
-  category?: 'contract' | 'invoice' | 'proposal' | 'report' | 'other'
-  storagePath: string
-  downloadURL: string
-  uploadedBy: string
-  uploadedByName: string
-  createdAt: string
-  updatedAt: string
-  description?: string
-  tags?: string[]
-}
+import { ClientDocument } from '@/types/clients'
 
 export interface UploadProgress {
   bytesTransferred: number

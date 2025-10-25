@@ -213,6 +213,7 @@ export interface Signature {
 export interface Communication {
   id: string
   clientId: string
+  tenantId: string
   contactPersonId?: string
 
   // Communication Details
@@ -344,6 +345,7 @@ export interface ClientProject {
 export interface ClientActivity {
   id: string
   clientId: string
+  tenantId: string
 
   type: 'created' | 'updated' | 'communication' | 'project' | 'invoice' | 'payment' | 'contract' | 'note'
   title: string
@@ -366,7 +368,9 @@ export interface ClientActivity {
 export interface ClientNote {
   id: string
   clientId: string
+  tenantId: string
 
+  title?: string // Optional title for the note
   content: string
 
   // User
@@ -387,29 +391,30 @@ export interface ClientNote {
 export interface ClientDocument {
   id: string
   clientId: string
+  tenantId: string
 
-  title: string
-  description?: string
-  category: string
+  // File names
+  name: string // Sanitized filename for storage
+  originalName: string // Original filename
 
-  // File
-  fileName: string
-  fileType: string
-  fileSize: number
-  fileUrl: string
-  thumbnailUrl?: string
+  // File metadata
+  size: number
+  type: string // MIME type
+  category?: 'contract' | 'invoice' | 'proposal' | 'report' | 'other'
 
-  // Upload
+  // Firebase Storage
+  storagePath: string // Path in Firebase Storage
+  downloadURL: string // Public download URL
+
+  // Upload info
   uploadedBy: string
   uploadedByName: string
 
-  // Access
-  isConfidential: boolean
-  allowedUserIds?: string[]
+  // Optional metadata
+  description?: string
+  tags?: string[]
 
-  // Metadata
-  tags: string[]
-
+  // Timestamps
   createdAt: string
   updatedAt: string
 }
