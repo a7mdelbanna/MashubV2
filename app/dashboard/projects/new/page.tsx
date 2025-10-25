@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft, ArrowRight, FolderOpen, Users, Calendar,
@@ -14,6 +15,12 @@ import Select from '@/components/ui/select'
 import { projectStatusOptions, priorityOptions, currencyOptions } from '@/lib/select-options'
 import { ChecklistAssignmentModal } from '@/components/projects/checklist-assignment-modal'
 import { ChecklistTemplate, ChecklistItem, TeamMember } from '@/types'
+import { Client } from '@/types/clients'
+import { User as UserType } from '@/types'
+import { ClientsService } from '@/lib/services/clients-service'
+import { UserService } from '@/lib/services/user-service'
+import { projectsService } from '@/lib/services/projects-service'
+import toast from 'react-hot-toast'
 
 interface ProjectFormData {
   // Project Details
@@ -65,8 +72,13 @@ interface ProjectFormData {
 
 export default function NewProjectPage() {
   const router = useRouter()
+  const { user, tenant } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [clients, setClients] = useState<Client[]>([])
+  const [users, setUsers] = useState<UserType[]>([])
   const [formData, setFormData] = useState<ProjectFormData>({
     // Project Details
     name: '',
@@ -111,6 +123,30 @@ export default function NewProjectPage() {
     riskAssessment: 'low'
   })
 
+  // Fetch clients and users on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!tenant?.id) return
+
+      try {
+        setLoading(true)
+        const [clientsData, usersData] = await Promise.all([
+          ClientsService.getClients(tenant.id),
+          UserService.getUsers(tenant.id)
+        ])
+        setClients(clientsData)
+        setUsers(usersData)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Failed to load data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [tenant?.id])
+
   const steps = [
     { id: 1, name: 'Project Details', icon: FolderOpen },
     { id: 2, name: 'Client & Scope', icon: Target },
@@ -145,30 +181,18 @@ export default function NewProjectPage() {
     { value: 'critical', label: 'Critical', color: 'gradient-pink' }
   ]
 
-  const mockClients = [
-    { id: 'c1', name: 'TechCorp Inc.', contacts: ['John Smith', 'Sarah Johnson'] },
-    { id: 'c2', name: 'FinanceHub', contacts: ['Michael Brown', 'Emily Davis'] },
-    { id: 'c3', name: 'GlobalHR Solutions', contacts: ['David Wilson', 'Jennifer Lee'] }
-  ]
-
-  const clientOptions = mockClients.map(client => ({
+  // Convert clients to select options
+  const clientOptions = clients.map(client => ({
     value: client.id,
-    label: client.name
+    label: client.companyName
   }))
 
-  const mockTeamMembers = [
-    { id: 't1', name: 'Alex Johnson', role: 'Frontend Developer', avatar: 'AJ' },
-    { id: 't2', name: 'Sarah Chen', role: 'Backend Developer', avatar: 'SC' },
-    { id: 't3', name: 'Mike Roberts', role: 'UI/UX Designer', avatar: 'MR' },
-    { id: 't4', name: 'Lisa Kim', role: 'Project Manager', avatar: 'LK' },
-    { id: 't5', name: 'Tom Wilson', role: 'DevOps Engineer', avatar: 'TW' }
-  ]
-
-  const projectManagerOptions = mockTeamMembers
-    .filter(m => m.role.includes('Manager'))
-    .map(member => ({
-      value: member.id,
-      label: `${member.name} - ${member.role}`
+  // Convert users to team member options
+  const projectManagerOptions = users
+    .filter(u => u.role === 'admin' || u.role === 'manager')
+    .map(user => ({
+      value: user.id,
+      label: `${user.name} - ${user.role}`
     }))
 
   const availableSkills = [
@@ -252,24 +276,119 @@ export default function NewProjectPage() {
     }
   ]
 
-  // Convert mockTeamMembers to TeamMember type for modal
-  const teamMembersForModal: TeamMember[] = mockTeamMembers.map(m => ({
-    id: m.id,
-    name: m.name,
-    role: m.role,
-    avatar: m.avatar
-  }))
+  // Convert users to TeamMember type for modal
+  const teamMembersForModal: TeamMember[] = users.map(u => {
+    const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    return {
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      avatar: initials
+    }
+  })
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // If on step 5 (Checklist Templates) and templates are selected, show assignment modal
     if (currentStep === 5 && formData.selectedChecklistTemplates.length > 0) {
       setShowAssignmentModal(true)
     } else if (currentStep < 6) {
       setCurrentStep(currentStep + 1)
     } else {
-      // Submit form
-      console.log('Creating project:', formData)
-      router.push('/dashboard/projects')
+      // Submit form - Create project
+      await handleSubmit()
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!user || !tenant) {
+      toast.error('User or tenant not found')
+      return
+    }
+
+    // Validation
+    if (!formData.name.trim()) {
+      toast.error('Project name is required')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      // Get selected client and manager details
+      const selectedClient = clients.find(c => c.id === formData.clientId)
+      const selectedManager = users.find(u => u.id === formData.projectManager)
+
+      // Map form data to Project type
+      const projectData = {
+        tenantId: tenant.id,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        status: formData.status as any,
+        priority: formData.priority as any,
+        tags: formData.tags,
+
+        // Client info
+        clientId: formData.clientId || null,
+        clientName: selectedClient?.companyName || null,
+
+        // Manager info
+        managerId: formData.projectManager || null,
+        managerName: selectedManager?.name || null,
+
+        // Owner info (current user)
+        ownerId: user.uid,
+        ownerName: user.displayName || user.email || 'Unknown',
+
+        // Budget
+        budgetAllocated: formData.budget || 0,
+        budgetSpent: 0,
+        currency: formData.currency || 'USD',
+
+        // Dates
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
+
+        // Metrics
+        tasksTotal: 0,
+        tasksCompleted: 0,
+        milestonesTotal: formData.milestones.length,
+        milestonesCompleted: 0,
+        completionPercentage: 0,
+        hoursLogged: 0,
+        estimatedHours: formData.estimatedHours || 0,
+
+        // Team
+        teamMemberIds: [user.uid, ...formData.teamMembers],
+        teamSize: formData.teamMembers.length + 1
+      }
+
+      // Create project
+      const projectId = await projectsService.createProject(projectData)
+
+      // Create milestones if any
+      for (const milestone of formData.milestones) {
+        if (milestone.name.trim()) {
+          await projectsService.createMilestone({
+            tenantId: tenant.id,
+            projectId,
+            name: milestone.name.trim(),
+            description: milestone.description.trim(),
+            dueDate: milestone.date,
+            status: 'upcoming',
+            completionPercentage: 0,
+            tasksTotal: 0,
+            tasksCompleted: 0
+          })
+        }
+      }
+
+      toast.success('Project created successfully!')
+      router.push(`/dashboard/projects/${projectId}`)
+    } catch (error: any) {
+      console.error('Error creating project:', error)
+      toast.error(error.message || 'Failed to create project')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -385,6 +504,29 @@ export default function NewProjectPage() {
       ...prev,
       milestones: prev.milestones.filter((_, i) => i !== index)
     }))
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/dashboard/projects">
+            <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+              <ArrowLeft className="h-5 w-5 text-gray-400" />
+            </button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Create New Project</h1>
+            <p className="text-gray-400">Loading form data...</p>
+          </div>
+        </div>
+        <div className="animate-pulse space-y-6">
+          <div className="h-20 bg-gray-800 rounded-xl" />
+          <div className="h-96 bg-gray-800 rounded-xl" />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -604,18 +746,15 @@ export default function NewProjectPage() {
               </div>
 
               <div>
-                <Select
-                  label="Primary Contact"
-                  options={formData.clientId && mockClients.find(c => c.id === formData.clientId)
-                    ? mockClients.find(c => c.id === formData.clientId)!.contacts.map(contact => ({
-                        value: contact,
-                        label: contact
-                      }))
-                    : []
-                  }
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Primary Contact (Optional)
+                </label>
+                <input
+                  type="text"
                   value={formData.clientContact}
-                  onChange={(value) => setFormData({ ...formData, clientContact: value })}
-                  placeholder="Select contact"
+                  onChange={(e) => setFormData({ ...formData, clientContact: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-white placeholder:text-gray-500 focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all"
+                  placeholder="Enter primary contact name"
                   disabled={!formData.clientId}
                 />
               </div>
@@ -731,8 +870,9 @@ export default function NewProjectPage() {
                 Team Members
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mockTeamMembers.map(member => {
+                {users.map(member => {
                   const isSelected = formData.teamMembers.includes(member.id)
+                  const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
                   return (
                     <div
                       key={member.id}
@@ -749,7 +889,7 @@ export default function NewProjectPage() {
                           "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
                           isSelected ? "gradient-purple text-white" : "bg-gray-700 text-gray-300"
                         )}>
-                          {member.avatar}
+                          {initials}
                         </div>
                         <div>
                           <p className={cn(
@@ -1141,7 +1281,7 @@ export default function NewProjectPage() {
                 <div>
                   <span className="text-gray-400">Client:</span>
                   <span className="text-white ml-2">
-                    {mockClients.find(c => c.id === formData.clientId)?.name || 'Not selected'}
+                    {clients.find(c => c.id === formData.clientId)?.companyName || 'Not selected'}
                   </span>
                 </div>
                 <div>
@@ -1169,7 +1309,7 @@ export default function NewProjectPage() {
                 <div>
                   <span className="text-gray-400">Project Manager:</span>
                   <span className="text-white ml-2">
-                    {mockTeamMembers.find(m => m.id === formData.projectManager)?.name || 'Not assigned'}
+                    {users.find(u => u.id === formData.projectManager)?.name || 'Not assigned'}
                   </span>
                 </div>
                 <div>
@@ -1250,7 +1390,7 @@ export default function NewProjectPage() {
                                 .map(item => {
                                   const assignment = formData.checklistAssignments[item.id]
                                   const assignedMember = assignment.assignedType === 'user'
-                                    ? mockTeamMembers.find(m => m.id === assignment.assignedTo)
+                                    ? users.find(u => u.id === assignment.assignedTo)
                                     : null
 
                                   return (
@@ -1298,10 +1438,14 @@ export default function NewProjectPage() {
 
           <button
             onClick={handleNext}
-            className="px-6 py-3 rounded-xl gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2"
+            disabled={submitting}
+            className={cn(
+              "px-6 py-3 rounded-xl gradient-purple text-white font-medium hover:opacity-90 transition-all flex items-center gap-2",
+              submitting && "opacity-50 cursor-not-allowed"
+            )}
           >
-            {currentStep === 6 ? 'Create Project' : 'Next'}
-            <ArrowRight className="h-4 w-4" />
+            {submitting ? 'Creating...' : currentStep === 6 ? 'Create Project' : 'Next'}
+            {!submitting && <ArrowRight className="h-4 w-4" />}
           </button>
         </div>
       </div>
