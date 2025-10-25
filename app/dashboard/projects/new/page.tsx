@@ -184,7 +184,7 @@ export default function NewProjectPage() {
   // Convert clients to select options
   const clientOptions = clients.map(client => ({
     value: client.id,
-    label: client.companyName
+    label: client.name
   }))
 
   // Convert users to team member options
@@ -329,7 +329,7 @@ export default function NewProjectPage() {
 
         // Client info
         clientId: formData.clientId || null,
-        clientName: selectedClient?.companyName || null,
+        clientName: selectedClient?.name || null,
 
         // Manager info
         managerId: formData.projectManager || null,
@@ -1281,7 +1281,7 @@ export default function NewProjectPage() {
                 <div>
                   <span className="text-gray-400">Client:</span>
                   <span className="text-white ml-2">
-                    {clients.find(c => c.id === formData.clientId)?.companyName || 'Not selected'}
+                    {clients.find(c => c.id === formData.clientId)?.name || 'Not selected'}
                   </span>
                 </div>
                 <div>

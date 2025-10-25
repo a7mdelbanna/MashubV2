@@ -427,9 +427,21 @@ function OverviewTab({ client }: { client: Client }) {
               <div className="flex items-start text-gray-300">
                 <MapPin className="h-4 w-4 mr-3 text-gray-400 mt-1" />
                 <div>
-                  <p>{client.address}</p>
-                  {client.city && client.country && (
-                    <p>{client.city}, {client.country}</p>
+                  {client.address.formatted ? (
+                    <p>{client.address.formatted}</p>
+                  ) : (
+                    <>
+                      {client.address.street && <p>{client.address.street}</p>}
+                      {client.address.street2 && <p>{client.address.street2}</p>}
+                      {(client.address.city || client.address.state || client.address.postalCode) && (
+                        <p>
+                          {[client.address.city, client.address.state, client.address.postalCode]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                      )}
+                      {client.address.country && <p>{client.address.country}</p>}
+                    </>
                   )}
                 </div>
               </div>
@@ -447,10 +459,10 @@ function OverviewTab({ client }: { client: Client }) {
                 <p className="text-white mt-1">{client.industry}</p>
               </div>
             )}
-            {client.companySize && (
+            {client.size && (
               <div>
                 <p className="text-sm text-gray-400">Company Size</p>
-                <p className="text-white mt-1">{client.companySize}</p>
+                <p className="text-white mt-1">{client.size}</p>
               </div>
             )}
             {client.legalName && (
