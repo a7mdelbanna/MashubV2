@@ -394,7 +394,7 @@ export default function ProjectPricingPage() {
 
                 {/* Price */}
                 <div className="mb-4 pb-4 border-b border-gray-700">
-                  {isPaid ? (
+                  {addon.pricing ? (
                     <>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-green-400">
@@ -638,7 +638,7 @@ function PackageModal({
                 </label>
                 <select
                   value={formData.pricingModel}
-                  onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value as 'custom' | 'subscription' | 'one_time' | 'usage_based' })}
                   className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
                 >
                   <option value="subscription">Subscription</option>
@@ -689,7 +689,7 @@ function PackageModal({
                   </label>
                   <select
                     value={formData.interval}
-                    onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, interval: e.target.value as 'month' | 'year' })}
                     className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white focus:border-purple-500 focus:outline-none transition-colors"
                   >
                     <option value="month">Monthly</option>

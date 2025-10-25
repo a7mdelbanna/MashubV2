@@ -462,7 +462,6 @@ export default function ClientsPage() {
                           <AppTypeBadge
                             key={app.id}
                             type={app.type}
-                            label={app.nameEn}
                             size="sm"
                           />
                         ))}

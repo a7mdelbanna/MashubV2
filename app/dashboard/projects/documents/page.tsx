@@ -30,38 +30,11 @@ import {
 } from 'lucide-react'
 import { FileAppAssignmentModal } from '@/components/projects/file-app-assignment-modal'
 import { MOCK_APPS, MOCK_PROJECTS } from '@/lib/mock-project-data'
-import { App } from '@/types'
+import { App, ProjectFile, FileVersion, FileType } from '@/types'
 
 // Types
-type FileType = 'document' | 'image' | 'video' | 'audio' | 'archive' | 'other'
 type ViewMode = 'grid' | 'list'
 type SortBy = 'name' | 'date' | 'size' | 'type'
-
-interface ProjectFile {
-  id: string
-  name: string
-  type: FileType
-  extension: string
-  size: number
-  uploadedBy: string
-  uploadedAt: string
-  version: number
-  versions: FileVersion[]
-  folder: string
-  tags: string[]
-  isStarred: boolean
-  downloads: number
-  lastAccessed?: string
-  assignedApps: string[] // NEW: App IDs this file is assigned to
-}
-
-interface FileVersion {
-  version: number
-  uploadedBy: string
-  uploadedAt: string
-  size: number
-  changes?: string
-}
 
 interface FolderStructure {
   name: string
@@ -106,6 +79,7 @@ const mockFolders: FolderStructure[] = [
 const mockFiles: ProjectFile[] = [
   {
     id: 'file-1',
+    projectId: 'mock-project-1',
     name: 'Project Requirements.docx',
     type: 'document',
     extension: 'docx',
@@ -122,10 +96,12 @@ const mockFiles: ProjectFile[] = [
     tags: ['requirements', 'specs'],
     isStarred: true,
     downloads: 12,
-    lastAccessed: '2025-10-13T16:30:00Z'
+    lastAccessed: '2025-10-13T16:30:00Z',
+    assignedApps: []
   },
   {
     id: 'file-2',
+    projectId: 'mock-project-1',
     name: 'Dashboard Mockup.fig',
     type: 'other',
     extension: 'fig',
@@ -141,10 +117,12 @@ const mockFiles: ProjectFile[] = [
     tags: ['design', 'ui', 'dashboard'],
     isStarred: true,
     downloads: 8,
-    lastAccessed: '2025-10-13T15:00:00Z'
+    lastAccessed: '2025-10-13T15:00:00Z',
+    assignedApps: []
   },
   {
     id: 'file-3',
+    projectId: 'mock-project-1',
     name: 'API Documentation.pdf',
     type: 'document',
     extension: 'pdf',
@@ -159,10 +137,12 @@ const mockFiles: ProjectFile[] = [
     tags: ['api', 'documentation', 'backend'],
     isStarred: false,
     downloads: 24,
-    lastAccessed: '2025-10-13T09:00:00Z'
+    lastAccessed: '2025-10-13T09:00:00Z',
+    assignedApps: []
   },
   {
     id: 'file-4',
+    projectId: 'mock-project-1',
     name: 'Hero Banner.png',
     type: 'image',
     extension: 'png',
@@ -177,10 +157,12 @@ const mockFiles: ProjectFile[] = [
     tags: ['image', 'banner', 'marketing'],
     isStarred: false,
     downloads: 5,
-    lastAccessed: '2025-10-13T10:00:00Z'
+    lastAccessed: '2025-10-13T10:00:00Z',
+    assignedApps: []
   },
   {
     id: 'file-5',
+    projectId: 'mock-project-1',
     name: 'Demo Video.mp4',
     type: 'video',
     extension: 'mp4',
@@ -195,10 +177,12 @@ const mockFiles: ProjectFile[] = [
     tags: ['video', 'demo', 'presentation'],
     isStarred: true,
     downloads: 31,
-    lastAccessed: '2025-10-12T14:00:00Z'
+    lastAccessed: '2025-10-12T14:00:00Z',
+    assignedApps: []
   },
   {
     id: 'file-6',
+    projectId: 'mock-project-1',
     name: 'Source Code Archive.zip',
     type: 'archive',
     extension: 'zip',
@@ -213,7 +197,8 @@ const mockFiles: ProjectFile[] = [
     tags: ['source', 'backup', 'archive'],
     isStarred: false,
     downloads: 3,
-    lastAccessed: '2025-10-13T11:00:00Z'
+    lastAccessed: '2025-10-13T11:00:00Z',
+    assignedApps: []
   }
 ]
 
