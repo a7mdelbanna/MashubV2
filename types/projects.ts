@@ -81,6 +81,7 @@ export interface Project {
 
 export interface Task {
   id: string
+  tenantId: string
   projectId: string
   sprintId?: string
   epicId?: string
@@ -131,6 +132,7 @@ export interface Task {
 
 export interface Sprint {
   id: string
+  tenantId: string
   projectId: string
   name: string
   goal: string
@@ -167,6 +169,7 @@ export interface BurndownPoint {
 
 export interface Milestone {
   id: string
+  tenantId: string
   projectId: string
   name: string
   description: string
@@ -190,6 +193,7 @@ export interface Milestone {
 
 export interface ProjectDocument {
   id: string
+  tenantId: string
   projectId: string
 
   title: string
@@ -231,6 +235,7 @@ export interface DocumentVersion {
 
 export interface TeamMember {
   id: string
+  tenantId: string
   projectId: string
   userId: string
 
@@ -261,6 +266,7 @@ export interface TeamMember {
 
 export interface VaultItem {
   id: string
+  tenantId: string
   projectId: string
 
   type: VaultItemType
@@ -296,6 +302,7 @@ export interface VaultItem {
 
 export interface ProjectTimeline {
   id: string
+  tenantId: string
   projectId: string
 
   date: string
@@ -316,6 +323,7 @@ export interface ProjectTimeline {
 
 export interface Board {
   id: string
+  tenantId: string
   projectId: string
   name: string
   description?: string
@@ -341,6 +349,7 @@ export interface BoardColumn {
 
 export interface Comment {
   id: string
+  tenantId: string
   taskId: string
   parentId?: string // for threaded comments
 
@@ -375,6 +384,7 @@ export interface Attachment {
 
 export interface TimeEntry {
   id: string
+  tenantId: string
   projectId: string
   taskId?: string
   userId: string

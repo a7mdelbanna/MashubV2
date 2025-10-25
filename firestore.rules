@@ -180,6 +180,36 @@ service cloud.firestore {
       allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
     }
 
+    match /time_entries/{entryId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /task_comments/{commentId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /project_team_members/{memberId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /project_boards/{boardId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /project_documents/{documentId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
+    match /project_timeline/{timelineId} {
+      allow read: if isAuthenticated() && resource.data.tenantId == userTenant();
+      allow write: if isAuthenticated() && request.resource.data.tenantId == userTenant();
+    }
+
     // Default: Deny all other collections
     match /{document=**} {
       allow read, write: if false;
