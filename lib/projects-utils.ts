@@ -5,8 +5,8 @@
  * sprint calculations, and project analytics
  */
 
+import { Project } from '@/types'
 import {
-  Project,
   ProjectStatus,
   ProjectPriority,
   Task,

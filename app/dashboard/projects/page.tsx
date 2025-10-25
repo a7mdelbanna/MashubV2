@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { projectsService } from '@/lib/services/projects-service'
-import { Project } from '@/types/projects'
+import { Project } from '@/types'
 import { cn } from '@/lib/utils'
 import {
   Briefcase, Plus, Search, Filter, Calendar, DollarSign,

@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Project } from '@/types/projects'
+import { Project } from '@/types'
 import {
   Calendar, DollarSign, Users, Clock, MoreVertical,
   ArrowUpRight, CheckCircle2, AlertTriangle, TrendingUp,

@@ -337,39 +337,106 @@ export interface ChecklistInstance {
   completedAt?: Date
 }
 
-// Project Types (Updated to remove direct client, add apps/catalog)
+/**
+ * Project - Main project entity representing a software development project
+ *
+ * FIREBASE vs FRONTEND MODEL:
+ * - In Firestore: Stored WITHOUT embedded arrays (apps, pricingCatalog, etc.)
+ * - In Frontend: Populated WITH arrays for easy access
+ * - Query pattern: Fetch project, then query related collections and populate arrays
+ *
+ * RELATIONSHIPS:
+ * - Project → Apps (One-to-Many): A project can have multiple apps
+ * - App → Client (Many-to-One): Each app belongs to one client
+ * - Multiple clients can collaborate on same project through their apps
+ *
+ * EXAMPLE:
+ * Project "Retail Suite" might have:
+ *   - App 1: "TechCorp POS" (Client: TechCorp)
+ *   - App 2: "RetailChain Shop" (Client: RetailChain)
+ *   → This project serves 2 different clients
+ */
 export interface Project {
   id: string
   tenantId: string
   name: string
+  slug: string
   description?: string
 
-  // Note: Project no longer has direct client relationship
-  // Clients are linked through Apps
+  // Client & Business
+  clientId?: string
+  clientName?: string
+  contractValue?: number
+  currency?: string
 
+  // Status & Dates
   type: ProjectType
   status: ProjectStatus
-  budget: number
-  spent: number
-  startDate: Date
-  dueDate: Date
+  priority: ProjectPriority
+  visibility: ProjectVisibility
+  startDate?: string
+  dueDate?: string
+  endDate?: string // Alternative field name for compatibility
+  estimatedHours?: number
+  actualHours?: number
+
+  // Team
+  ownerId: string
+  ownerName?: string
   manager: {
     id: string
     name: string
   }
+  managerId?: string // Alternative field for compatibility
+  managerName?: string
   team: TeamMember[]
-  progress: number
+  teamSize?: number
 
-  // New: Apps (deliverables)
+  // Progress
+  progress: number
+  completionPercentage: number // Alternative field name for compatibility
+  tasksTotal: number
+  tasksCompleted: number
+  milestonesTotal: number
+  milestonesCompleted: number
+
+  // Budget
+  budget: number
+  spent: number
+  budgetAllocated?: number // Alternative field name for compatibility
+  budgetSpent?: number // Alternative field name for compatibility
+
+  // Metadata
+  tags: string[]
+  color?: string
+  iconUrl?: string
+
+  /**
+   * Apps (Project Deliverables)
+   * FIREBASE: Query apps by projectId, populate this array in frontend
+   * RELATIONSHIP: One Project → Many Apps
+   */
   apps: App[]
 
-  // New: Pricing Catalog (migrated from Services)
+  /**
+   * Pricing Catalog (Migrated from Services)
+   * FIREBASE: Query pricing items by projectId
+   * Contains pricing packages/plans available for this project's apps
+   */
   pricingCatalog: PricingCatalogItem[]
 
-  // New: Checklist Templates
+  /**
+   * Checklist Templates
+   * FIREBASE: Store as subcollection or query by projectId
+   * Reusable checklist templates for apps of different types
+   */
   checklistTemplates: ChecklistTemplate[]
 
-  // New: Checklist Instances (project-level checklists with assignments)
+  /**
+   * Checklist Instances
+   * FIREBASE: Store as subcollection
+   * Actual checklist instances with completion status and assignments
+   */
   checklistInstances: ChecklistInstance[]
 
   // Health indicators
@@ -385,18 +452,23 @@ export interface Project {
     id: string
     name: string
     goal: string
-    startDate: Date
-    endDate: Date
+    startDate: string
+    endDate: string
     committed: number
     completed: number
   }
 
-  createdAt: Date
-  updatedAt: Date
+  // Timestamps
+  createdAt: string
+  updatedAt: string
+  completedAt?: string
+  archivedAt?: string
 }
 
 export type ProjectType = 'fixed_price' | 'time_material' | 'retainer' | 'agile' | 'custom'
-export type ProjectStatus = 'planning' | 'in_progress' | 'review' | 'completed' | 'on_hold' | 'cancelled'
+export type ProjectStatus = 'planning' | 'in_progress' | 'review' | 'completed' | 'on_hold' | 'cancelled' | 'draft' | 'archived'
+export type ProjectPriority = 'low' | 'medium' | 'high' | 'critical'
+export type ProjectVisibility = 'private' | 'team' | 'client' | 'public'
 
 export interface TeamMember {
   id: string

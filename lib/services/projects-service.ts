@@ -22,8 +22,8 @@ import {
   increment
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { Project } from '@/types'
 import {
-  Project,
   Task,
   Sprint,
   Milestone,

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { MilestoneStatus, ProjectStatus, ProjectPriority, Project } from '@/types/projects'
+import { MilestoneStatus, ProjectStatus, ProjectPriority } from '@/types/projects'
+import { Project } from '@/types'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft, ArrowRight, FolderOpen, Users, Calendar,

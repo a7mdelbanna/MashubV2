@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Plus, Filter, Calendar, CheckCircle2, Circle, AlertCircle, TrendingUp, ChevronRight } from 'lucide-react'
-import { Milestone, Project } from '@/types/projects'
+import { Milestone } from '@/types/projects'
+import { Project } from '@/types'
 import { calculateMilestoneProgress, getDaysRemaining } from '@/lib/projects-utils'
 
 // Mock data

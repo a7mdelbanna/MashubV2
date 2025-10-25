@@ -1,6 +1,8 @@
 // ==========================================
-// PROJECT TYPES & INTERFACES
+// PROJECT TYPES & ENUMS
 // ==========================================
+// NOTE: Main Project interface is in types/index.ts
+// This file contains only project-related enums and sub-interfaces
 
 export type ProjectStatus = 'draft' | 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled' | 'archived'
 export type ProjectPriority = 'low' | 'medium' | 'high' | 'critical'
@@ -24,60 +26,8 @@ export type VaultItemType = 'credential' | 'api_key' | 'certificate' | 'ssh_key'
 export type VaultAccessLevel = 'owner' | 'admin' | 'write' | 'read'
 
 // ==========================================
-// MAIN INTERFACES
+// SUB-INTERFACES (for Project-related entities)
 // ==========================================
-
-export interface Project {
-  id: string
-  tenantId: string
-  name: string
-  slug: string
-  description: string
-
-  // Client & Business
-  clientId?: string
-  clientName?: string
-  contractValue?: number
-  currency?: string
-
-  // Status & Dates
-  status: ProjectStatus
-  priority: ProjectPriority
-  visibility: ProjectVisibility
-  startDate?: string
-  endDate?: string
-  estimatedHours?: number
-  actualHours?: number
-
-  // Team
-  ownerId: string
-  ownerName?: string
-  managerId?: string
-  managerName?: string
-  teamSize?: number
-
-  // Progress
-  completionPercentage: number
-  tasksTotal: number
-  tasksCompleted: number
-  milestonesTotal: number
-  milestonesCompleted: number
-
-  // Budget
-  budgetAllocated?: number
-  budgetSpent?: number
-
-  // Metadata
-  tags: string[]
-  color?: string
-  iconUrl?: string
-
-  // Timestamps
-  createdAt: string
-  updatedAt: string
-  completedAt?: string
-  archivedAt?: string
-}
 
 export interface Task {
   id: string
