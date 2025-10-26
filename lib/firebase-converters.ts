@@ -19,7 +19,9 @@ import type {
   FirestoreSprint,
   FirestoreMilestone,
   FirestoreEpic,
-  FirestoreStory
+  FirestoreStory,
+  FirestoreEmployee,
+  FirestoreProjectTeamMember
 } from './firebase-schema'
 
 // ============================================================================
@@ -423,6 +425,68 @@ export const storyConverter = {
 }
 
 // ============================================================================
+// EMPLOYEE CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Employees
+ */
+export const employeeConverter = {
+  toFirestore(employee: Partial<FirestoreEmployee>): DocumentData {
+    return {
+      ...employee,
+      hireDate: employee.hireDate,
+      terminationDate: employee.terminationDate,
+      dateOfBirth: employee.dateOfBirth,
+      createdAt: employee.createdAt,
+      updatedAt: employee.updatedAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreEmployee>,
+    options?: SnapshotOptions
+  ): FirestoreEmployee {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
+// PROJECT TEAM MEMBER CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Project Team Members
+ */
+export const projectTeamMemberConverter = {
+  toFirestore(member: Partial<FirestoreProjectTeamMember>): DocumentData {
+    return {
+      ...member,
+      startDate: member.startDate,
+      endDate: member.endDate,
+      assignedAt: member.assignedAt,
+      updatedAt: member.updatedAt,
+      lastActiveAt: member.lastActiveAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreProjectTeamMember>,
+    options?: SnapshotOptions
+  ): FirestoreProjectTeamMember {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
@@ -506,6 +570,8 @@ export const converters = {
   milestone: milestoneConverter,
   epic: epicConverter,
   story: storyConverter,
+  employee: employeeConverter,
+  projectTeamMember: projectTeamMemberConverter,
 }
 
 export default converters

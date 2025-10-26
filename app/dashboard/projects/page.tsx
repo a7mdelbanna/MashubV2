@@ -57,18 +57,30 @@ export default function ProjectsPage() {
 
   // Real-time subscription to projects
   useEffect(() => {
-    if (!tenant?.id) return
+    if (!tenant?.id) {
+      // If no tenant, set loading to false to show empty state
+      setLoading(false)
+      setProjects([])
+      return
+    }
 
     setLoading(true)
-    const unsubscribe = ProjectsService.subscribeAll(
-      tenant.id,
-      (updatedProjects) => {
-        setProjects(updatedProjects)
-        setLoading(false)
-      }
-    )
 
-    return () => unsubscribe()
+    try {
+      const unsubscribe = ProjectsService.subscribeAll(
+        tenant.id,
+        (updatedProjects) => {
+          setProjects(updatedProjects)
+          setLoading(false)
+        }
+      )
+
+      return () => unsubscribe()
+    } catch (error) {
+      console.error('Error subscribing to projects:', error)
+      setLoading(false)
+      toast.error('Failed to load projects')
+    }
   }, [tenant?.id])
 
   // Calculate statistics

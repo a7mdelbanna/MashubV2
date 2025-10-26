@@ -364,7 +364,15 @@ export interface Project {
   description?: string
 
   // Client & Business
+  /**
+   * @deprecated Use App.client instead. In the App-centric model, each App has its own client relationship.
+   * Projects can serve multiple clients through their apps.
+   */
   clientId?: string
+  /**
+   * @deprecated Use App.client instead. In the App-centric model, each App has its own client relationship.
+   * Projects can serve multiple clients through their apps.
+   */
   clientName?: string
   contractValue?: number
   currency?: string
@@ -478,28 +486,251 @@ export interface TeamMember {
   capacity?: number // hours per sprint
 }
 
+// Employee Types (Comprehensive employee management system)
+export type EmployeeRole =
+  // Technical Roles
+  | 'developer'
+  | 'senior_developer'
+  | 'tech_lead'
+  | 'architect'
+  | 'qa_engineer'
+  | 'qa_lead'
+  | 'devops_engineer'
+  | 'designer'
+  | 'ui_ux_designer'
+  | 'frontend_developer'
+  | 'backend_developer'
+  | 'full_stack_developer'
+  | 'mobile_developer'
+  // Management Roles
+  | 'project_manager'
+  | 'product_manager'
+  | 'scrum_master'
+  | 'engineering_manager'
+  | 'cto'
+  | 'vp_engineering'
+  // Business Roles
+  | 'account_manager'
+  | 'sales_manager'
+  | 'business_analyst'
+  | 'hr_manager'
+  | 'finance_manager'
+  | 'accountant'
+  | 'marketing_manager'
+  // Custom
+  | 'custom'
+
+export type EmployeeDepartment =
+  | 'engineering'
+  | 'design'
+  | 'product'
+  | 'qa'
+  | 'devops'
+  | 'management'
+  | 'sales'
+  | 'marketing'
+  | 'hr'
+  | 'finance'
+  | 'operations'
+  | 'support'
+
+export type EmployeeStatus =
+  | 'active'
+  | 'on_leave'
+  | 'inactive'
+  | 'terminated'
+
+export type EmploymentType =
+  | 'full_time'
+  | 'part_time'
+  | 'contract'
+  | 'intern'
+  | 'freelance'
+
+/**
+ * Employee - Comprehensive employee entity for team management
+ *
+ * FIREBASE: Stored at /tenants/{tenantId}/employees/{employeeId}
+ * PURPOSE: Central employee database for the entire company/tenant
+ * RELATIONSHIP: Can be assigned to multiple project teams
+ */
+export interface Employee {
+  id: string
+  tenantId: string
+  userId?: string // Link to User account (for authentication/portal access)
+
+  // Personal Information
+  firstName: string
+  lastName: string
+  fullName: string // Computed: firstName + lastName
+  email: string
+  phone?: string
+  avatar?: string
+
+  // Employment Details
+  employeeId?: string // Company employee ID/badge number
+  role: EmployeeRole
+  customRole?: string // If role === 'custom', store custom role name
+  department: EmployeeDepartment
+  title: string // Job title (e.g., "Senior Software Engineer")
+
+  status: EmployeeStatus
+  employmentType: EmploymentType
+
+  // Dates
+  hireDate: Date
+  terminationDate?: Date
+  dateOfBirth?: Date
+
+  // Capacity & Availability
+  weeklyHours: number // Standard weekly hours (e.g., 40)
+  hourlyRate?: number // For billing/costing
+  sprintCapacity?: number // Hours available per sprint (default: calculated from weeklyHours)
+
+  // Skills & Expertise
+  skills: string[] // e.g., ['React', 'TypeScript', 'Node.js']
+  expertiseLevel: 'junior' | 'mid' | 'senior' | 'lead' | 'principal'
+  certifications?: string[]
+
+  // Reporting Structure
+  managerId?: string // Reports to (employee ID)
+  managerName?: string // Denormalized for quick display
+
+  // Project Assignments (denormalized for quick overview)
+  activeProjects: {
+    projectId: string
+    projectName: string
+    role: string // Role in this specific project
+    allocation: number // Percentage allocated (0-100)
+  }[]
+
+  // Contact & Address
+  address?: {
+    street?: string
+    city?: string
+    state?: string
+    country?: string
+    zip?: string
+  }
+  emergencyContact?: {
+    name: string
+    relationship: string
+    phone: string
+  }
+
+  // Performance & Notes
+  performanceRating?: number // 1-5 scale
+  notes?: string // Internal notes about the employee
+
+  // Metadata
+  createdAt: Date
+  updatedAt: Date
+  createdBy?: string // User ID who created this record
+  lastModifiedBy?: string // User ID who last modified
+
+  // NOTE: Detailed project assignments stored in separate collection
+  // Query: ProjectTeamsService.getEmployeeProjects(tenantId, employeeId)
+}
+
+/**
+ * ProjectTeamMember - Detailed project team assignment
+ *
+ * FIREBASE: Stored at /tenants/{tenantId}/projects/{projectId}/team/{memberId}
+ * PURPOSE: Track detailed employee assignment to specific projects
+ * RELATIONSHIP: Links Employee to Project with role and allocation details
+ */
+export interface ProjectTeamMember {
+  id: string
+  projectId: string
+  employeeId: string // Reference to Employee
+
+  // Employee Info (denormalized for quick display)
+  employee: {
+    id: string
+    fullName: string
+    email: string
+    avatar?: string
+    title: string // Job title
+    department: EmployeeDepartment
+  }
+
+  // Role in Project
+  projectRole: string // Role specific to this project (e.g., "Lead Developer", "QA Engineer")
+  responsibilities?: string[] // Specific responsibilities in this project
+
+  // Allocation & Capacity
+  allocation: number // Percentage allocated to this project (0-100)
+  hoursPerWeek: number // Hours allocated per week
+  sprintCapacity: number // Hours available per sprint
+
+  // Assignment Period
+  startDate: Date
+  endDate?: Date // null if ongoing
+  status: 'active' | 'on_hold' | 'completed'
+
+  // Performance Tracking
+  tasksAssigned: number // Count of tasks assigned
+  tasksCompleted: number // Count of tasks completed
+  hoursLogged: number // Total hours logged on this project
+  performanceScore?: number // 1-5 scale
+
+  // Permissions (project-specific)
+  permissions: string[] // e.g., ['edit:tasks', 'view:financials']
+
+  // Metadata
+  assignedAt: Date
+  assignedBy: string // User ID who assigned this member
+  updatedAt: Date
+  lastActiveAt?: Date // Last time this member worked on the project
+}
+
 // Task Types (Updated for App-level scoping)
 export type TicketScope = 'project' | 'app'
+export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'testing' | 'done' | 'blocked'
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+export type TaskType = 'feature' | 'bug' | 'improvement' | 'task'
 
 export interface Task {
   id: string
   projectId: string
+
+  // Content
   title: string
   description?: string
+  type: TaskType // Task type (feature, bug, etc.)
+
+  // Status & Priority
   status: TaskStatus
   priority: TaskPriority
-  assignee?: TeamMember
+
+  // Assignment
+  assignee?: {
+    id: string
+    name: string
+    avatar?: string
+  }
+
+  // Dates
   dueDate?: Date
-  tags?: string[]
+  startDate?: Date
+  completedDate?: Date
+
+  // Estimation
+  estimatedHours?: number
+  storyPoints?: number
+
+  // Organization
+  tags: string[]
   attachments?: Attachment[]
   dependencies?: string[] // task IDs
+  blockedBy?: string[] // task IDs that block this task
 
-  // New: Scoping support
+  // Scoping support
   scope: TicketScope // 'project' or 'app'
   appId?: string // If scope is 'app', which app does this belong to
   appName?: string // Denormalized for quick display
 
-  // Epic/Story relationship
+  // Agile relationships
   epicId?: string
   storyId?: string
   sprintId?: string
@@ -508,13 +739,10 @@ export interface Task {
   checklistItemId?: string // If created from checklist item
   checklistInstanceId?: string // Parent checklist instance
 
+  // Metadata
   createdAt: Date
   updatedAt: Date
 }
-
-export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked'
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
-export type TaskType = 'bug' | 'feature' | 'task' | 'improvement' | 'documentation'
 
 export interface Attachment {
   id: string
@@ -528,38 +756,92 @@ export interface Attachment {
 export interface Epic {
   id: string
   projectId: string
-  title: string
+  name: string // Changed from 'title' to match service
   description?: string
-  status: 'planning' | 'in_progress' | 'completed' | 'cancelled'
-  priority: TaskPriority
-  owner?: TeamMember
-  stories: Story[]
+  goal?: string // Epic goal/objective
+  status: 'planned' | 'in_progress' | 'completed' | 'on_hold' // Fixed status values
+  priority: 'low' | 'medium' | 'high' | 'critical' // Epic-specific priority
+
+  // Owner (not TeamMember object)
+  owner?: {
+    id: string
+    name: string
+    avatar?: string
+  }
+
+  // Progress & Tracking
   progress: number // 0-100
+  storiesCount: number // Number of stories in this epic
+  tasksCount: number // Number of tasks in this epic
+  completedTasksCount: number // Completed tasks count
+
+  // Business Value
+  businessValue?: number // Business value score
+  tags: string[]
+  acceptanceCriteria: string[]
+
+  // Dates
   startDate?: Date
   targetDate?: Date
+
+  // Metadata
   createdAt: Date
   updatedAt: Date
+
+  // NOTE: stories array NOT stored - query by epicId
+  // Query: StoriesService.list(tenantId, projectId, { epicId })
 }
 
 export interface Story {
   id: string
-  epicId?: string
   projectId: string
+  epicId?: string // Link to parent epic
+  sprintId?: string // Link to sprint if planned
+
+  // Story Content
   title: string
   description?: string
-  status: TaskStatus
-  priority: TaskPriority
-  storyPoints?: number
-  assignee?: TeamMember
-  tasks: Task[]
-  acceptanceCriteria?: string[]
 
-  // Scoping
+  // User Story Format ("As a... I want... So that...")
+  asA?: string // "As a [user type]"
+  iWant?: string // "I want [feature]"
+  soThat?: string // "So that [benefit]"
+
+  // Status & Priority
+  status: 'draft' | 'ready' | 'in_progress' | 'review' | 'done' | 'accepted' // Fixed status values
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+
+  // Estimation & Progress
+  storyPoints?: number
+  progress: number // 0-100
+
+  // Assignment
+  assignee?: {
+    id: string
+    name: string
+    avatar?: string
+  }
+
+  // Acceptance Criteria
+  acceptanceCriteria: string[]
+
+  // Tags
+  tags: string[]
+
+  // Scoping (project-level or app-specific)
   scope: TicketScope
   appId?: string
 
+  // Task Tracking
+  tasksCount: number // Number of tasks for this story
+  completedTasksCount: number // Completed tasks
+
+  // Metadata
   createdAt: Date
   updatedAt: Date
+
+  // NOTE: tasks array NOT stored - query by storyId
+  // Query: TasksService.list(tenantId, projectId, { storyId })
 }
 
 export interface Sprint {
@@ -572,23 +854,24 @@ export interface Sprint {
   status: 'planned' | 'active' | 'completed' | 'cancelled'
 
   // Capacity & Planning
-  capacity: number // Total story points/hours
-  committed: number // Committed story points
+  capacity: number // Total story points/hours available
+  committed: number // Committed story points for this sprint
   completed: number // Completed story points
 
   // Definition of Done
   definitionOfDone: string[]
 
-  // Associated work
-  stories: Story[]
-  tasks: Task[]
-
   // Metrics
-  velocity?: number
-  burndown?: number[]
+  velocity?: number // Sprint velocity (completed points)
+  burndown?: number[] // Daily burndown data
 
+  // Metadata
   createdAt: Date
   updatedAt: Date
+
+  // NOTE: stories and tasks arrays NOT stored - query by sprintId
+  // Query Stories: StoriesService.list(tenantId, projectId, { sprintId })
+  // Query Tasks: TasksService.list(tenantId, projectId, { sprintId })
 }
 
 /**

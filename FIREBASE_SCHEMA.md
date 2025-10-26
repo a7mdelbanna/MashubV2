@@ -110,6 +110,7 @@ Store computed values to avoid expensive queries:
 │       ├── projects/           # Projects collection
 │       ├── apps/               # Apps collection
 │       ├── clients/            # Clients collection
+│       ├── employees/          # Employee management
 │       ├── pricingCatalog/     # Pricing packages
 │       ├── featureAddons/      # Feature add-ons
 │       └── checklistTemplates/ # Reusable checklists
@@ -123,6 +124,8 @@ Store computed values to avoid expensive queries:
 ```
 /tenants/{tenantId}/projects/{projectId}/
 ├── tasks/              # Project tasks
+├── epics/              # Agile epics (large features)
+├── stories/            # User stories (epic subdivisions)
 ├── sprints/            # Agile sprints
 ├── milestones/         # Project milestones
 ├── boards/             # Kanban boards
@@ -209,6 +212,121 @@ const clients = await Promise.all(
   clientIds.map(id => getClient(id))
 )
 ```
+
+### Agile Entity Relationships
+
+#### Epic → Stories (One-to-Many)
+```typescript
+// Query pattern
+const epicStories = await db
+  .collection(`tenants/${tenantId}/projects/${projectId}/stories`)
+  .where('epicId', '==', epicId)
+  .get()
+```
+
+**Relationship**: Epics are large features broken down into multiple Stories
+
+#### Story → Tasks (One-to-Many)
+```typescript
+// Query pattern
+const storyTasks = await db
+  .collection(`tenants/${tenantId}/projects/${projectId}/tasks`)
+  .where('storyId', '==', storyId)
+  .get()
+```
+
+**Relationship**: Stories are implemented through multiple Tasks
+
+#### Sprint → Stories (One-to-Many)
+```typescript
+// Query pattern
+const sprintStories = await db
+  .collection(`tenants/${tenantId}/projects/${projectId}/stories`)
+  .where('sprintId', '==', sprintId)
+  .get()
+```
+
+**Relationship**: Sprints contain planned Stories for a time-boxed iteration
+
+#### Sprint → Tasks (One-to-Many)
+```typescript
+// Query pattern
+const sprintTasks = await db
+  .collection(`tenants/${tenantId}/projects/${projectId}/tasks`)
+  .where('sprintId', '==', sprintId)
+  .get()
+```
+
+**Relationship**: Sprints contain all Tasks from their Stories plus standalone Tasks
+
+#### Agile Hierarchy
+```
+Project
+  ├── Epics (collection group)
+  │   └── Stories (query-based: where epicId == epicId)
+  │       └── Tasks (query-based: where storyId == storyId)
+  │
+  ├── Sprints (collection group)
+  │   ├── Stories (query-based: where sprintId == sprintId)
+  │   └── Tasks (query-based: where sprintId == sprintId)
+  │
+  └── Backlog (derived)
+      └── Stories (query: where sprintId == null)
+```
+
+**Key Principles**:
+- All Agile entities (epics, stories, tasks, sprints) are stored as subcollections under project
+- Relationships are query-based (no embedded arrays in Firestore)
+- Foreign key references: `epicId`, `storyId`, `sprintId` in respective entities
+- Counts are denormalized for performance (e.g., `storiesCount`, `tasksCount`)
+
+### Employee & Team Relationships
+
+#### Employee → ProjectTeamMember (One-to-Many)
+```typescript
+// Query pattern: Get all project assignments for an employee
+const employeeProjects = await db
+  .collectionGroup('team')
+  .where('employeeId', '==', employeeId)
+  .where('status', '==', 'active')
+  .get()
+```
+
+**Relationship**: Employees can be assigned to multiple projects with different roles/allocations
+
+#### Project → ProjectTeamMember (One-to-Many)
+```typescript
+// Query pattern: Get all team members for a project
+const projectTeam = await db
+  .collection(`tenants/${tenantId}/projects/${projectId}/team`)
+  .where('status', '==', 'active')
+  .get()
+```
+
+**Relationship**: Projects have multiple team members with specific roles and allocations
+
+#### Employee Hierarchy
+```
+Tenant
+  └── Employees (collection)
+      └── Employee
+          ├── activeProjects[] (denormalized overview)
+          └── ProjectTeamMember (query via collection group)
+
+Project
+  └── team/ (subcollection)
+      └── ProjectTeamMember
+          └── employee (denormalized employee info)
+```
+
+**Key Principles**:
+- Employees are stored at tenant level (central employee database)
+- Project team assignments stored in project subcollection for detailed tracking
+- Bidirectional denormalization:
+  - Employee.activeProjects[] for quick overview
+  - ProjectTeamMember.employee{} for team list display
+- Query via collection group to get all projects for an employee
+- Supports multiple concurrent project assignments with allocation tracking
 
 ---
 
@@ -302,6 +420,116 @@ Fields:
   - dueDate (Ascending)
 ```
 
+#### 8. Epics by Project and Status
+**Purpose**: Get project epics filtered by status and sorted by priority
+```javascript
+Collection: epics (collection group)
+Fields:
+  - projectId (Ascending)
+  - status (Ascending)
+  - priority (Descending)
+```
+
+#### 9. Epics by Project and Priority
+**Purpose**: Get all epics for a project sorted by priority
+```javascript
+Collection: epics (collection group)
+Fields:
+  - projectId (Ascending)
+  - priority (Descending)
+  - updatedAt (Descending)
+```
+
+#### 10. Stories by Epic
+**Purpose**: Get all stories for an epic sorted by priority
+```javascript
+Collection: stories (collection group)
+Fields:
+  - projectId (Ascending)
+  - epicId (Ascending)
+  - priority (Descending)
+```
+
+#### 11. Stories by Sprint
+**Purpose**: Get all stories for a sprint sorted by priority
+```javascript
+Collection: stories (collection group)
+Fields:
+  - projectId (Ascending)
+  - sprintId (Ascending)
+  - priority (Descending)
+```
+
+#### 12. Stories by Status
+**Purpose**: Get stories filtered by status and sorted by priority
+```javascript
+Collection: stories (collection group)
+Fields:
+  - projectId (Ascending)
+  - status (Ascending)
+  - priority (Descending)
+```
+
+#### 13. Story Backlog
+**Purpose**: Get stories not assigned to any sprint (backlog)
+```javascript
+Collection: stories (collection group)
+Fields:
+  - projectId (Ascending)
+  - sprintId (Ascending)  // Will query where sprintId == null
+  - priority (Descending)
+```
+
+#### 14. Employees by Department and Status
+**Purpose**: Get employees filtered by department and status
+```javascript
+Collection: employees
+Fields:
+  - tenantId (Ascending)
+  - department (Ascending)
+  - status (Ascending)
+```
+
+#### 15. Employees by Role
+**Purpose**: Get employees by role sorted by hire date
+```javascript
+Collection: employees
+Fields:
+  - tenantId (Ascending)
+  - role (Ascending)
+  - hireDate (Descending)
+```
+
+#### 16. Employee Skills Search
+**Purpose**: Find employees with specific skills
+```javascript
+Collection: employees
+Fields:
+  - tenantId (Ascending)
+  - skills (Array Contains)
+  - status (Ascending)
+```
+
+#### 17. Project Team Members
+**Purpose**: Get active team members for a project (collection group query)
+```javascript
+Collection: team (collection group)
+Fields:
+  - employeeId (Ascending)
+  - status (Ascending)
+  - assignedAt (Descending)
+```
+
+#### 18. Employee Project Assignments
+**Purpose**: Get all project assignments for an employee
+```javascript
+Collection: team (collection group)
+Fields:
+  - employeeId (Ascending)
+  - status (Ascending)
+  - startDate (Descending)
+```
+
 ### firebase.indexes.json
 
 ```json
@@ -368,6 +596,96 @@ Fields:
         { "fieldPath": "projectId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "dueDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "epics",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "priority", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "epics",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "priority", "order": "DESCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stories",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "epicId", "order": "ASCENDING" },
+        { "fieldPath": "priority", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stories",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "sprintId", "order": "ASCENDING" },
+        { "fieldPath": "priority", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stories",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "priority", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "employees",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "department", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "employees",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "role", "order": "ASCENDING" },
+        { "fieldPath": "hireDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "employees",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "skills", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "team",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "employeeId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "assignedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "team",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "employeeId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
       ]
     }
   ]

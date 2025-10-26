@@ -657,6 +657,138 @@ export interface FirestoreStory {
   updatedAt: string
 }
 
+/**
+ * EMPLOYEES COLLECTION
+ * Path: /tenants/{tenantId}/employees/{employeeId}
+ *
+ * Central employee database for the entire company/tenant
+ */
+export interface FirestoreEmployee {
+  id: string
+  tenantId: string
+  userId?: string // Link to User account (for authentication)
+
+  // Personal Information
+  firstName: string
+  lastName: string
+  fullName: string
+  email: string
+  phone?: string
+  avatar?: string
+
+  // Employment Details
+  employeeId?: string // Company employee ID/badge number
+  role: string
+  customRole?: string
+  department: string
+  title: string
+
+  status: 'active' | 'on_leave' | 'inactive' | 'terminated'
+  employmentType: 'full_time' | 'part_time' | 'contract' | 'intern' | 'freelance'
+
+  // Dates
+  hireDate: string
+  terminationDate?: string
+  dateOfBirth?: string
+
+  // Capacity & Availability
+  weeklyHours: number
+  hourlyRate?: number
+  sprintCapacity?: number
+
+  // Skills & Expertise
+  skills: string[]
+  expertiseLevel: 'junior' | 'mid' | 'senior' | 'lead' | 'principal'
+  certifications?: string[]
+
+  // Reporting Structure
+  managerId?: string
+  managerName?: string
+
+  // Project Assignments (denormalized for overview)
+  activeProjects: Array<{
+    projectId: string
+    projectName: string
+    role: string
+    allocation: number
+  }>
+
+  // Contact & Address
+  address?: {
+    street?: string
+    city?: string
+    state?: string
+    country?: string
+    zip?: string
+  }
+  emergencyContact?: {
+    name: string
+    relationship: string
+    phone: string
+  }
+
+  // Performance & Notes
+  performanceRating?: number
+  notes?: string
+
+  // Metadata
+  createdAt: string
+  updatedAt: string
+  createdBy?: string
+  lastModifiedBy?: string
+}
+
+/**
+ * PROJECT TEAM MEMBERS SUBCOLLECTION
+ * Path: /tenants/{tenantId}/projects/{projectId}/team/{memberId}
+ *
+ * Detailed project team assignment linking Employee to Project
+ */
+export interface FirestoreProjectTeamMember {
+  id: string
+  projectId: string
+  employeeId: string
+
+  // Employee Info (denormalized)
+  employee: {
+    id: string
+    fullName: string
+    email: string
+    avatar?: string
+    title: string
+    department: string
+  }
+
+  // Role in Project
+  projectRole: string
+  responsibilities?: string[]
+
+  // Allocation & Capacity
+  allocation: number // 0-100 percentage
+  hoursPerWeek: number
+  sprintCapacity: number
+
+  // Assignment Period
+  startDate: string
+  endDate?: string
+  status: 'active' | 'on_hold' | 'completed'
+
+  // Performance Tracking
+  tasksAssigned: number
+  tasksCompleted: number
+  hoursLogged: number
+  performanceScore?: number
+
+  // Permissions (project-specific)
+  permissions: string[]
+
+  // Metadata
+  assignedAt: string
+  assignedBy: string
+  updatedAt: string
+  lastActiveAt?: string
+}
+
 // ============================================================================
 // REQUIRED INDEXES
 // ============================================================================
