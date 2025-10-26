@@ -18,7 +18,6 @@ import {
   getHealthLevelColor,
   calculateClientHealth
 } from '@/lib/clients-utils'
-import { getClientApps } from '@/lib/mock-project-data'
 import { AppTypeBadge } from '@/components/apps/app-type-badge'
 
 // Mock data for clients with relationships

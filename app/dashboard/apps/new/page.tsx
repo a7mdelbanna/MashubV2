@@ -16,7 +16,6 @@ import Link from 'next/link'
 import { AppType, Project } from '@/types'
 import type { FirestorePricingCatalogItem, FirestoreFeatureAddon } from '@/lib/firebase-schema'
 import { APP_TYPE_CONFIG } from '@/components/apps/app-type-badge'
-import { MOCK_CHECKLIST_TEMPLATES } from '@/lib/mock-project-data'
 
 interface AppCredential {
   key: string
@@ -121,15 +120,17 @@ export default function NewAppPage() {
   const [newCredential, setNewCredential] = useState({ key: '', value: '', type: 'api_key' as const })
   const [newInstallment, setNewInstallment] = useState({ amount: 0, dueDate: '', description: '' })
 
-  // Get available addons for the selected project
-  const projectAddons = formData.projectId
-    ? MOCK_FEATURE_ADDONS.filter(addon => addon.projectId === formData.projectId).map(addon => ({
-        id: addon.id,
-        name: addon.name,
-        enabled: false,
-        pricing: addon.pricing
-      }))
-    : []
+  // Get available addons for the selected project (loaded from Firebase)
+  const projectAddons = featureAddons.map(addon => ({
+    id: addon.id,
+    name: addon.name,
+    enabled: false,
+    pricing: addon.pricing
+  }))
+
+  // Get the selected project and its checklist templates
+  const selectedProject = projects.find(p => p.id === formData.projectId)
+  const checklistTemplates = selectedProject?.checklistTemplates || []
 
   const steps = [
     { number: 1, title: 'Basic Info', icon: FileText, required: true },
@@ -255,6 +256,22 @@ export default function NewAppPage() {
         return true
     }
   }
+
+  // Load projects from Firebase
+  useEffect(() => {
+    if (!tenant?.id) return
+
+    const loadProjects = async () => {
+      try {
+        const allProjects = await ProjectsService.list(tenant.id)
+        setProjects(allProjects)
+      } catch (error) {
+        console.error('Error loading projects:', error)
+      }
+    }
+
+    loadProjects()
+  }, [tenant?.id])
 
   // Load pricing packages and addons when project is selected
   useEffect(() => {
@@ -483,7 +500,7 @@ export default function NewAppPage() {
                     required
                   >
                     <option value="">Select a project...</option>
-                    {MOCK_PROJECTS.map(project => (
+                    {projects.map(project => (
                       <option key={project.id} value={project.id}>
                         {project.name}
                       </option>
@@ -1384,26 +1401,27 @@ export default function NewAppPage() {
               </div>
 
               <div className="space-y-4">
-                {MOCK_CHECKLIST_TEMPLATES.map((template) => (
-                  <button
-                    key={template.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, selectedChecklist: template.id })}
-                    className={cn(
-                      "w-full p-6 rounded-xl border-2 transition-all text-left",
-                      formData.selectedChecklist === template.id
-                        ? "border-purple-500 bg-purple-500/10"
-                        : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
-                    )}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white mb-1">{template.name}</h3>
-                        {template.description && (
-                          <p className="text-sm text-gray-400">{template.description}</p>
-                        )}
-                      </div>
-                      {formData.selectedChecklist === template.id && (
+                {checklistTemplates.length > 0 ? (
+                  checklistTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, selectedChecklist: template.id })}
+                      className={cn(
+                        "w-full p-6 rounded-xl border-2 transition-all text-left",
+                        formData.selectedChecklist === template.id
+                          ? "border-purple-500 bg-purple-500/10"
+                          : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-white mb-1">{template.name}</h3>
+                          {template.description && (
+                            <p className="text-sm text-gray-400">{template.description}</p>
+                          )}
+                        </div>
+                        {formData.selectedChecklist === template.id && (
                         <CheckSquare className="h-6 w-6 text-purple-400" />
                       )}
                     </div>
@@ -1413,7 +1431,14 @@ export default function NewAppPage() {
                       <span>{template.items.filter(i => i.required).length} required</span>
                     </div>
                   </button>
-                ))}
+                ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    {formData.projectId
+                      ? 'No checklist templates available for this project'
+                      : 'Select a project to view checklist templates'}
+                  </div>
+                )}
 
                 <button
                   type="button"

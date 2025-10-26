@@ -8,47 +8,10 @@ import {
   TrendingUp, Plus, FileText, BarChart3,
   Calendar, ArrowUpRight, MoreVertical, Smartphone
 } from 'lucide-react'
-import { MOCK_PROJECTS, MOCK_APPS } from '@/lib/mock-project-data'
-
-// Calculate real metrics from mock data
-const activeProjects = MOCK_PROJECTS.filter(p => p.status === 'in_progress').length
-const totalApps = MOCK_APPS.length
-const appsInProduction = MOCK_APPS.filter(a => a.status === 'production').length
-
-const metrics = [
-  {
-    title: 'ACTIVE PROJECTS',
-    value: MOCK_PROJECTS.length.toString(),
-    subtitle: `${activeProjects} in progress`,
-    change: { value: 12, type: 'increase' as const },
-    icon: Briefcase,
-    gradient: 'gradient-blue'
-  },
-  {
-    title: 'DEPLOYED APPS',
-    value: totalApps.toString(),
-    subtitle: `${appsInProduction} in production`,
-    change: { value: 15, type: 'increase' as const },
-    icon: Smartphone,
-    gradient: 'gradient-purple'
-  },
-  {
-    title: 'TOTAL REVENUE',
-    value: '$125,430',
-    subtitle: 'Monthly growth',
-    change: { value: 8.2, type: 'increase' as const },
-    icon: DollarSign,
-    gradient: 'gradient-green'
-  },
-  {
-    title: 'SUPPORT TICKETS',
-    value: '12',
-    subtitle: 'Better than last week',
-    change: { value: 15, type: 'decrease' as const },
-    icon: HeadphonesIcon,
-    gradient: 'gradient-orange'
-  }
-]
+import { useAuth } from '@/contexts/auth-context'
+import { ProjectsService } from '@/services/projects.service'
+import { AppsService } from '@/services/apps.service'
+import { Project, App } from '@/types'
 
 const revenueData = [
   { month: 'Jan', projects: 8, revenue: 45 },
@@ -83,11 +46,91 @@ const quickActions = [
 ]
 
 export default function DashboardPage() {
+  const { tenant } = useAuth()
   const [mounted, setMounted] = useState(false)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [apps, setApps] = useState<App[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Fetch projects and apps from Firebase
+  useEffect(() => {
+    if (!tenant?.id) return
+
+    const unsubscribeProjects = ProjectsService.subscribeAll(
+      tenant.id,
+      (updatedProjects) => {
+        setProjects(updatedProjects)
+      }
+    )
+
+    const unsubscribeApps = AppsService.subscribeAll(
+      tenant.id,
+      (updatedApps) => {
+        setApps(updatedApps)
+        setLoading(false)
+      }
+    )
+
+    return () => {
+      unsubscribeProjects()
+      unsubscribeApps()
+    }
+  }, [tenant?.id])
+
+  // Calculate metrics from real data
+  const activeProjects = projects.filter(p => p.status === 'in_progress').length
+  const totalApps = apps.length
+  const appsInProduction = apps.filter(a => a.status === 'production').length
+
+  const metrics = [
+    {
+      title: 'ACTIVE PROJECTS',
+      value: projects.length.toString(),
+      subtitle: `${activeProjects} in progress`,
+      change: { value: 12, type: 'increase' as const },
+      icon: Briefcase,
+      gradient: 'gradient-blue'
+    },
+    {
+      title: 'DEPLOYED APPS',
+      value: totalApps.toString(),
+      subtitle: `${appsInProduction} in production`,
+      change: { value: 15, type: 'increase' as const },
+      icon: Smartphone,
+      gradient: 'gradient-purple'
+    },
+    {
+      title: 'TOTAL REVENUE',
+      value: '$125,430',
+      subtitle: 'Monthly growth',
+      change: { value: 8.2, type: 'increase' as const },
+      icon: DollarSign,
+      gradient: 'gradient-green'
+    },
+    {
+      title: 'SUPPORT TICKETS',
+      value: '12',
+      subtitle: 'Better than last week',
+      change: { value: 15, type: 'decrease' as const },
+      icon: HeadphonesIcon,
+      gradient: 'gradient-orange'
+    }
+  ]
+
+  // Get recent projects (top 3 by updated date)
+  const recentProjects = [...projects]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 3)
+    .map(p => ({
+      name: p.name,
+      client: p.client?.name || 'Unknown',
+      progress: p.progress || 0,
+      color: 'gradient-blue'
+    }))
 
   return (
     <div className="p-6 space-y-6">
@@ -215,27 +258,33 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
-              {[
-                { name: 'E-Commerce Platform', client: 'TechCorp', progress: 65, color: 'gradient-blue' },
-                { name: 'Mobile Banking App', client: 'FinanceHub', progress: 85, color: 'gradient-green' },
-                { name: 'HR Management', client: 'GlobalHR', progress: 40, color: 'gradient-purple' }
-              ].map((project, index) => (
-                <div key={index} className="p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="text-white font-medium">{project.name}</h3>
-                      <p className="text-gray-500 text-sm">{project.client}</p>
-                    </div>
-                    <span className="text-gray-400 text-sm">{project.progress}%</span>
-                  </div>
-                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className={cn("h-full rounded-full", project.color)}
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
+              {loading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
                 </div>
-              ))}
+              ) : recentProjects.length > 0 ? (
+                recentProjects.map((project, index) => (
+                  <div key={index} className="p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-white font-medium">{project.name}</h3>
+                        <p className="text-gray-500 text-sm">{project.client}</p>
+                      </div>
+                      <span className="text-gray-400 text-sm">{project.progress}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full", project.color)}
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  No recent projects
+                </div>
+              )}
             </div>
           </div>
         </div>

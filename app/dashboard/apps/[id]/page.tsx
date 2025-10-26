@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -11,13 +11,14 @@ import {
   GitBranch, Edit, Copy, Download, Shield, Palette,
   Code, Smartphone, Clock, Target, Bell, FolderOpen
 } from 'lucide-react'
-import { MOCK_APPS, MOCK_PROJECTS, getPricingCatalogItem } from '@/lib/mock-project-data'
+import { useAuth } from '@/contexts/auth-context'
+import { AppsService } from '@/services/apps.service'
+import { ProjectsService } from '@/services/projects.service'
 import { AppTypeIcon, AppTypeBadge } from '@/components/apps/app-type-badge'
 import { CredentialsVault } from '@/components/apps/credentials-vault'
 import { Checklist } from '@/components/apps/checklist'
 import { AppFilesView } from '@/components/apps/app-files-view'
-import { getChecklistItemsForApp } from '@/lib/checklist-task-service'
-import { ProjectFile } from '@/types'
+import { ProjectFile, App, Project } from '@/types'
 
 const STATUS_CONFIG = {
   development: {
@@ -59,22 +60,65 @@ const STATUS_CONFIG = {
 
 export default function AppDetailPage() {
   const params = useParams()
+  const { tenant } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
+  const [app, setApp] = useState<App | null>(null)
+  const [project, setProject] = useState<Project | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Find the app (in real app, fetch from API)
-  const app = MOCK_APPS.find(a => a.id === params.id) || MOCK_APPS[0]
+  const appId = params.id as string
 
-  // Find the project this app belongs to
-  const project = MOCK_PROJECTS.find(p => p.apps.some(a => a.id === app.id))
+  // Fetch app data from Firebase
+  useEffect(() => {
+    if (!tenant?.id || !appId) return
 
-  // Get pricing info
-  const pricingItem = app.pricing ? getPricingCatalogItem(app.pricing.catalogItemId) : null
+    const unsubscribe = AppsService.subscribe(tenant.id, appId, async (updatedApp) => {
+      setApp(updatedApp)
+
+      // Fetch the project this app belongs to
+      if (updatedApp.projectId) {
+        try {
+          const projectData = await ProjectsService.getById(tenant.id, updatedApp.projectId)
+          setProject(projectData)
+        } catch (error) {
+          console.error('Error fetching project:', error)
+        }
+      }
+
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [tenant?.id, appId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+      </div>
+    )
+  }
+
+  if (!app) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h2 className="text-2xl font-bold text-white mb-2">App Not Found</h2>
+        <p className="text-gray-400 mb-6">The app you're looking for doesn't exist</p>
+        <Link
+          href="/dashboard/apps"
+          className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+        >
+          Back to Apps
+        </Link>
+      </div>
+    )
+  }
 
   const statusConfig = STATUS_CONFIG[app.status]
   const StatusIcon = statusConfig.icon
 
   // Get checklist template for this app type
-  const checklist = project?.checklistTemplates.find(t => t.appTypes.includes(app.type))
+  const checklist = project?.checklistTemplates?.find(t => t.appTypes.includes(app.type))
 
   // Mock project files (in real app, fetch from API)
   const mockProjectFiles: ProjectFile[] = [
@@ -226,7 +270,7 @@ export default function AppDetailPage() {
             <Users className="h-4 w-4 text-blue-400" />
             <span className="text-xs text-gray-500">Client</span>
           </div>
-          <p className="text-lg font-bold text-white">{app.client.name}</p>
+          <p className="text-lg font-bold text-white">{app.client?.name || 'N/A'}</p>
         </div>
 
         <div className="rounded-xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-4">
@@ -234,7 +278,7 @@ export default function AppDetailPage() {
             <GitBranch className="h-4 w-4 text-purple-400" />
             <span className="text-xs text-gray-500">Version</span>
           </div>
-          <p className="text-lg font-bold text-white">{app.releases.current.version}</p>
+          <p className="text-lg font-bold text-white">{app.releases?.current?.version || 'N/A'}</p>
         </div>
 
         <div className="rounded-xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-4">
@@ -242,7 +286,7 @@ export default function AppDetailPage() {
             <TrendingUp className="h-4 w-4 text-green-400" />
             <span className="text-xs text-gray-500">Uptime</span>
           </div>
-          <p className="text-lg font-bold text-green-400">{app.health.uptime?.toFixed(1)}%</p>
+          <p className="text-lg font-bold text-green-400">{app.health?.uptime?.toFixed(1) || 0}%</p>
         </div>
 
         <div className="rounded-xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-4">
@@ -250,7 +294,7 @@ export default function AppDetailPage() {
             <AlertCircle className="h-4 w-4 text-orange-400" />
             <span className="text-xs text-gray-500">Open Issues</span>
           </div>
-          <p className="text-lg font-bold text-white">{app.health.issues || 0}</p>
+          <p className="text-lg font-bold text-white">{app.health?.issues || 0}</p>
         </div>
 
         <div className="rounded-xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-4">
@@ -323,32 +367,34 @@ export default function AppDetailPage() {
               )}
 
               {/* Client Card */}
-              <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Client</h3>
-                    <p className="text-sm text-gray-400">Client information</p>
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700">
-                  <div className="flex items-center gap-3 mb-3">
-                    {app.client.logo && (
-                      <img
-                        src={app.client.logo}
-                        alt={app.client.name}
-                        className="w-12 h-12 rounded-lg"
-                      />
-                    )}
+              {app.client && (
+                <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
                     <div>
-                      <h4 className="font-semibold text-white">{app.client.name}</h4>
-                      <p className="text-xs text-gray-500">Client ID: {app.client.id}</p>
+                      <h3 className="text-lg font-bold text-white">Client</h3>
+                      <p className="text-sm text-gray-400">Client information</p>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700">
+                    <div className="flex items-center gap-3 mb-3">
+                      {app.client.logo && (
+                        <img
+                          src={app.client.logo}
+                          alt={app.client.name}
+                          className="w-12 h-12 rounded-lg"
+                        />
+                      )}
+                      <div>
+                        <h4 className="font-semibold text-white">{app.client.name}</h4>
+                        <p className="text-xs text-gray-500">Client ID: {app.client.id}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Environments */}
@@ -406,54 +452,46 @@ export default function AppDetailPage() {
             {/* Features & Pricing */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Features */}
-              <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Enabled Features</h3>
-                <div className="flex flex-wrap gap-2">
-                  {app.features.enabled.map((feature) => (
-                    <div
-                      key={feature}
-                      className="px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 text-sm"
-                    >
-                      {feature.replace('_', ' ')}
+              {app.features && (
+                <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Enabled Features</h3>
+                  {app.features.enabled && app.features.enabled.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {app.features.enabled.map((feature) => (
+                        <div
+                          key={feature}
+                          className="px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 text-sm"
+                        >
+                          {feature.replace('_', ' ')}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  {app.features.modules && app.features.modules.length > 0 && (
+                    <>
+                      <h4 className="text-sm font-semibold text-white mt-6 mb-3">Modules</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {app.features.modules.map((module) => (
+                          <div
+                            key={module}
+                            className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm"
+                          >
+                            {module}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <h4 className="text-sm font-semibold text-white mt-6 mb-3">Modules</h4>
-                <div className="flex flex-wrap gap-2">
-                  {app.features.modules.map((module) => (
-                    <div
-                      key={module}
-                      className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm"
-                    >
-                      {module}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Pricing */}
-              {pricingItem && (
+              {app.pricing && (
                 <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
                   <h3 className="text-lg font-bold text-white mb-4">Pricing Plan</h3>
                   <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
-                    <h4 className="text-xl font-bold text-white mb-2">{pricingItem.name}</h4>
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-3xl font-bold text-green-400">
-                        ${pricingItem.pricing.amount.toLocaleString()}
-                      </span>
-                      <span className="text-gray-400 text-sm">
-                        {pricingItem.pricing.currency}
-                        {pricingItem.pricing.interval && ` / ${pricingItem.pricing.interval}`}
-                      </span>
-                    </div>
-                    <ul className="space-y-2">
-                      {pricingItem.features.slice(0, 4).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
-                          <CheckCircle2 className="h-4 w-4 text-green-400 flex-shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                    <h4 className="text-xl font-bold text-white mb-2">Pricing Configured</h4>
+                    <p className="text-sm text-gray-400">Pricing catalog item ID: {app.pricing.catalogItemId}</p>
                   </div>
                 </div>
               )}
@@ -580,35 +618,41 @@ export default function AppDetailPage() {
         )}
 
         {/* Releases Tab */}
-        {activeTab === 'releases' && (
+        {activeTab === 'releases' && app.releases && (
           <div className="space-y-6">
             {/* Current Release */}
-            <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
-              <h3 className="text-lg font-bold text-white mb-6">Current Release</h3>
-              <div className="p-6 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className="text-2xl font-bold text-white mb-1">
-                      v{app.releases.current.version}
-                    </h4>
-                    <p className="text-sm text-gray-400">
-                      Released {new Date(app.releases.current.releaseDate).toLocaleDateString()}
-                    </p>
+            {app.releases.current && (
+              <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
+                <h3 className="text-lg font-bold text-white mb-6">Current Release</h3>
+                <div className="p-6 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-2xl font-bold text-white mb-1">
+                        v{app.releases.current.version}
+                      </h4>
+                      {app.releases.current.releaseDate && (
+                        <p className="text-sm text-gray-400">
+                          Released {new Date(app.releases.current.releaseDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    {app.releases.current.releaseChannel && (
+                      <div className={cn(
+                        "px-4 py-2 rounded-xl font-medium capitalize",
+                        app.releases.current.releaseChannel === 'production' && "bg-green-500/20 text-green-400",
+                        app.releases.current.releaseChannel === 'staging' && "bg-blue-500/20 text-blue-400",
+                        app.releases.current.releaseChannel === 'dev' && "bg-yellow-500/20 text-yellow-400"
+                      )}>
+                        {app.releases.current.releaseChannel}
+                      </div>
+                    )}
                   </div>
-                  <div className={cn(
-                    "px-4 py-2 rounded-xl font-medium capitalize",
-                    app.releases.current.releaseChannel === 'production' && "bg-green-500/20 text-green-400",
-                    app.releases.current.releaseChannel === 'staging' && "bg-blue-500/20 text-blue-400",
-                    app.releases.current.releaseChannel === 'dev' && "bg-yellow-500/20 text-yellow-400"
-                  )}>
-                    {app.releases.current.releaseChannel}
-                  </div>
+                  {app.releases.current.notes && (
+                    <p className="text-gray-300">{app.releases.current.notes}</p>
+                  )}
                 </div>
-                {app.releases.current.notes && (
-                  <p className="text-gray-300">{app.releases.current.notes}</p>
-                )}
               </div>
-            </div>
+            )}
 
             {/* Upcoming Release */}
             {app.releases.upcoming && (
@@ -620,37 +664,43 @@ export default function AppDetailPage() {
                       <h4 className="text-2xl font-bold text-white mb-1">
                         v{app.releases.upcoming.version}
                       </h4>
-                      <p className="text-sm text-gray-400">
-                        Target: {new Date(app.releases.upcoming.targetDate).toLocaleDateString()}
-                      </p>
+                      {app.releases.upcoming.targetDate && (
+                        <p className="text-sm text-gray-400">
+                          Target: {new Date(app.releases.upcoming.targetDate).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
-                    <div className={cn(
-                      "px-4 py-2 rounded-xl font-medium capitalize",
-                      app.releases.upcoming.status === 'approved' && "bg-green-500/20 text-green-400",
-                      app.releases.upcoming.status === 'qa' && "bg-blue-500/20 text-blue-400",
-                      app.releases.upcoming.status === 'in_progress' && "bg-yellow-500/20 text-yellow-400",
-                      app.releases.upcoming.status === 'planned' && "bg-gray-500/20 text-gray-400"
-                    )}>
-                      {app.releases.upcoming.status.replace('_', ' ')}
+                    {app.releases.upcoming.status && (
+                      <div className={cn(
+                        "px-4 py-2 rounded-xl font-medium capitalize",
+                        app.releases.upcoming.status === 'approved' && "bg-green-500/20 text-green-400",
+                        app.releases.upcoming.status === 'qa' && "bg-blue-500/20 text-blue-400",
+                        app.releases.upcoming.status === 'in_progress' && "bg-yellow-500/20 text-yellow-400",
+                        app.releases.upcoming.status === 'planned' && "bg-gray-500/20 text-gray-400"
+                      )}>
+                        {app.releases.upcoming.status.replace('_', ' ')}
+                      </div>
+                    )}
+                  </div>
+                  {app.releases.upcoming.features && app.releases.upcoming.features.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-400 mb-2">Planned Features:</p>
+                      <ul className="space-y-1">
+                        {app.releases.upcoming.features.map((feature, i) => (
+                          <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
+                            <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400 mb-2">Planned Features:</p>
-                    <ul className="space-y-1">
-                      {app.releases.upcoming.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
-                          <CheckCircle2 className="h-4 w-4 text-purple-400" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Release History */}
-            {app.releases.history.length > 0 && (
+            {app.releases.history && app.releases.history.length > 0 && (
               <div className="rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 p-6">
                 <h3 className="text-lg font-bold text-white mb-6">Release History</h3>
                 <div className="space-y-3">
@@ -660,16 +710,18 @@ export default function AppDetailPage() {
                         <div>
                           <h4 className="font-semibold text-white">v{release.version}</h4>
                           <p className="text-sm text-gray-400">
-                            {new Date(release.releaseDate).toLocaleDateString()} • {release.releaseChannel}
+                            {release.releaseDate && new Date(release.releaseDate).toLocaleDateString()} • {release.releaseChannel}
                           </p>
                         </div>
-                        <div className={cn(
-                          "px-3 py-1 rounded-lg text-xs font-medium",
-                          release.status === 'shipped' && "bg-green-500/20 text-green-400",
-                          release.status === 'rolled_back' && "bg-red-500/20 text-red-400"
-                        )}>
-                          {release.status.replace('_', ' ')}
-                        </div>
+                        {release.status && (
+                          <div className={cn(
+                            "px-3 py-1 rounded-lg text-xs font-medium",
+                            release.status === 'shipped' && "bg-green-500/20 text-green-400",
+                            release.status === 'rolled_back' && "bg-red-500/20 text-red-400"
+                          )}>
+                            {release.status.replace('_', ' ')}
+                          </div>
+                        )}
                       </div>
                       {release.notes && (
                         <p className="text-sm text-gray-400 mt-2">{release.notes}</p>

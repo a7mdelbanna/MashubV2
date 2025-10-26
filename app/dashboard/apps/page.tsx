@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -9,12 +9,16 @@ import {
   TrendingUp, CheckCircle2, AlertCircle, Users,
   Package, Activity
 } from 'lucide-react'
-import { MOCK_APPS, MOCK_PROJECTS } from '@/lib/mock-project-data'
+import { useAuth } from '@/contexts/auth-context'
+import { AppsService } from '@/services/apps.service'
 import { AppCard } from '@/components/apps/app-card'
 import { AppTypeBadge, APP_TYPE_CONFIG } from '@/components/apps/app-type-badge'
-import { AppType } from '@/types'
+import { AppType, App } from '@/types'
 
 export default function AppsPage() {
+  const { tenant } = useAuth()
+  const [apps, setApps] = useState<App[]>([])
+  const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedType, setSelectedType] = useState<string>('all')
@@ -22,23 +26,38 @@ export default function AppsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 9
 
+  // Fetch apps from Firebase
+  useEffect(() => {
+    if (!tenant?.id) return
+
+    const unsubscribe = AppsService.subscribeAll(
+      tenant.id,
+      (updatedApps) => {
+        setApps(updatedApps)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [tenant?.id])
+
   // Calculate statistics
   const stats = {
-    total: MOCK_APPS.length,
-    production: MOCK_APPS.filter(a => a.status === 'production').length,
-    development: MOCK_APPS.filter(a => a.status === 'development').length,
-    avgUptime: (MOCK_APPS.reduce((sum, a) => sum + (a.health.uptime || 0), 0) / MOCK_APPS.length).toFixed(1),
-    totalIssues: MOCK_APPS.reduce((sum, a) => sum + (a.health.issues || 0), 0)
+    total: apps.length,
+    production: apps.filter(a => a.status === 'production').length,
+    development: apps.filter(a => a.status === 'development').length,
+    avgUptime: apps.length > 0 ? (apps.reduce((sum, a) => sum + (a.health?.uptime || 0), 0) / apps.length).toFixed(1) : '0',
+    totalIssues: apps.reduce((sum, a) => sum + (a.health?.issues || 0), 0)
   }
 
   // Get unique app types
   const appTypes = Object.keys(APP_TYPE_CONFIG) as AppType[]
 
   // Filter apps
-  const filteredApps = MOCK_APPS.filter(app => {
+  const filteredApps = apps.filter(app => {
     const matchesSearch = app.nameEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          app.nameAr.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.client.name.toLowerCase().includes(searchTerm.toLowerCase())
+                         (app.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = selectedType === 'all' || app.type === selectedType
     const matchesStatus = selectedStatus === 'all' || app.status === selectedStatus
     return matchesSearch && matchesType && matchesStatus
@@ -56,11 +75,11 @@ export default function AppsPage() {
       ...filteredApps.map(a => [
         a.nameEn,
         a.type,
-        a.client.name,
+        a.client?.name || 'N/A',
         a.status,
-        a.releases.current.version,
-        `${a.health.uptime}%`,
-        a.health.issues
+        a.releases?.current?.version || 'N/A',
+        `${a.health?.uptime || 0}%`,
+        a.health?.issues || 0
       ].join(','))
     ].join('\n')
 
@@ -71,6 +90,14 @@ export default function AppsPage() {
     link.download = 'apps.csv'
     link.click()
     window.URL.revokeObjectURL(url)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+      </div>
+    )
   }
 
   return (
