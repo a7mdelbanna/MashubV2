@@ -441,6 +441,222 @@ export interface FirestoreFeatureAddon {
   updatedAt: string
 }
 
+/**
+ * TASKS SUBCOLLECTION
+ * Path: /tenants/{tenantId}/projects/{projectId}/tasks/{taskId}
+ */
+export interface FirestoreTask {
+  id: string
+  projectId: string
+
+  // Scope (Project-level or App-specific)
+  scope: 'project' | 'app'
+  appId?: string // Required if scope is 'app'
+  appName?: string // Denormalized for quick display
+
+  // Agile Hierarchy
+  epicId?: string
+  storyId?: string
+  sprintId?: string
+
+  // Checklist Integration
+  checklistItemId?: string
+
+  // Task Details
+  title: string
+  description?: string
+  type: 'feature' | 'bug' | 'improvement' | 'task' | 'epic' | 'story'
+  status: 'todo' | 'in_progress' | 'review' | 'testing' | 'done' | 'blocked'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+
+  // Assignment
+  assignee?: {
+    id: string
+    name: string
+    avatar?: string
+  }
+  reporter?: {
+    id: string
+    name: string
+  }
+
+  // Effort & Time
+  estimatedHours?: number
+  actualHours?: number
+  storyPoints?: number
+
+  // Dates
+  startDate?: string
+  dueDate?: string
+  completedDate?: string
+
+  // Labels & Tags
+  labels: string[]
+  tags: string[]
+
+  // Attachments & Links
+  attachments?: string[]
+  relatedTasks?: string[]
+  blockedBy?: string[]
+  blocks?: string[]
+
+  // Comments count (denormalized)
+  commentsCount?: number
+
+  // Timestamps
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * SPRINTS SUBCOLLECTION
+ * Path: /tenants/{tenantId}/projects/{projectId}/sprints/{sprintId}
+ */
+export interface FirestoreSprint {
+  id: string
+  projectId: string
+  name: string
+  goal: string
+
+  // Duration
+  startDate: string
+  endDate: string
+  status: 'planned' | 'active' | 'completed' | 'cancelled'
+
+  // Capacity & Planning
+  capacity: number // Total story points/hours
+  committed: number // Committed story points
+  completed: number // Completed story points
+
+  // Definition of Done
+  definitionOfDone: string[]
+
+  // Metrics
+  velocity?: number
+  burndown?: number[] // Daily progress tracking
+
+  // NOTE: stories and tasks NOT stored as arrays
+  // Query by: tasks WHERE sprintId == this.id
+  // Query by: stories WHERE sprintId == this.id (if stories have sprintId field)
+
+  // Timestamps
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * MILESTONES SUBCOLLECTION
+ * Path: /tenants/{tenantId}/projects/{projectId}/milestones/{milestoneId}
+ */
+export interface FirestoreMilestone {
+  id: string
+  projectId: string
+  name: string
+  description?: string
+  dueDate: string
+  status: 'upcoming' | 'in_progress' | 'completed' | 'overdue'
+
+  // Deliverables & Outcomes
+  deliverables: string[]
+
+  // Progress Tracking
+  progress: number // 0-100
+  tasksLinked?: string[] // Task IDs associated with this milestone
+
+  // Dependencies
+  dependencies?: string[] // Other milestone IDs this depends on
+
+  // Team & Ownership
+  owner?: string // User ID
+
+  // Timestamps
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * EPICS SUBCOLLECTION
+ * Path: /tenants/{tenantId}/projects/{projectId}/epics/{epicId}
+ */
+export interface FirestoreEpic {
+  id: string
+  projectId: string
+  title: string
+  description?: string
+  status: 'planning' | 'in_progress' | 'completed' | 'cancelled'
+
+  // Scope (Project-level or App-specific)
+  scope?: 'project' | 'app'
+  appId?: string
+
+  // Effort
+  estimatedPoints?: number
+  actualPoints?: number
+
+  // Dates
+  startDate?: string
+  targetDate?: string
+  completedDate?: string
+
+  // Labels
+  labels: string[]
+
+  // NOTE: stories NOT stored as array
+  // Query by: stories WHERE epicId == this.id
+
+  // Owner
+  owner?: {
+    id: string
+    name: string
+  }
+
+  // Timestamps
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * STORIES SUBCOLLECTION
+ * Path: /tenants/{tenantId}/projects/{projectId}/stories/{storyId}
+ */
+export interface FirestoreStory {
+  id: string
+  projectId: string
+  epicId?: string // Links to parent epic
+  sprintId?: string // Links to sprint if planned
+
+  // Scope (Project-level or App-specific)
+  scope: 'project' | 'app'
+  appId?: string
+
+  // Story Details
+  title: string
+  description?: string
+  acceptanceCriteria: string[]
+  status: 'backlog' | 'planned' | 'in_progress' | 'review' | 'done' | 'cancelled'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+
+  // Effort
+  storyPoints?: number
+  estimatedHours?: number
+
+  // Assignment
+  assignee?: {
+    id: string
+    name: string
+  }
+
+  // Labels
+  labels: string[]
+
+  // NOTE: tasks NOT stored as array
+  // Query by: tasks WHERE storyId == this.id
+
+  // Timestamps
+  createdAt: string
+  updatedAt: string
+}
+
 // ============================================================================
 // REQUIRED INDEXES
 // ============================================================================
@@ -512,6 +728,97 @@ export const REQUIRED_INDEXES = [
       { fieldPath: 'projectId', order: 'ASCENDING' },
       { fieldPath: 'status', order: 'ASCENDING' },
       { fieldPath: 'dueDate', order: 'ASCENDING' }
+    ]
+  },
+  // Tasks by sprint
+  {
+    collectionGroup: 'tasks',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'sprintId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' }
+    ]
+  },
+  // Tasks by epic
+  {
+    collectionGroup: 'tasks',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'epicId', order: 'ASCENDING' },
+      { fieldPath: 'priority', order: 'DESCENDING' }
+    ]
+  },
+  // Tasks by story
+  {
+    collectionGroup: 'tasks',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'storyId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' }
+    ]
+  },
+  // Tasks by app (app-scoped tasks)
+  {
+    collectionGroup: 'tasks',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'scope', order: 'ASCENDING' },
+      { fieldPath: 'appId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' }
+    ]
+  },
+  // Tasks by assignee
+  {
+    collectionGroup: 'tasks',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'assignee.id', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' }
+    ]
+  },
+  // Sprints by project and status
+  {
+    collectionGroup: 'sprints',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'startDate', order: 'DESCENDING' }
+    ]
+  },
+  // Stories by epic
+  {
+    collectionGroup: 'stories',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'epicId', order: 'ASCENDING' },
+      { fieldPath: 'priority', order: 'DESCENDING' }
+    ]
+  },
+  // Stories by sprint
+  {
+    collectionGroup: 'stories',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'sprintId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' }
+    ]
+  },
+  // Stories by project and status
+  {
+    collectionGroup: 'stories',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'priority', order: 'DESCENDING' }
+    ]
+  },
+  // Epics by project and status
+  {
+    collectionGroup: 'epics',
+    fields: [
+      { fieldPath: 'projectId', order: 'ASCENDING' },
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' }
     ]
   }
 ]

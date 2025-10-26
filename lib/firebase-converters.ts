@@ -14,7 +14,12 @@ import type {
   FirestoreApp,
   FirestoreClient,
   FirestorePricingCatalogItem,
-  FirestoreFeatureAddon
+  FirestoreFeatureAddon,
+  FirestoreTask,
+  FirestoreSprint,
+  FirestoreMilestone,
+  FirestoreEpic,
+  FirestoreStory
 } from './firebase-schema'
 
 // ============================================================================
@@ -278,6 +283,146 @@ export const featureAddonConverter = {
 }
 
 // ============================================================================
+// TASK CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Tasks
+ */
+export const taskConverter = {
+  toFirestore(task: Partial<FirestoreTask>): DocumentData {
+    return {
+      ...task,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreTask>,
+    options?: SnapshotOptions
+  ): FirestoreTask {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
+// SPRINT CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Sprints
+ */
+export const sprintConverter = {
+  toFirestore(sprint: Partial<FirestoreSprint>): DocumentData {
+    return {
+      ...sprint,
+      createdAt: sprint.createdAt,
+      updatedAt: sprint.updatedAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreSprint>,
+    options?: SnapshotOptions
+  ): FirestoreSprint {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
+// MILESTONE CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Milestones
+ */
+export const milestoneConverter = {
+  toFirestore(milestone: Partial<FirestoreMilestone>): DocumentData {
+    return {
+      ...milestone,
+      createdAt: milestone.createdAt,
+      updatedAt: milestone.updatedAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreMilestone>,
+    options?: SnapshotOptions
+  ): FirestoreMilestone {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
+// EPIC CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Epics
+ */
+export const epicConverter = {
+  toFirestore(epic: Partial<FirestoreEpic>): DocumentData {
+    return {
+      ...epic,
+      createdAt: epic.createdAt,
+      updatedAt: epic.updatedAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreEpic>,
+    options?: SnapshotOptions
+  ): FirestoreEpic {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
+// STORY CONVERTER
+// ============================================================================
+
+/**
+ * Firestore data converter for Stories
+ */
+export const storyConverter = {
+  toFirestore(story: Partial<FirestoreStory>): DocumentData {
+    return {
+      ...story,
+      createdAt: story.createdAt,
+      updatedAt: story.updatedAt,
+    }
+  },
+
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<FirestoreStory>,
+    options?: SnapshotOptions
+  ): FirestoreStory {
+    const data = snapshot.data(options)
+    return {
+      ...data,
+      id: snapshot.id,
+    }
+  }
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
@@ -356,6 +501,11 @@ export const converters = {
   client: clientConverter,
   pricingCatalog: pricingCatalogConverter,
   featureAddon: featureAddonConverter,
+  task: taskConverter,
+  sprint: sprintConverter,
+  milestone: milestoneConverter,
+  epic: epicConverter,
+  story: storyConverter,
 }
 
 export default converters

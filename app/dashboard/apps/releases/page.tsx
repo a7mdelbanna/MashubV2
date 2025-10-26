@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import {
   GitBranch, Plus, Search, Filter, Calendar,
@@ -8,16 +8,37 @@ import {
   AlertCircle, TrendingUp, Code, Smartphone,
   ChevronDown, ExternalLink
 } from 'lucide-react'
-import { MOCK_APPS } from '@/lib/mock-project-data'
+import { useAuth } from '@/contexts/auth-context'
+import { AppsService } from '@/services/apps.service'
+import { App } from '@/types'
 import { AppTypeBadge } from '@/components/apps/app-type-badge'
 
 export default function ReleasesPage() {
+  const { tenant } = useAuth()
+  const [apps, setApps] = useState<App[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
 
+  // Load apps from Firebase
+  useEffect(() => {
+    if (!tenant?.id) return
+
+    const unsubscribe = AppsService.subscribeAll(
+      tenant.id,
+      (updatedApps) => {
+        setApps(updatedApps)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [tenant?.id])
+
   // Get all releases from all apps
-  const allReleases = MOCK_APPS.flatMap(app => {
+  const allReleases = apps.flatMap(app => {
+    if (!app.releases) return []
     const releases = []
 
     // Add current release
@@ -26,7 +47,7 @@ export default function ReleasesPage() {
         ...app.releases.current,
         status: 'current',
         app: { id: app.id, nameEn: app.nameEn, type: app.type },
-        deployedAt: new Date(app.releases.current.releaseDate)
+        deployedAt: app.releases.current.releaseDate ? new Date(app.releases.current.releaseDate) : new Date()
       })
     }
 
@@ -36,19 +57,21 @@ export default function ReleasesPage() {
         ...app.releases.upcoming,
         status: 'upcoming',
         app: { id: app.id, nameEn: app.nameEn, type: app.type },
-        deployedAt: new Date(app.releases.upcoming.plannedDate)
+        deployedAt: app.releases.upcoming.targetDate ? new Date(app.releases.upcoming.targetDate) : new Date()
       })
     }
 
     // Add history releases
-    app.releases.history.forEach(release => {
-      releases.push({
-        ...release,
-        status: 'deployed',
-        app: { id: app.id, nameEn: app.nameEn, type: app.type },
-        deployedAt: new Date(release.releaseDate)
+    if (app.releases.history && Array.isArray(app.releases.history)) {
+      app.releases.history.forEach(release => {
+        releases.push({
+          ...release,
+          status: 'deployed',
+          app: { id: app.id, nameEn: app.nameEn, type: app.type },
+          deployedAt: release.releaseDate ? new Date(release.releaseDate) : new Date()
+        })
       })
-    })
+    }
 
     return releases
   })
@@ -100,6 +123,14 @@ export default function ReleasesPage() {
       default:
         return Package
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Upload,
   Search,
@@ -28,9 +28,11 @@ import {
   ArrowUpDown,
   Smartphone
 } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
+import { ProjectsService } from '@/services/projects.service'
+import { AppsService } from '@/services/apps.service'
 import { FileAppAssignmentModal } from '@/components/projects/file-app-assignment-modal'
-import { MOCK_APPS, MOCK_PROJECTS } from '@/lib/mock-project-data'
-import { App, ProjectFile, FileVersion, FileType } from '@/types'
+import { App, ProjectFile, FileVersion, FileType, Project } from '@/types'
 
 // Types
 type ViewMode = 'grid' | 'list'
@@ -246,6 +248,10 @@ function getFileTypeColor(type: FileType): string {
 }
 
 export default function ProjectDocumentsPage() {
+  const { tenant } = useAuth()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [apps, setApps] = useState<App[]>([])
+  const [loading, setLoading] = useState(true)
   const [files, setFiles] = useState<ProjectFile[]>(mockFiles.map(f => ({ ...f, assignedApps: [] })))
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
@@ -254,13 +260,38 @@ export default function ProjectDocumentsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedFileTypes, setSelectedFileTypes] = useState<FileType[]>([])
 
-  // NEW: File selection and app assignment
+  // File selection and app assignment
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [showAssignModal, setShowAssignModal] = useState(false)
 
-  // Get project and apps (in real app, fetch from API)
-  const project = MOCK_PROJECTS[0] // Using first project for demo
-  const projectApps: App[] = project?.apps || []
+  // Load projects and apps from Firebase
+  useEffect(() => {
+    if (!tenant?.id) return
+
+    const unsubscribeProjects = ProjectsService.subscribeAll(
+      tenant.id,
+      (updatedProjects) => {
+        setProjects(updatedProjects)
+      }
+    )
+
+    const unsubscribeApps = AppsService.subscribeAll(
+      tenant.id,
+      (updatedApps) => {
+        setApps(updatedApps)
+        setLoading(false)
+      }
+    )
+
+    return () => {
+      unsubscribeProjects()
+      unsubscribeApps()
+    }
+  }, [tenant?.id])
+
+  // Get project and apps (using Firebase data)
+  const project = projects[0] // Using first project for demo (can be updated to use route params)
+  const projectApps: App[] = apps.filter(app => project && app.projectId === project.id)
 
   // Filter and sort files
   const filteredFiles = files

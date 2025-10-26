@@ -1,268 +1,210 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Search, Filter, MoreVertical, Clock, PlayCircle, ChevronRight, Calendar, TrendingUp } from 'lucide-react'
-import { Task, Sprint } from '@/types/agile'
-import {
-  getPriorityColor,
-  formatTimeEstimate,
-  sortTasksByPriority,
-  calculateSprintProgress,
-  getSprintDaysRemaining
-} from '@/lib/agile-utils'
-import { TaskChecklistBadgeCompact } from '@/components/projects/task-checklist-badge'
-import { AdvancedFilters } from '@/components/projects/advanced-filters'
-import { WorkItemFilter } from '@/types/agile'
-import { filterTasks } from '@/lib/agile-utils'
-import { TaskDetailModal } from '@/components/projects/task-detail-modal'
-import { TaskFormModal } from '@/components/projects/task-form-modal'
-import { StartSprintModal } from '@/components/projects/start-sprint-modal'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Filter, MoreVertical, Clock, PlayCircle, ChevronRight, Calendar, TrendingUp, X } from 'lucide-react'
+import { Task, Sprint } from '@/types'
+import { TasksService } from '@/services/tasks.service'
+import { SprintsService } from '@/services/sprints.service'
+import { useAuth } from '@/contexts/auth-context'
+import { useRouter, useSearchParams } from 'next/navigation'
+import toast from 'react-hot-toast'
 
-// Legacy function names for backward compatibility
-const getSprintProgress = calculateSprintProgress
-
-// Mock checklist instances for demonstration
-const mockChecklistInstances = [
-  {
-    id: 'checklist-inst-3',
-    items: [
-      { id: 'item-9', title: 'Setup Stripe account', completed: true },
-      { id: 'item-10', title: 'Configure webhooks', completed: false },
-      { id: 'item-11', title: 'Test payment flow', completed: false },
-      { id: 'item-12', title: 'Handle errors', completed: false }
-    ],
-    totalItems: 4,
-    completedItems: 1,
-    isProductionReady: false
+// Helper functions
+const getPriorityColor = (priority: string) => {
+  const colors: Record<string, string> = {
+    urgent: 'bg-red-500/20 text-red-400',
+    high: 'bg-orange-500/20 text-orange-400',
+    medium: 'bg-yellow-500/20 text-yellow-400',
+    low: 'bg-blue-500/20 text-blue-400'
   }
-]
+  return colors[priority] || 'bg-gray-500/20 text-gray-400'
+}
 
-// Mock data
-const mockSprints: any[] = [
-  {
-    id: 'sprint-1',
-    projectId: 'proj-1',
-    name: 'Sprint 12 - Authentication Module',
-    goal: 'Complete authentication system implementation',
-    status: 'active',
-    number: 12,
-    startDate: '2025-10-08',
-    endDate: '2025-10-22',
-    totalStoryPoints: 34,
-    completedStoryPoints: 18,
-    velocity: 0,
-    capacity: 40,
-    tasks: ['1', '2', '3'],
-    burndownData: [],
-    createdAt: '2025-10-01T10:00:00Z'
-  },
-  {
-    id: 'sprint-2',
-    projectId: 'proj-1',
-    name: 'Sprint 13 - Payment Integration',
-    goal: 'Integrate payment gateway and implement checkout flow',
-    status: 'planning',
-    number: 13,
-    startDate: '2025-10-23',
-    endDate: '2025-11-06',
-    totalStoryPoints: 0,
-    completedStoryPoints: 0,
-    velocity: 0,
-    capacity: 40,
-    tasks: [],
-    burndownData: [],
-    createdAt: '2025-10-12T10:00:00Z'
-  }
-]
+const formatTimeEstimate = (minutes: number) => {
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+}
 
-const mockBacklogTasks: any[] = [
-  {
-    id: '10',
-    projectId: 'proj-1',
-    storyId: 'story-3',
-    epicId: 'epic-2',
-    title: 'Implement payment gateway integration',
-    description: 'Integrate Stripe payment gateway with backend',
-    type: 'feature',
-    status: 'backlog',
-    priority: 'high',
-    reporterId: 'user-2',
-    dependencies: [],
-    blockedBy: [],
-    timeEstimate: {
-      original: 960, // 16 hours
-      remaining: 960,
-      actual: 0,
-      confidence: 'medium'
-    },
-    storyPoints: 8,
-    tags: ['payment', 'integration'],
-    labels: [],
-    commentsCount: 0,
-    attachmentsCount: 0,
-    watchers: [],
-    checklistItemId: 'item-9',
-    checklistInstanceId: 'checklist-inst-3',
-    definitionOfDoneCompleted: false,
-    customFields: [],
-    createdAt: new Date('2025-10-10T10:00:00Z'),
-    updatedAt: new Date('2025-10-10T10:00:00Z'),
-    createdBy: 'user-2'
-  },
-  {
-    id: '11',
-    projectId: 'proj-1',
-    storyId: 'story-3',
-    epicId: 'epic-2',
-    title: 'Design checkout UI',
-    description: 'Create user-friendly checkout interface',
-    type: 'feature',
-    status: 'backlog',
-    priority: 'high',
-    assigneeId: 'user-1',
-    assigneeName: 'Sarah Chen',
-    reporterId: 'user-2',
-    dependencies: [],
-    blockedBy: [],
-    timeEstimate: {
-      original: 600, // 10 hours
-      remaining: 600,
-      actual: 0,
-      confidence: 'high'
-    },
-    storyPoints: 5,
-    tags: ['ui', 'checkout'],
-    labels: [],
-    commentsCount: 2,
-    attachmentsCount: 0,
-    watchers: [],
-    definitionOfDoneCompleted: false,
-    customFields: [],
-    createdAt: new Date('2025-10-11T10:00:00Z'),
-    updatedAt: new Date('2025-10-12T14:00:00Z'),
-    createdBy: 'user-2'
-  },
-  {
-    id: '12',
-    projectId: 'proj-1',
-    storyId: 'story-3',
-    epicId: 'epic-2',
-    title: 'Add order confirmation emails',
-    description: 'Send email notifications after successful orders',
-    type: 'feature',
-    status: 'backlog',
-    priority: 'medium',
-    reporterId: 'user-2',
-    dependencies: [],
-    blockedBy: [],
-    timeEstimate: {
-      original: 360, // 6 hours
-      remaining: 360,
-      actual: 0,
-      confidence: 'medium'
-    },
-    storyPoints: 3,
-    tags: ['email', 'notifications'],
-    labels: [],
-    commentsCount: 1,
-    attachmentsCount: 0,
-    watchers: [],
-    definitionOfDoneCompleted: false,
-    customFields: [],
-    createdAt: new Date('2025-10-11T10:00:00Z'),
-    updatedAt: new Date('2025-10-11T10:00:00Z'),
-    createdBy: 'user-2'
-  }
-]
+const sortTasksByPriority = (tasks: Task[]) => {
+  const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 }
+  return tasks.sort((a, b) => {
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4
+    return aPriority - bPriority
+  })
+}
+
+const calculateSprintProgress = (sprint: Sprint) => {
+  if (!sprint.capacity || sprint.capacity === 0) return 0
+  return Math.round((sprint.completed / sprint.capacity) * 100)
+}
+
+const getSprintDaysRemaining = (sprint: Sprint) => {
+  const endDate = new Date(sprint.endDate)
+  const now = new Date()
+  const diff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return diff > 0 ? diff : 0
+}
 
 export default function ProjectBacklogPage() {
-  const [sprints, setSprints] = useState<any[]>(mockSprints)
-  const [backlogTasks, setBacklogTasks] = useState<any[]>(mockBacklogTasks)
-  const [advancedFilters, setAdvancedFilters] = useState<WorkItemFilter>({})
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { tenant } = useAuth()
+
+  // Get projectId from URL params
+  const projectId = searchParams.get('projectId')
+
+  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [backlogTasks, setBacklogTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([])
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [expandedSprint, setExpandedSprint] = useState<string | null>(sprints.find(s => s.status === 'active')?.id || null)
+  const [expandedSprint, setExpandedSprint] = useState<string | null>(null)
 
   // Modal states
   const [showTaskDetail, setShowTaskDetail] = useState(false)
   const [showNewTask, setShowNewTask] = useState(false)
-  const [showStartSprint, setShowStartSprint] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<any | null>(null)
-  const [selectedSprint, setSelectedSprint] = useState<any | null>(null)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-  // Mock data for filter dropdowns
-  const mockAssignees = [
-    { id: 'user-1', name: 'Sarah Chen' },
-    { id: 'user-2', name: 'Mike Johnson' },
-    { id: 'user-3', name: 'Alex Rivera' }
-  ]
+  // Load sprints from Firebase
+  useEffect(() => {
+    if (!tenant?.id || !projectId) {
+      setLoading(false)
+      return
+    }
 
-  const mockEpics = [
-    { id: 'epic-1', name: 'Authentication System' },
-    { id: 'epic-2', name: 'Payment Integration' }
-  ]
+    setLoading(true)
 
-  const mockSprintsList = [
-    { id: 'sprint-1', name: 'Sprint 12' },
-    { id: 'sprint-2', name: 'Sprint 13' }
-  ]
+    const unsubscribeSprints = SprintsService.subscribe(
+      tenant.id,
+      projectId,
+      (fetchedSprints) => {
+        setSprints(fetchedSprints)
+        // Set expanded sprint to the active one
+        const activeSprint = fetchedSprints.find(s => s.status === 'active')
+        if (activeSprint) {
+          setExpandedSprint(activeSprint.id)
+        }
+        setLoading(false)
+      },
+      {
+        orderByField: 'startDate',
+        orderDirection: 'desc'
+      }
+    )
+
+    return () => unsubscribeSprints()
+  }, [tenant?.id, projectId])
+
+  // Load backlog tasks from Firebase
+  useEffect(() => {
+    if (!tenant?.id || !projectId) return
+
+    const unsubscribeTasks = TasksService.subscribe(
+      tenant.id,
+      projectId,
+      (fetchedTasks) => {
+        // Filter to show only backlog tasks (not assigned to a sprint)
+        const backlog = fetchedTasks.filter(task => !task.sprintId)
+        setBacklogTasks(backlog)
+      }
+    )
+
+    return () => unsubscribeTasks()
+  }, [tenant?.id, projectId])
 
   const activeSprint = sprints.find(s => s.status === 'active')
-  const upcomingSprints = sprints.filter(s => s.status === 'planning')
+  const upcomingSprints = sprints.filter(s => s.status === 'planned')
 
-  // Apply advanced filters
-  const filteredBacklog = sortTasksByPriority(filterTasks(backlogTasks, advancedFilters))
+  // Apply filters
+  const filteredBacklog = sortTasksByPriority(
+    backlogTasks.filter(task => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority)
+      return matchesSearch && matchesPriority
+    })
+  )
 
   const totalBacklogPoints = backlogTasks.reduce((sum, task) => sum + (task.storyPoints || 0), 0)
 
   // Handlers
-  const handleTaskClick = (task: any) => {
+  const handleTaskClick = (task: Task) => {
     setSelectedTask(task)
     setShowTaskDetail(true)
   }
 
-  const handleNewTask = () => {
-    setShowNewTask(true)
-  }
-
-  const handleStartSprint = (sprint: any) => {
-    setSelectedSprint(sprint)
-    setShowStartSprint(true)
-  }
-
-  const handleTaskCreate = (taskData: Partial<Task>) => {
-    const newTask = {
-      ...taskData,
-      id: `task_${Date.now()}`,
-      projectId: 'proj-1',
-      dependencies: [],
-      blockedBy: [],
-      labels: [],
-      commentsCount: 0,
-      attachmentsCount: 0,
-      watchers: [],
-      definitionOfDoneCompleted: false,
-      customFields: [],
-      reporterId: 'user-1',
-      createdBy: 'user-1'
+  const handleNewTask = async () => {
+    if (!tenant?.id || !projectId) {
+      toast.error('Project not found')
+      return
     }
-    setBacklogTasks(prev => [...prev, newTask as any])
-    console.log('Task created:', newTask)
+
+    try {
+      await TasksService.create(tenant.id, projectId, {
+        title: 'New Task',
+        description: '',
+        type: 'task',
+        status: 'todo',
+        priority: 'medium',
+        scope: 'project',
+        projectId: projectId,
+        labels: [],
+        tags: []
+      })
+      toast.success('Task created successfully')
+      setShowNewTask(false)
+    } catch (error) {
+      console.error('Error creating task:', error)
+      toast.error('Failed to create task')
+    }
   }
 
-  const handleTaskUpdate = (updatedTask: Partial<Task>) => {
-    setBacklogTasks(prev =>
-      prev.map(task => (task.id === selectedTask?.id ? { ...task, ...updatedTask } : task))
-    )
-    console.log('Task updated:', updatedTask)
+  const handleTaskUpdate = async (updatedTask: Partial<Task>) => {
+    if (!tenant?.id || !projectId || !selectedTask) return
+
+    try {
+      await TasksService.update(tenant.id, projectId, selectedTask.id, updatedTask)
+      toast.success('Task updated successfully')
+      setShowTaskDetail(false)
+      setSelectedTask(null)
+    } catch (error) {
+      console.error('Error updating task:', error)
+      toast.error('Failed to update task')
+    }
   }
 
-  const handleSprintStart = (sprintData: Partial<Sprint>) => {
-    setSprints(prev =>
-      prev.map(sprint =>
-        sprint.id === selectedSprint?.id ? { ...sprint, ...sprintData, status: 'active' } : sprint
-      )
+  // Loading state
+  if (loading) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading backlog...</p>
+        </div>
+      </div>
     )
-    console.log('Sprint started:', sprintData)
+  }
+
+  // No project selected state
+  if (!projectId) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">No Project Selected</h2>
+          <p className="text-gray-400 mb-4">Please select a project to view its backlog</p>
+          <button
+            onClick={() => router.push('/dashboard/projects')}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+          >
+            Go to Projects
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -279,15 +221,7 @@ export default function ProjectBacklogPage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => upcomingSprints.length > 0 && handleStartSprint(upcomingSprints[0])}
-              disabled={upcomingSprints.length === 0}
-              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <PlayCircle className="w-4 h-4" />
-              Start Sprint
-            </button>
-            <button
-              onClick={handleNewTask}
+              onClick={() => setShowNewTask(true)}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -453,22 +387,47 @@ export default function ProjectBacklogPage() {
             <input
               type="text"
               placeholder="Search backlog tasks..."
-              value={advancedFilters.search || ''}
-              onChange={(e) => setAdvancedFilters({ ...advancedFilters, search: e.target.value || undefined })}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
             />
           </div>
 
-          {/* Advanced Filter Panel */}
+          {/* Priority Filter Panel */}
           {showAdvancedFilters && (
-            <div className="mt-4">
-              <AdvancedFilters
-                filters={advancedFilters}
-                onChange={setAdvancedFilters}
-                availableAssignees={mockAssignees}
-                availableEpics={mockEpics}
-                availableSprints={mockSprintsList}
-              />
+            <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-gray-400">Priority:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(['low', 'medium', 'high', 'urgent']).map(priority => (
+                  <button
+                    key={priority}
+                    onClick={() => {
+                      setSelectedPriorities(prev =>
+                        prev.includes(priority)
+                          ? prev.filter(p => p !== priority)
+                          : [...prev, priority]
+                      )
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      selectedPriorities.includes(priority)
+                        ? getPriorityColor(priority)
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                  </button>
+                ))}
+                {selectedPriorities.length > 0 && (
+                  <button
+                    onClick={() => setSelectedPriorities([])}
+                    className="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -507,32 +466,6 @@ export default function ProjectBacklogPage() {
                       <p className="text-sm text-gray-400 mb-3">{task.description}</p>
                     )}
 
-                    {/* Checklist Badge */}
-                    {task.checklistItemId && task.checklistInstanceId && (
-                      <div className="mb-3">
-                        <TaskChecklistBadgeCompact
-                          taskId={task.id}
-                          checklistItemId={task.checklistItemId}
-                          checklistInstanceId={task.checklistInstanceId}
-                          totalItems={
-                            mockChecklistInstances.find(
-                              i => i.id === task.checklistInstanceId
-                            )?.totalItems || 0
-                          }
-                          completedItems={
-                            mockChecklistInstances.find(
-                              i => i.id === task.checklistInstanceId
-                            )?.completedItems || 0
-                          }
-                          isProductionReady={
-                            mockChecklistInstances.find(
-                              i => i.id === task.checklistInstanceId
-                            )?.isProductionReady || false
-                          }
-                        />
-                      </div>
-                    )}
-
                     <div className="flex items-center gap-4 text-xs text-gray-400">
                       {task.storyPoints && (
                         <span className="flex items-center gap-1">
@@ -542,21 +475,21 @@ export default function ProjectBacklogPage() {
                           <span>Story Points</span>
                         </span>
                       )}
-                      {task.timeEstimate && (
+                      {task.estimatedHours && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {formatTimeEstimate(task.timeEstimate.remaining)}
+                          {formatTimeEstimate(task.estimatedHours * 60)}
                         </span>
                       )}
-                      {task.assigneeName && (
-                        <span>Assigned to {task.assigneeName}</span>
+                      {task.assignee?.name && (
+                        <span>Assigned to {task.assignee.name}</span>
                       )}
-                      {task.commentsCount > 0 && (
+                      {task.commentsCount && task.commentsCount > 0 && (
                         <span>💬 {task.commentsCount}</span>
                       )}
                     </div>
 
-                    {task.tags.length > 0 && (
+                    {task.tags && task.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {task.tags.map(tag => (
                           <span
@@ -580,39 +513,79 @@ export default function ProjectBacklogPage() {
         </div>
       </div>
 
-      {/* Modals */}
-      {selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          isOpen={showTaskDetail}
-          onClose={() => {
-            setShowTaskDetail(false)
-            setSelectedTask(null)
-          }}
-          onSave={handleTaskUpdate}
-          checklistInstance={mockChecklistInstances.find(i => i.id === selectedTask.checklistInstanceId)}
-        />
-      )}
+      {/* Task Detail Modal - Simplified */}
+      {showTaskDetail && selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowTaskDetail(false)}>
+          <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-gray-800" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <h2 className="text-xl font-semibold text-white">{selectedTask.title}</h2>
+              <button
+                onClick={() => setShowTaskDetail(false)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-      <TaskFormModal
-        isOpen={showNewTask}
-        onClose={() => setShowNewTask(false)}
-        onSubmit={handleTaskCreate}
-        defaultStatus="backlog"
-        title="Create New Task"
-      />
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-4">
+                {selectedTask.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                    <p className="text-white">{selectedTask.description}</p>
+                  </div>
+                )}
 
-      {selectedSprint && (
-        <StartSprintModal
-          isOpen={showStartSprint}
-          onClose={() => {
-            setShowStartSprint(false)
-            setSelectedSprint(null)
-          }}
-          onStart={handleSprintStart}
-          sprint={selectedSprint}
-          backlogTasks={backlogTasks}
-        />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Status</label>
+                    <span className="inline-block px-3 py-1 rounded text-sm bg-gray-700 text-gray-300">
+                      {selectedTask.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Priority</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${getPriorityColor(selectedTask.priority)}`}>
+                      {selectedTask.priority.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedTask.assignee && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Assignee</label>
+                    <p className="text-white">{selectedTask.assignee.name}</p>
+                  </div>
+                )}
+
+                {selectedTask.tags && selectedTask.tags.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Tags</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTask.tags.map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-800 flex justify-end gap-3">
+              <button
+                onClick={() => setShowTaskDetail(false)}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

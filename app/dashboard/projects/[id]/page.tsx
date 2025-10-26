@@ -5,7 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { ProjectsService } from '@/services/projects.service'
 import { projectsService } from '@/lib/services/projects-service' // Keep for tasks, milestones, timeline
-import { Project } from '@/types'
+import { TasksService } from '@/services/tasks.service'
+import { SprintsService } from '@/services/sprints.service'
+import { MilestonesService } from '@/services/milestones.service'
+import { EpicsService } from '@/services/epics.service'
+import { StoriesService } from '@/services/stories.service'
+import { Project, Sprint, Epic, Story } from '@/types'
+import { Milestone as AgMilestone } from '@/types'
 import { Task, Milestone, TimeEntry, ProjectTimeline } from '@/types/projects'
 import { PermissionGuard } from '@/components/auth/permission-guard'
 import { Can } from '@/components/auth/can'
@@ -13,7 +19,8 @@ import { cn } from '@/lib/utils'
 import {
   ArrowLeft, MoreVertical, Edit, Trash2, Calendar, Clock, DollarSign,
   Users, Briefcase, CheckCircle2, AlertCircle, PlayCircle, Star,
-  MessageSquare, Plus, Activity, TrendingUp, Target, FileText
+  MessageSquare, Plus, Activity, TrendingUp, Target, FileText, Flag,
+  Layers, BookOpen, ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -33,6 +40,12 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  // Agile data
+  const [activeSprint, setActiveSprint] = useState<Sprint | null>(null)
+  const [upcomingMilestones, setUpcomingMilestones] = useState<AgMilestone[]>([])
+  const [epicsCount, setEpicsCount] = useState({ total: 0, active: 0 })
+  const [storiesCount, setStoriesCount] = useState({ total: 0, ready: 0 })
 
   // Real-time subscription to project
   useEffect(() => {
@@ -60,6 +73,56 @@ export default function ProjectDetailPage() {
       unsubTimeline()
     }
   }, [projectId])
+
+  // Load Agile data
+  useEffect(() => {
+    if (!projectId || !tenant?.id) return
+
+    // Subscribe to active sprint
+    const unsubSprints = SprintsService.subscribe(
+      tenant.id,
+      projectId,
+      (sprints) => {
+        const active = sprints.find(s => s.status === 'active')
+        setActiveSprint(active || null)
+      },
+      { status: 'active', limitCount: 1 }
+    )
+
+    // Subscribe to upcoming milestones
+    const unsubMilestones = MilestonesService.subscribe(
+      tenant.id,
+      projectId,
+      (mls) => {
+        const upcoming = mls
+          .filter(m => m.status === 'upcoming' || m.status === 'in_progress')
+          .slice(0, 3)
+        setUpcomingMilestones(upcoming)
+      },
+      { orderByField: 'dueDate', orderDirection: 'asc', limitCount: 3 }
+    )
+
+    // Load epics count
+    EpicsService.list(tenant.id, projectId).then(epics => {
+      setEpicsCount({
+        total: epics.length,
+        active: epics.filter(e => e.status === 'in_progress').length
+      })
+    })
+
+    // Load stories count
+    StoriesService.list(tenant.id, projectId).then(stories => {
+      setStoriesCount({
+        total: stories.length,
+        ready: stories.filter(s => s.status === 'ready').length
+      })
+    })
+
+    return () => {
+      unsubSprints()
+      unsubMilestones()
+    }
+  }, [projectId, tenant?.id])
 
   const handleDelete = async () => {
     if (!project || !tenant?.id) return
@@ -304,7 +367,15 @@ export default function ProjectDetailPage() {
 
         {/* Tab Content */}
         <div className="min-h-[400px]">
-          {activeTab === 'overview' && <OverviewTab project={project} />}
+          {activeTab === 'overview' && (
+            <OverviewTab
+              project={project}
+              activeSprint={activeSprint}
+              upcomingMilestones={upcomingMilestones}
+              epicsCount={epicsCount}
+              storiesCount={storiesCount}
+            />
+          )}
           {activeTab === 'tasks' && <TasksTab tasks={tasks} projectId={project.id} />}
           {activeTab === 'milestones' && <MilestonesTab milestones={milestones} projectId={project.id} />}
           {activeTab === 'timeline' && <TimelineTab timeline={timeline} />}
@@ -343,8 +414,20 @@ export default function ProjectDetailPage() {
 }
 
 // Overview Tab Component
-function OverviewTab({ project }: { project: Project }) {
-  const formatDate = (dateString?: string) => {
+function OverviewTab({
+  project,
+  activeSprint,
+  upcomingMilestones,
+  epicsCount,
+  storiesCount
+}: {
+  project: Project
+  activeSprint: Sprint | null
+  upcomingMilestones: AgMilestone[]
+  epicsCount: { total: number; active: number }
+  storiesCount: { total: number; ready: number }
+}) {
+  const formatDate = (dateString?: string | Date) => {
     if (!dateString) return 'Not set'
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -361,10 +444,184 @@ function OverviewTab({ project }: { project: Project }) {
     }).format(amount)
   }
 
+  const getDaysRemaining = (endDate: Date) => {
+    const now = new Date()
+    const diff = Math.ceil((new Date(endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return diff
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left Column */}
-      <div className="lg:col-span-2 space-y-6">
+    <div className="space-y-6">
+      {/* Agile Overview Section */}
+      <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-xl border border-purple-500/30 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold bg-gradient-purple bg-clip-text text-transparent">
+            Agile Overview
+          </h3>
+          <Link
+            href={`/dashboard/projects/board?projectId=${project.id}`}
+            className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+          >
+            View All <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Agile Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Link
+            href={`/dashboard/projects/sprints?projectId=${project.id}`}
+            className="bg-gray-900/50 backdrop-blur-xl border border-gray-700 rounded-xl p-4 hover:border-purple-500/50 transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg gradient-purple">
+                <Activity className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{activeSprint ? 1 : 0}</p>
+                <p className="text-xs text-gray-400">Active Sprint</p>
+              </div>
+            </div>
+          </Link>
+
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-700 rounded-xl p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg gradient-blue">
+                <Layers className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{epicsCount.active}/{epicsCount.total}</p>
+                <p className="text-xs text-gray-400">Active Epics</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-700 rounded-xl p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg gradient-green">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{storiesCount.ready}/{storiesCount.total}</p>
+                <p className="text-xs text-gray-400">Ready Stories</p>
+              </div>
+            </div>
+          </div>
+
+          <Link
+            href={`/dashboard/projects/milestones?projectId=${project.id}`}
+            className="bg-gray-900/50 backdrop-blur-xl border border-gray-700 rounded-xl p-4 hover:border-purple-500/50 transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg gradient-orange">
+                <Flag className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{upcomingMilestones.length}</p>
+                <p className="text-xs text-gray-400">Upcoming Milestones</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Active Sprint Card */}
+        {activeSprint && (
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-700 rounded-xl p-4 mb-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h4 className="text-white font-semibold mb-1">{activeSprint.name}</h4>
+                <p className="text-sm text-gray-400">{activeSprint.goal}</p>
+              </div>
+              <Link
+                href={`/dashboard/projects/sprints?projectId=${project.id}`}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                View Details
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-3">
+              <div>
+                <p className="text-xs text-gray-500">Progress</p>
+                <p className="text-white font-medium">{Math.round((activeSprint.completed / activeSprint.committed) * 100)}%</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Story Points</p>
+                <p className="text-white font-medium">{activeSprint.completed}/{activeSprint.committed}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Days Left</p>
+                <p className="text-white font-medium">{getDaysRemaining(activeSprint.endDate)}</p>
+              </div>
+            </div>
+            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all"
+                style={{ width: `${Math.round((activeSprint.completed / activeSprint.committed) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming Milestones */}
+        {upcomingMilestones.length > 0 && (
+          <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-700 rounded-xl p-4">
+            <h4 className="text-white font-semibold mb-3">Upcoming Milestones</h4>
+            <div className="space-y-2">
+              {upcomingMilestones.map(milestone => (
+                <div key={milestone.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
+                  <div className="flex-1">
+                    <p className="text-sm text-white font-medium">{milestone.name}</p>
+                    <p className="text-xs text-gray-400">{formatDate(milestone.dueDate)}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24">
+                      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-600 to-blue-600"
+                          style={{ width: `${milestone.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400 w-10 text-right">{milestone.progress}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+          <Link
+            href={`/dashboard/projects/board?projectId=${project.id}`}
+            className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors text-center"
+          >
+            Board
+          </Link>
+          <Link
+            href={`/dashboard/projects/backlog?projectId=${project.id}`}
+            className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors text-center"
+          >
+            Backlog
+          </Link>
+          <Link
+            href={`/dashboard/projects/sprints?projectId=${project.id}`}
+            className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors text-center"
+          >
+            Sprints
+          </Link>
+          <Link
+            href={`/dashboard/projects/milestones?projectId=${project.id}`}
+            className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors text-center"
+          >
+            Milestones
+          </Link>
+        </div>
+      </div>
+
+      {/* Original Overview Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
         {/* Project Details */}
         <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">Project Details</h3>
@@ -459,6 +716,7 @@ function OverviewTab({ project }: { project: Project }) {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

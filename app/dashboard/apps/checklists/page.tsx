@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import {
   CheckSquare, Plus, Search, Grid, List,
@@ -8,8 +8,9 @@ import {
   FileText, Circle, Edit, Copy, Trash2,
   ChevronDown, TrendingUp, Target
 } from 'lucide-react'
-import { MOCK_CHECKLIST_TEMPLATES } from '@/lib/mock-project-data'
-import { AppType } from '@/types'
+import { useAuth } from '@/contexts/auth-context'
+import { ProjectsService } from '@/services/projects.service'
+import { AppType, Project, ChecklistTemplate } from '@/types'
 import { APP_TYPE_CONFIG } from '@/components/apps/app-type-badge'
 
 const CATEGORY_ICONS = {
@@ -23,12 +24,35 @@ const CATEGORY_ICONS = {
 }
 
 export default function ChecklistsPage() {
+  const { tenant } = useAuth()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAppType, setSelectedAppType] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
+  // Load projects from Firebase
+  useEffect(() => {
+    if (!tenant?.id) return
+
+    const unsubscribe = ProjectsService.subscribeAll(
+      tenant.id,
+      (updatedProjects) => {
+        setProjects(updatedProjects)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [tenant?.id])
+
+  // Aggregate all checklist templates from all projects
+  const allTemplates: ChecklistTemplate[] = projects.flatMap(project =>
+    project.checklistTemplates || []
+  )
+
   // Filter templates
-  const filteredTemplates = MOCK_CHECKLIST_TEMPLATES.filter(template => {
+  const filteredTemplates = allTemplates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = selectedAppType === 'all' || template.appTypes.includes(selectedAppType as AppType)
@@ -37,10 +61,18 @@ export default function ChecklistsPage() {
 
   // Calculate stats
   const stats = {
-    total: MOCK_CHECKLIST_TEMPLATES.length,
-    totalItems: MOCK_CHECKLIST_TEMPLATES.reduce((sum, t) => sum + t.items.length, 0),
-    avgItems: Math.round(MOCK_CHECKLIST_TEMPLATES.reduce((sum, t) => sum + t.items.length, 0) / MOCK_CHECKLIST_TEMPLATES.length),
-    appTypes: new Set(MOCK_CHECKLIST_TEMPLATES.flatMap(t => t.appTypes)).size
+    total: allTemplates.length,
+    totalItems: allTemplates.reduce((sum, t) => sum + t.items.length, 0),
+    avgItems: allTemplates.length > 0 ? Math.round(allTemplates.reduce((sum, t) => sum + t.items.length, 0) / allTemplates.length) : 0,
+    appTypes: new Set(allTemplates.flatMap(t => t.appTypes)).size
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+      </div>
+    )
   }
 
   return (

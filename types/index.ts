@@ -591,6 +591,36 @@ export interface Sprint {
   updatedAt: Date
 }
 
+/**
+ * Milestone
+ * FIREBASE: Store in tenants/{tenantId}/projects/{projectId}/milestones/{milestoneId}
+ * RELATIONSHIP: Many Milestones → One Project
+ */
+export interface Milestone {
+  id: string
+  projectId: string
+  name: string
+  description?: string
+  dueDate: Date
+  status: 'upcoming' | 'in_progress' | 'completed' | 'overdue'
+
+  // Deliverables & Outcomes
+  deliverables: string[]
+
+  // Progress Tracking
+  progress: number // 0-100
+  tasksLinked?: string[] // Task IDs associated with this milestone
+
+  // Dependencies
+  dependencies?: string[] // Other milestone IDs this depends on
+
+  // Team & Ownership
+  owner?: string // User ID
+
+  createdAt: Date
+  updatedAt: Date
+}
+
 // File & Document Types
 export type FileType = 'document' | 'image' | 'video' | 'audio' | 'archive' | 'other'
 

@@ -2,23 +2,61 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Search, Filter, MoreVertical, Clock, AlertCircle, User, Tag, Calendar, X } from 'lucide-react'
-import { Task, TaskStatus, TaskPriority, TaskType } from '@/types/projects'
-import {
-  getTaskStatusColor,
-  getPriorityColor,
-  formatTimeEstimate,
-  sortTasksByPriority
-} from '@/lib/projects-utils'
-import { projectsService } from '@/lib/services/projects-service'
+import { Task } from '@/types'
+import { TasksService } from '@/services/tasks.service'
 import { useAuth } from '@/contexts/auth-context'
 import toast from 'react-hot-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+// Helper functions
+const getTaskStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    backlog: 'bg-gray-500/20 text-gray-400',
+    todo: 'bg-blue-500/20 text-blue-400',
+    in_progress: 'bg-yellow-500/20 text-yellow-400',
+    review: 'bg-orange-500/20 text-orange-400',
+    testing: 'bg-purple-500/20 text-purple-400',
+    done: 'bg-green-500/20 text-green-400',
+    blocked: 'bg-red-500/20 text-red-400'
+  }
+  return colors[status] || 'bg-gray-500/20 text-gray-400'
+}
+
+const getPriorityColor = (priority: string) => {
+  const colors: Record<string, string> = {
+    urgent: 'bg-red-500/20 text-red-400',
+    high: 'bg-orange-500/20 text-orange-400',
+    medium: 'bg-yellow-500/20 text-yellow-400',
+    low: 'bg-blue-500/20 text-blue-400'
+  }
+  return colors[priority] || 'bg-gray-500/20 text-gray-400'
+}
+
+const formatTimeEstimate = (minutes: number) => {
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+}
+
+const sortTasksByPriority = (tasks: Task[]) => {
+  const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 }
+  return tasks.sort((a, b) => {
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4
+    return aPriority - bPriority
+  })
+}
+
+type TaskStatus = 'todo' | 'in_progress' | 'review' | 'testing' | 'done' | 'blocked'
+type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+type TaskType = 'feature' | 'bug' | 'improvement' | 'task' | 'epic' | 'story'
+
 const columns: { status: TaskStatus; label: string; color: string }[] = [
-  { status: 'backlog', label: 'Backlog', color: 'gray' },
   { status: 'todo', label: 'To Do', color: 'blue' },
   { status: 'in_progress', label: 'In Progress', color: 'yellow' },
-  { status: 'in_review', label: 'In Review', color: 'orange' },
+  { status: 'review', label: 'In Review', color: 'orange' },
+  { status: 'testing', label: 'Testing', color: 'purple' },
   { status: 'done', label: 'Done', color: 'green' },
   { status: 'blocked', label: 'Blocked', color: 'red' }
 ]
@@ -62,15 +100,11 @@ export default function ProjectBoardPage() {
 
     setLoading(true)
 
-    const unsubscribe = projectsService.subscribeToTasksByStatus(
+    const unsubscribe = TasksService.subscribe(
+      tenant.id,
       projectId,
-      (tasksByStatus) => {
-        // Flatten tasks from all statuses
-        const allTasks: Task[] = []
-        Object.values(tasksByStatus).forEach(statusTasks => {
-          allTasks.push(...statusTasks)
-        })
-        setTasks(allTasks)
+      (fetchedTasks) => {
+        setTasks(fetchedTasks)
         setLoading(false)
       }
     )
@@ -99,10 +133,10 @@ export default function ProjectBoardPage() {
     const taskId = e.dataTransfer.getData('taskId')
     const task = tasks.find(t => t.id === taskId)
 
-    if (!task || task.status === newStatus) return
+    if (!task || task.status === newStatus || !tenant?.id || !projectId) return
 
     try {
-      await projectsService.updateTask(taskId, { status: newStatus })
+      await TasksService.update(tenant.id, projectId, taskId, { status: newStatus })
       toast.success(`Task moved to ${newStatus.replace('_', ' ')}`)
     } catch (error) {
       console.error('Error updating task status:', error)
@@ -367,7 +401,7 @@ export default function ProjectBoardPage() {
                         <span className={`px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
                           {task.priority.toUpperCase()}
                         </span>
-                        {task.blockedBy.length > 0 && (
+                        {task.blockedBy && task.blockedBy.length > 0 && (
                           <span className="px-1.5 sm:px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-xs font-medium flex items-center gap-1">
                             <AlertCircle className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
                             Blocked
@@ -376,7 +410,7 @@ export default function ProjectBoardPage() {
                       </div>
 
                       {/* Tags */}
-                      {task.tags.length > 0 && (
+                      {task.tags && task.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-2 sm:mb-3">
                           {task.tags.slice(0, 2).map(tag => (
                             <span
@@ -412,7 +446,7 @@ export default function ProjectBoardPage() {
                               {formatTimeEstimate(task.estimatedHours * 60)}
                             </span>
                           )}
-                          {task.commentsCount > 0 && (
+                          {task.commentsCount && task.commentsCount > 0 && (
                             <span className="flex items-center gap-1">
                               💬 {task.commentsCount}
                             </span>
@@ -420,11 +454,11 @@ export default function ProjectBoardPage() {
                         </div>
 
                         {/* Assignee */}
-                        {task.assigneeName && (
+                        {task.assignee?.name && (
                           <div className="flex items-center gap-1">
                             <User className="w-3 h-3" />
                             <span className="truncate max-w-[100px]">
-                              {task.assigneeName.split(' ')[0]}
+                              {task.assignee.name.split(' ')[0]}
                             </span>
                           </div>
                         )}
@@ -515,10 +549,10 @@ export default function ProjectBoardPage() {
 
                 {/* Assignee & Due Date */}
                 <div className="grid grid-cols-2 gap-4">
-                  {selectedTask.assigneeName && (
+                  {selectedTask.assignee?.name && (
                     <div>
                       <label className="block text-sm font-medium text-gray-400 mb-2">Assignee</label>
-                      <p className="text-white">{selectedTask.assigneeName}</p>
+                      <p className="text-white">{selectedTask.assignee.name}</p>
                     </div>
                   )}
                   {selectedTask.dueDate && (
@@ -546,7 +580,7 @@ export default function ProjectBoardPage() {
                 </div>
 
                 {/* Tags */}
-                {selectedTask.tags.length > 0 && (
+                {selectedTask.tags && selectedTask.tags.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">Tags</label>
                     <div className="flex flex-wrap gap-2">
